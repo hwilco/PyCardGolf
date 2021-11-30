@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>AlphaGolf.pygolf.deck API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>AlphaGolf.pygolf.deck</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import random
+import sys
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import ClassVar, Dict, List
+
+
+@dataclass
+class Card:
+    &#34;&#34;&#34;
+    A class to represent a playing card.
+    &#34;&#34;&#34;
+    value: int
+    suit: str
+    __value_dict: ClassVar[Dict[int, int]] = {1: &#34;A&#34;,
+                                              2: &#34;2&#34;,
+                                              3: &#34;3&#34;,
+                                              4: &#34;4&#34;,
+                                              5: &#34;5&#34;,
+                                              6: &#34;6&#34;,
+                                              7: &#34;7&#34;,
+                                              8: &#34;8&#34;,
+                                              9: &#34;9&#34;,
+                                              10: &#34;10&#34;,
+                                              11: &#34;J&#34;,
+                                              12: &#34;Q&#34;,
+                                              13: &#34;K&#34;}
+    __suit_dict: ClassVar[Dict[str, str]] = {&#34;s&#34;: &#39;\u2660&#39;,
+                                             &#34;h&#34;: &#39;\u2665&#39;,
+                                             &#34;d&#34;: &#39;\u2666&#39;,
+                                             &#34;c&#34;: &#39;\u2663&#39;,
+                                             &#34;s_outline&#34;: &#39;\u2664&#39;,
+                                             &#34;h_outline&#34;: &#39;\u2661&#39;,
+                                             &#34;d_outline&#34;: &#39;\u2662&#39;,
+                                             &#34;c_outline&#34;: &#39;\u2667&#39;}
+
+    @property
+    def __value_str(self):
+        return Card.__value_dict[self.value]
+
+    @property
+    def __suit_str(self):
+        return Card.__suit_dict[self.suit.lower() + &#34;_outline&#34;]
+
+    def __repr__(self):
+        return &#34;Card({}, &#39;{}&#39;)&#34;.format(self.value, self.suit.upper())
+
+    def __str__(self):
+        return self.__value_str + self.__suit_str
+
+    def __eq__(self, other: &#39;Card&#39;):
+        return self.value == other.value and \
+               self.suit.lower() == other.suit.lower()
+
+
+class CardStack(ABC):
+    &#34;&#34;&#34;
+    An abstract class representing a stack of cards.
+    &#34;&#34;&#34;
+    def __init__(self, cards: &#39;List[Card]&#39; = None):
+        self._cards: &#39;List[Card]&#39; = [] if cards is None else cards
+
+    @property
+    def num_cards(self):
+        return len(self._cards)
+
+    def draw(self):
+        &#34;&#34;&#34;
+        Draw the top card from the deck.
+
+        Returns:
+            Card: The top card of the deck.
+
+        Raises:
+            IndexError: If no cards are left in the deck but draw is called.
+        &#34;&#34;&#34;
+        if len(self._cards) == 0:
+            raise IndexError(&#34;No cards left in deck&#34;)
+        return self._cards.pop()
+
+    @abstractmethod
+    def reset(self):
+        pass
+
+
+class Deck(CardStack):
+    &#34;&#34;&#34;
+    A class to represent a deck of cards.
+    &#34;&#34;&#34;
+    def __init__(self, seed: int = None, cards: &#39;List[Card]&#39; = None):
+        &#34;&#34;&#34;
+        Construct a Deck object.
+
+        Args:
+            seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
+            cards (optional): Cards to be put in self.__cards, in order. Defaults to a shuffled deck of 52 cards.
+        &#34;&#34;&#34;
+        super().__init__(cards)
+        self.seed = random.randrange(sys.maxsize) if seed is None else seed
+        self.rand = random.Random(self.seed)
+        if cards is None:
+            self.reset()
+            self.shuffle()
+
+    def reset(self):
+        &#34;&#34;&#34;
+        Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
+        &#34;&#34;&#34;
+        self._cards = [Card(v, s) for s in (&#39;h&#39;, &#39;c&#39;, &#39;d&#39;, &#39;s&#39;) for v in range(1, 14)]
+
+    def add_discard_pile(self, discard_pile: &#39;DiscardPile&#39;):
+        &#34;&#34;&#34;
+        Adds a discard pile back into the deck, shuffles the deck, and resets the discard pile.
+
+        Args:
+            discard_pile: The discard pile to be added back into the deck. Will be reset as a side effect.
+        &#34;&#34;&#34;
+        # noinspection PyProtectedMember
+        self._cards.extend(discard_pile._cards)
+        discard_pile.reset()
+        self.shuffle()
+
+    def shuffle(self):
+        &#34;&#34;&#34;
+        Randomly order the cards remaining in the deck.
+        &#34;&#34;&#34;
+        self.rand.shuffle(self._cards)
+
+    def __repr__(self):
+        return &#34;Deck({}, {})&#34;.format(self.seed, self._cards)
+
+    def __str__(self):
+        return &#34;Deck of {} card{}&#34;.format(self.num_cards, &#34;&#34; if self.num_cards == 1 else &#34;s&#34;)
+
+
+class DiscardPile(CardStack):
+    &#34;&#34;&#34;
+    A class to represent a discard pile of cards.
+    &#34;&#34;&#34;
+    def peek(self):
+        &#34;&#34;&#34;
+        Peek at the top card of the discard pile without removing it.
+
+        Returns:
+            Card: The top card of the discard pile.
+        &#34;&#34;&#34;
+        return self._cards[-1]
+
+    def reset(self):
+        &#34;&#34;&#34;
+        Empty the discard pile.
+        &#34;&#34;&#34;
+        self._cards = []
+
+    def add_card(self, new_card: &#39;Card&#39;):
+        &#34;&#34;&#34;
+        Add a card to the top of the discard pile.
+
+        Args:
+            new_card: Card to add to the top of the pile.
+        &#34;&#34;&#34;
+        self._cards.append(new_card)
+
+    def __repr__(self):
+        return &#34;DiscardPile({})&#34;.format(self._cards)
+
+    def __str__(self):
+        return &#34;Discard pile of {} card{}{}&#34;.format(self.num_cards, &#34;&#34; if self.num_cards == 1 else &#34;s&#34;,
+                                                    &#34;&#34; if self.num_cards == 0 else &#34;. Top card: &#34; + str(self.peek()))</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="AlphaGolf.pygolf.deck.Card"><code class="flex name class">
+<span>class <span class="ident">Card</span></span>
+<span>(</span><span>value: int, suit: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A class to represent a playing card.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Card:
+    &#34;&#34;&#34;
+    A class to represent a playing card.
+    &#34;&#34;&#34;
+    value: int
+    suit: str
+    __value_dict: ClassVar[Dict[int, int]] = {1: &#34;A&#34;,
+                                              2: &#34;2&#34;,
+                                              3: &#34;3&#34;,
+                                              4: &#34;4&#34;,
+                                              5: &#34;5&#34;,
+                                              6: &#34;6&#34;,
+                                              7: &#34;7&#34;,
+                                              8: &#34;8&#34;,
+                                              9: &#34;9&#34;,
+                                              10: &#34;10&#34;,
+                                              11: &#34;J&#34;,
+                                              12: &#34;Q&#34;,
+                                              13: &#34;K&#34;}
+    __suit_dict: ClassVar[Dict[str, str]] = {&#34;s&#34;: &#39;\u2660&#39;,
+                                             &#34;h&#34;: &#39;\u2665&#39;,
+                                             &#34;d&#34;: &#39;\u2666&#39;,
+                                             &#34;c&#34;: &#39;\u2663&#39;,
+                                             &#34;s_outline&#34;: &#39;\u2664&#39;,
+                                             &#34;h_outline&#34;: &#39;\u2661&#39;,
+                                             &#34;d_outline&#34;: &#39;\u2662&#39;,
+                                             &#34;c_outline&#34;: &#39;\u2667&#39;}
+
+    @property
+    def __value_str(self):
+        return Card.__value_dict[self.value]
+
+    @property
+    def __suit_str(self):
+        return Card.__suit_dict[self.suit.lower() + &#34;_outline&#34;]
+
+    def __repr__(self):
+        return &#34;Card({}, &#39;{}&#39;)&#34;.format(self.value, self.suit.upper())
+
+    def __str__(self):
+        return self.__value_str + self.__suit_str
+
+    def __eq__(self, other: &#39;Card&#39;):
+        return self.value == other.value and \
+               self.suit.lower() == other.suit.lower()</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="AlphaGolf.pygolf.deck.Card.suit"><code class="name">var <span class="ident">suit</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.Card.value"><code class="name">var <span class="ident">value</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.CardStack"><code class="flex name class">
+<span>class <span class="ident">CardStack</span></span>
+<span>(</span><span>cards: List[<a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a>] = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An abstract class representing a stack of cards.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CardStack(ABC):
+    &#34;&#34;&#34;
+    An abstract class representing a stack of cards.
+    &#34;&#34;&#34;
+    def __init__(self, cards: &#39;List[Card]&#39; = None):
+        self._cards: &#39;List[Card]&#39; = [] if cards is None else cards
+
+    @property
+    def num_cards(self):
+        return len(self._cards)
+
+    def draw(self):
+        &#34;&#34;&#34;
+        Draw the top card from the deck.
+
+        Returns:
+            Card: The top card of the deck.
+
+        Raises:
+            IndexError: If no cards are left in the deck but draw is called.
+        &#34;&#34;&#34;
+        if len(self._cards) == 0:
+            raise IndexError(&#34;No cards left in deck&#34;)
+        return self._cards.pop()
+
+    @abstractmethod
+    def reset(self):
+        pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="AlphaGolf.pygolf.deck.Deck" href="#AlphaGolf.pygolf.deck.Deck">Deck</a></li>
+<li><a title="AlphaGolf.pygolf.deck.DiscardPile" href="#AlphaGolf.pygolf.deck.DiscardPile">DiscardPile</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="AlphaGolf.pygolf.deck.CardStack.num_cards"><code class="name">var <span class="ident">num_cards</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def num_cards(self):
+    return len(self._cards)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="AlphaGolf.pygolf.deck.CardStack.draw"><code class="name flex">
+<span>def <span class="ident">draw</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Draw the top card from the deck.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a></code></dt>
+<dd>The top card of the deck.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>IndexError</code></dt>
+<dd>If no cards are left in the deck but draw is called.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def draw(self):
+    &#34;&#34;&#34;
+    Draw the top card from the deck.
+
+    Returns:
+        Card: The top card of the deck.
+
+    Raises:
+        IndexError: If no cards are left in the deck but draw is called.
+    &#34;&#34;&#34;
+    if len(self._cards) == 0:
+        raise IndexError(&#34;No cards left in deck&#34;)
+    return self._cards.pop()</code></pre>
+</details>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.CardStack.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def reset(self):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.Deck"><code class="flex name class">
+<span>class <span class="ident">Deck</span></span>
+<span>(</span><span>seed: int = None, cards: List[<a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a>] = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A class to represent a deck of cards.</p>
+<p>Construct a Deck object.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>seed</code></strong> :&ensp;<code>optional</code></dt>
+<dd>Seed for self.rand. Defaults to a random value between 0 and sys.maxsize</dd>
+<dt><strong><code>cards</code></strong> :&ensp;<code>optional</code></dt>
+<dd>Cards to be put in self.__cards, in order. Defaults to a shuffled deck of 52 cards.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Deck(CardStack):
+    &#34;&#34;&#34;
+    A class to represent a deck of cards.
+    &#34;&#34;&#34;
+    def __init__(self, seed: int = None, cards: &#39;List[Card]&#39; = None):
+        &#34;&#34;&#34;
+        Construct a Deck object.
+
+        Args:
+            seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
+            cards (optional): Cards to be put in self.__cards, in order. Defaults to a shuffled deck of 52 cards.
+        &#34;&#34;&#34;
+        super().__init__(cards)
+        self.seed = random.randrange(sys.maxsize) if seed is None else seed
+        self.rand = random.Random(self.seed)
+        if cards is None:
+            self.reset()
+            self.shuffle()
+
+    def reset(self):
+        &#34;&#34;&#34;
+        Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
+        &#34;&#34;&#34;
+        self._cards = [Card(v, s) for s in (&#39;h&#39;, &#39;c&#39;, &#39;d&#39;, &#39;s&#39;) for v in range(1, 14)]
+
+    def add_discard_pile(self, discard_pile: &#39;DiscardPile&#39;):
+        &#34;&#34;&#34;
+        Adds a discard pile back into the deck, shuffles the deck, and resets the discard pile.
+
+        Args:
+            discard_pile: The discard pile to be added back into the deck. Will be reset as a side effect.
+        &#34;&#34;&#34;
+        # noinspection PyProtectedMember
+        self._cards.extend(discard_pile._cards)
+        discard_pile.reset()
+        self.shuffle()
+
+    def shuffle(self):
+        &#34;&#34;&#34;
+        Randomly order the cards remaining in the deck.
+        &#34;&#34;&#34;
+        self.rand.shuffle(self._cards)
+
+    def __repr__(self):
+        return &#34;Deck({}, {})&#34;.format(self.seed, self._cards)
+
+    def __str__(self):
+        return &#34;Deck of {} card{}&#34;.format(self.num_cards, &#34;&#34; if self.num_cards == 1 else &#34;s&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="AlphaGolf.pygolf.deck.CardStack" href="#AlphaGolf.pygolf.deck.CardStack">CardStack</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="AlphaGolf.pygolf.deck.Deck.add_discard_pile"><code class="name flex">
+<span>def <span class="ident">add_discard_pile</span></span>(<span>self, discard_pile: <a title="AlphaGolf.pygolf.deck.DiscardPile" href="#AlphaGolf.pygolf.deck.DiscardPile">DiscardPile</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds a discard pile back into the deck, shuffles the deck, and resets the discard pile.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>discard_pile</code></strong></dt>
+<dd>The discard pile to be added back into the deck. Will be reset as a side effect.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_discard_pile(self, discard_pile: &#39;DiscardPile&#39;):
+    &#34;&#34;&#34;
+    Adds a discard pile back into the deck, shuffles the deck, and resets the discard pile.
+
+    Args:
+        discard_pile: The discard pile to be added back into the deck. Will be reset as a side effect.
+    &#34;&#34;&#34;
+    # noinspection PyProtectedMember
+    self._cards.extend(discard_pile._cards)
+    discard_pile.reset()
+    self.shuffle()</code></pre>
+</details>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.Deck.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset(self):
+    &#34;&#34;&#34;
+    Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
+    &#34;&#34;&#34;
+    self._cards = [Card(v, s) for s in (&#39;h&#39;, &#39;c&#39;, &#39;d&#39;, &#39;s&#39;) for v in range(1, 14)]</code></pre>
+</details>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.Deck.shuffle"><code class="name flex">
+<span>def <span class="ident">shuffle</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Randomly order the cards remaining in the deck.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def shuffle(self):
+    &#34;&#34;&#34;
+    Randomly order the cards remaining in the deck.
+    &#34;&#34;&#34;
+    self.rand.shuffle(self._cards)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="AlphaGolf.pygolf.deck.CardStack" href="#AlphaGolf.pygolf.deck.CardStack">CardStack</a></b></code>:
+<ul class="hlist">
+<li><code><a title="AlphaGolf.pygolf.deck.CardStack.draw" href="#AlphaGolf.pygolf.deck.CardStack.draw">draw</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.DiscardPile"><code class="flex name class">
+<span>class <span class="ident">DiscardPile</span></span>
+<span>(</span><span>cards: List[<a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a>] = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A class to represent a discard pile of cards.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DiscardPile(CardStack):
+    &#34;&#34;&#34;
+    A class to represent a discard pile of cards.
+    &#34;&#34;&#34;
+    def peek(self):
+        &#34;&#34;&#34;
+        Peek at the top card of the discard pile without removing it.
+
+        Returns:
+            Card: The top card of the discard pile.
+        &#34;&#34;&#34;
+        return self._cards[-1]
+
+    def reset(self):
+        &#34;&#34;&#34;
+        Empty the discard pile.
+        &#34;&#34;&#34;
+        self._cards = []
+
+    def add_card(self, new_card: &#39;Card&#39;):
+        &#34;&#34;&#34;
+        Add a card to the top of the discard pile.
+
+        Args:
+            new_card: Card to add to the top of the pile.
+        &#34;&#34;&#34;
+        self._cards.append(new_card)
+
+    def __repr__(self):
+        return &#34;DiscardPile({})&#34;.format(self._cards)
+
+    def __str__(self):
+        return &#34;Discard pile of {} card{}{}&#34;.format(self.num_cards, &#34;&#34; if self.num_cards == 1 else &#34;s&#34;,
+                                                    &#34;&#34; if self.num_cards == 0 else &#34;. Top card: &#34; + str(self.peek()))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="AlphaGolf.pygolf.deck.CardStack" href="#AlphaGolf.pygolf.deck.CardStack">CardStack</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="AlphaGolf.pygolf.deck.DiscardPile.add_card"><code class="name flex">
+<span>def <span class="ident">add_card</span></span>(<span>self, new_card: <a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add a card to the top of the discard pile.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>new_card</code></strong></dt>
+<dd>Card to add to the top of the pile.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_card(self, new_card: &#39;Card&#39;):
+    &#34;&#34;&#34;
+    Add a card to the top of the discard pile.
+
+    Args:
+        new_card: Card to add to the top of the pile.
+    &#34;&#34;&#34;
+    self._cards.append(new_card)</code></pre>
+</details>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.DiscardPile.peek"><code class="name flex">
+<span>def <span class="ident">peek</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Peek at the top card of the discard pile without removing it.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a></code></dt>
+<dd>The top card of the discard pile.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def peek(self):
+    &#34;&#34;&#34;
+    Peek at the top card of the discard pile without removing it.
+
+    Returns:
+        Card: The top card of the discard pile.
+    &#34;&#34;&#34;
+    return self._cards[-1]</code></pre>
+</details>
+</dd>
+<dt id="AlphaGolf.pygolf.deck.DiscardPile.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Empty the discard pile.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset(self):
+    &#34;&#34;&#34;
+    Empty the discard pile.
+    &#34;&#34;&#34;
+    self._cards = []</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="AlphaGolf.pygolf.deck.CardStack" href="#AlphaGolf.pygolf.deck.CardStack">CardStack</a></b></code>:
+<ul class="hlist">
+<li><code><a title="AlphaGolf.pygolf.deck.CardStack.draw" href="#AlphaGolf.pygolf.deck.CardStack.draw">draw</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="AlphaGolf.pygolf" href="index.html">AlphaGolf.pygolf</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="AlphaGolf.pygolf.deck.Card" href="#AlphaGolf.pygolf.deck.Card">Card</a></code></h4>
+<ul class="">
+<li><code><a title="AlphaGolf.pygolf.deck.Card.suit" href="#AlphaGolf.pygolf.deck.Card.suit">suit</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.Card.value" href="#AlphaGolf.pygolf.deck.Card.value">value</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="AlphaGolf.pygolf.deck.CardStack" href="#AlphaGolf.pygolf.deck.CardStack">CardStack</a></code></h4>
+<ul class="">
+<li><code><a title="AlphaGolf.pygolf.deck.CardStack.draw" href="#AlphaGolf.pygolf.deck.CardStack.draw">draw</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.CardStack.num_cards" href="#AlphaGolf.pygolf.deck.CardStack.num_cards">num_cards</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.CardStack.reset" href="#AlphaGolf.pygolf.deck.CardStack.reset">reset</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="AlphaGolf.pygolf.deck.Deck" href="#AlphaGolf.pygolf.deck.Deck">Deck</a></code></h4>
+<ul class="">
+<li><code><a title="AlphaGolf.pygolf.deck.Deck.add_discard_pile" href="#AlphaGolf.pygolf.deck.Deck.add_discard_pile">add_discard_pile</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.Deck.reset" href="#AlphaGolf.pygolf.deck.Deck.reset">reset</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.Deck.shuffle" href="#AlphaGolf.pygolf.deck.Deck.shuffle">shuffle</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="AlphaGolf.pygolf.deck.DiscardPile" href="#AlphaGolf.pygolf.deck.DiscardPile">DiscardPile</a></code></h4>
+<ul class="">
+<li><code><a title="AlphaGolf.pygolf.deck.DiscardPile.add_card" href="#AlphaGolf.pygolf.deck.DiscardPile.add_card">add_card</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.DiscardPile.peek" href="#AlphaGolf.pygolf.deck.DiscardPile.peek">peek</a></code></li>
+<li><code><a title="AlphaGolf.pygolf.deck.DiscardPile.reset" href="#AlphaGolf.pygolf.deck.DiscardPile.reset">reset</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
