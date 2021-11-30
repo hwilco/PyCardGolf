@@ -1,17 +1,14 @@
 import random
 import sys
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import ClassVar, Dict, List
 
 
-@dataclass
 class Card:
     """
     A class to represent a playing card.
     """
-    value: int
-    suit: str
+
     __value_dict: ClassVar[Dict[int, int]] = {1: "A",
                                               2: "2",
                                               3: "3",
@@ -33,6 +30,25 @@ class Card:
                                              "h_outline": '\u2661',
                                              "d_outline": '\u2662',
                                              "c_outline": '\u2667'}
+
+    def __init__(self, value: int, suit: str):
+        """
+        Construct a Card object.
+
+        Args:
+            value: The value of the card. 1 -> Ace, 2-10 -> 2-10, 11 -> Jack, 12 -> Queen, 13 -> King.
+            suit: A single letter indicating the suit of the card. 's' -> Spades, 'h' - > Hearts, 'd' -> Diamonds,
+                'c' -> Clubs
+
+        Raises:
+            ValueError: If value or suit are out of range.
+        """
+        if value not in Card.__value_dict:
+            raise ValueError("Card value must be an int in range(1,14). Given value: {}".format(value))
+        if suit not in Card.__suit_dict:
+            raise ValueError("Card suit must be in ['s', 'h', 'd', 'c']. Given value: {}".format(suit))
+        self.value = value
+        self.suit = suit
 
     @property
     def __value_str(self):
@@ -57,6 +73,7 @@ class CardStack(ABC):
     """
     An abstract class representing a stack of cards.
     """
+
     def __init__(self, cards: 'List[Card]' = None):
         self._cards: 'List[Card]' = [] if cards is None else cards
 
@@ -87,6 +104,7 @@ class Deck(CardStack):
     """
     A class to represent a deck of cards.
     """
+
     def __init__(self, seed: int = None, cards: 'List[Card]' = None):
         """
         Construct a Deck object.
@@ -137,6 +155,7 @@ class DiscardPile(CardStack):
     """
     A class to represent a discard pile of cards.
     """
+
     def reset(self):
         """
         Empty the discard pile.
