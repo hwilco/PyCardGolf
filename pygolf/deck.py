@@ -57,8 +57,8 @@ class CardStack(ABC):
     """
     An abstract class representing a stack of cards.
     """
-    def __init__(self, cards: List['Card'] = None):
-        self._cards: List['Card'] = [] if cards is None else cards
+    def __init__(self, cards: 'List[Card]' = None):
+        self._cards: 'List[Card]' = [] if cards is None else cards
 
     @property
     def num_cards(self):
@@ -68,8 +68,11 @@ class CardStack(ABC):
         """
         Draw the top card from the deck.
 
-        :raises IndexError: Raised when no cards are left in the deck but draw is called.
-        :return: (Card) The top card of the deck.
+        Returns:
+            Card: The top card of the deck.
+
+        Raises:
+            IndexError: If no cards are left in the deck but draw is called.
         """
         if len(self._cards) == 0:
             raise IndexError("No cards left in deck")
@@ -84,14 +87,13 @@ class Deck(CardStack):
     """
     A class to represent a deck of cards.
     """
-    def __init__(self, seed: int = None, cards: List['Card'] = None):
-
+    def __init__(self, seed: int = None, cards: 'List[Card]' = None):
         """
         Construct a Deck object.
 
-        :param seed: (Optional) Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
-        :param cards: (Optional) Cards to be put in self.__cards, in order. Defaults to a shuffled deck of 52 cards.
-        :return: None
+        Args:
+            seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
+            cards (optional): Cards to be put in self.__cards, in order. Defaults to a shuffled deck of 52 cards.
         """
         super().__init__(cards)
         self.seed = random.randrange(sys.maxsize) if seed is None else seed
@@ -103,8 +105,6 @@ class Deck(CardStack):
     def reset(self):
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
-
-        :return: None
         """
         self._cards = [Card(v, s) for s in ('h', 'c', 'd', 's') for v in range(1, 14)]
 
@@ -112,8 +112,8 @@ class Deck(CardStack):
         """
         Adds a discard pile back into the deck, shuffles the deck, and resets the discard pile.
 
-        :param discard_pile: The discard pile to be added back into the deck. Will be reset as a side effect.
-        :return: None
+        Args:
+            discard_pile: The discard pile to be added back into the deck. Will be reset as a side effect.
         """
         # noinspection PyProtectedMember
         self._cards.extend(discard_pile._cards)
@@ -123,8 +123,6 @@ class Deck(CardStack):
     def shuffle(self):
         """
         Randomly order the cards remaining in the deck.
-
-        :return: None
         """
         self.rand.shuffle(self._cards)
 
@@ -143,15 +141,14 @@ class DiscardPile(CardStack):
         """
         Peek at the top card of the discard pile without removing it.
 
-        :return: The top card of the discard pile.
+        Returns:
+            Card: The top card of the discard pile.
         """
         return self._cards[-1]
 
     def reset(self):
         """
         Empty the discard pile.
-
-        :return: None
         """
         self._cards = []
 
@@ -159,9 +156,8 @@ class DiscardPile(CardStack):
         """
         Add a card to the top of the discard pile.
 
-        :type new_card: Card
-        :param new_card: Card to add to the top of the pile.
-        :return: None
+        Args:
+            new_card: Card to add to the top of the pile.
         """
         self._cards.append(new_card)
 
