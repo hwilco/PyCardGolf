@@ -165,15 +165,6 @@ class DiscardPile(CardStack):
     &#34;&#34;&#34;
     A class to represent a discard pile of cards.
     &#34;&#34;&#34;
-    def peek(self):
-        &#34;&#34;&#34;
-        Peek at the top card of the discard pile without removing it.
-
-        Returns:
-            Card: The top card of the discard pile.
-        &#34;&#34;&#34;
-        return self._cards[-1]
-
     def reset(self):
         &#34;&#34;&#34;
         Empty the discard pile.
@@ -188,6 +179,15 @@ class DiscardPile(CardStack):
             new_card: Card to add to the top of the pile.
         &#34;&#34;&#34;
         self._cards.append(new_card)
+
+    def peek(self):
+        &#34;&#34;&#34;
+        Peek at the top card of the discard pile without removing it.
+
+        Returns:
+            Card: The top card of the discard pile.
+        &#34;&#34;&#34;
+        return self._cards[-1]
 
     def __repr__(self):
         return &#34;DiscardPile({})&#34;.format(self._cards)
@@ -546,15 +546,6 @@ def reset(self):
     &#34;&#34;&#34;
     A class to represent a discard pile of cards.
     &#34;&#34;&#34;
-    def peek(self):
-        &#34;&#34;&#34;
-        Peek at the top card of the discard pile without removing it.
-
-        Returns:
-            Card: The top card of the discard pile.
-        &#34;&#34;&#34;
-        return self._cards[-1]
-
     def reset(self):
         &#34;&#34;&#34;
         Empty the discard pile.
@@ -569,6 +560,15 @@ def reset(self):
             new_card: Card to add to the top of the pile.
         &#34;&#34;&#34;
         self._cards.append(new_card)
+
+    def peek(self):
+        &#34;&#34;&#34;
+        Peek at the top card of the discard pile without removing it.
+
+        Returns:
+            Card: The top card of the discard pile.
+        &#34;&#34;&#34;
+        return self._cards[-1]
 
     def __repr__(self):
         return &#34;DiscardPile({})&#34;.format(self._cards)
