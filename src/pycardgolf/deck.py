@@ -30,7 +30,7 @@ class Card:
                                              "d_outline": '\u2662',
                                              "c_outline": '\u2667'}
 
-    def __init__(self, value: int, suit: str):
+    def __init__(self, value: int, suit: str, color: str):
         """
         Construct a Card object.
 
@@ -38,6 +38,7 @@ class Card:
             value: The value of the card. 1 -> Ace, 2-10 -> 2-10, 11 -> Jack, 12 -> Queen, 13 -> King.
             suit: A single letter indicating the suit of the card. 's' -> Spades, 'h' - > Hearts, 'd' -> Diamonds,
                 'c' -> Clubs
+            color: A string representing the color of the card. Used to differentiate cards from different decks.
 
         Raises:
             ValueError: If value or suit are out of range.
@@ -49,6 +50,7 @@ class Card:
             raise ValueError("Card suit must be in ['s', 'h', 'd', 'c']. Given value: {}".format(suit))
         self.value = value
         self.suit = suit
+        self.color = color
 
     @property
     def __value_str(self):
@@ -66,7 +68,8 @@ class Card:
 
     def __eq__(self, other: 'Card'):
         return self.value == other.value and \
-               self.suit == other.suit
+               self.suit == other.suit and \
+               self.color == other.color
 
 
 class CardStack:
@@ -85,8 +88,7 @@ class CardStack:
 
     def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None):
         """
-        Add the cards from a different card stack to this card stack. By default this also clears other and shuffles
-            this card stack.
+        Add the cards from a different card stack to this card stack. By default this also clears other stack.
 
         Args:
             other: The card stack to add to this stack.
@@ -131,7 +133,8 @@ class CardStack:
 
     def __eq__(self, other: 'CardStack'):
         # noinspection PyProtectedMember
-        return self.seed == other.seed and self._cards == other._cards
+        return self.seed == other.seed and \
+               self._cards == other._cards
 
     def __repr__(self):
         return "CardStack(seed={}, cards={})".format(self.seed, self._cards)
@@ -145,7 +148,7 @@ class Deck(CardStack):
     A class to represent a deck of cards.
     """
 
-    def __init__(self, seed: int = None):
+    def __init__(self, color: str, seed: int = None):
         """
         Construct a Deck object of 52 ordered cards.
 
@@ -153,16 +156,39 @@ class Deck(CardStack):
             seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
         """
         super().__init__(seed=seed)
+        self.color = color
         self.reset()
+
+    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None):
+        """
+        Add the cards from a different card stack to this deck. The other card stack must contain only cards of the
+            deck's color and may not contain cards already in the deck. By default this also clears other stack.
+
+        Args:
+            other: The card stack to add to this stack.
+            clear_other (optional): If True, clear the other card stack after adding its cards to this stack. Defaults
+                to True.
+            shuffle (optional): If True, shuffle the card stack after adding the other stack. Defaults to False.
+
+        Raises:
+            ValueError: If any of the cards to be added do not match the deck's color or already exist in the deck.
+        """
+        # noinspection PyProtectedMember
+        if any((c.color != self.color for c in other._cards)):
+            raise ValueError("Card to be added does not match the deck's color ({}).".format(self.color))
+        # noinspection PyProtectedMember
+        if any((c in self._cards for c in other._cards)):
+            raise ValueError("Card to be added is a duplicate of a card in the deck.")
+        super().add_card_stack(other, clear_other, shuffle)
 
     def reset(self):
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [Card(v, s) for s in ('c', 'd', 'h', 's') for v in range(1, 14)]
+        self._cards = [Card(v, s, self.color) for s in ('c', 'd', 'h', 's') for v in range(1, 14)]
 
     def __repr__(self):
-        return "Deck <seed={}, _cards={}>".format(self.seed, self._cards)
+        return "Deck <color={}, seed={}, _cards={}>".format(self.color, self.seed, self._cards)
 
     def __str__(self):
         return "Deck of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
