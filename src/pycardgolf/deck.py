@@ -134,7 +134,7 @@ class CardStack:
         return self.seed == other.seed and self._cards == other._cards
 
     def __repr__(self):
-        return "CardStack({}, {})".format(self.seed, self._cards)
+        return "CardStack(seed={}, cards={})".format(self.seed, self._cards)
 
     def __str__(self):
         return "Stack of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
@@ -168,7 +168,7 @@ class Deck(CardStack):
         return "Deck of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
 
 
-class DiscardPile(CardStack):
+class DiscardStack(CardStack):
     """
     A class to represent a discard pile of cards.
     """
@@ -179,25 +179,25 @@ class DiscardPile(CardStack):
 
     def add_card(self, new_card: 'Card'):
         """
-        Add a card to the top of the discard pile.
+        Add a card to the top of the discard stack.
 
         Args:
-            new_card: Card to add to the top of the pile.
+            new_card: Card to add to the top of the stack.
         """
         self._cards.append(new_card)
 
     def peek(self):
         """
-        Peek at the top card of the discard pile without removing it.
+        Peek at the top card of the discard stack without removing it.
 
         Returns:
-            Card: The top card of the discard pile.
+            Card: The top card of the discard stack.
         """
         return self._cards[-1]
 
     def __repr__(self):
-        return "DiscardPile({})".format(self._cards)
+        return "DiscardStack(cards={})".format(self._cards)
 
     def __str__(self):
-        return "Discard pile of {} card{}{}".format(self.num_cards, "" if self.num_cards == 1 else "s",
-                                                    "" if self.num_cards == 0 else ". Top card: " + str(self.peek()))
+        return "Discard stack of {} card{}{}".format(self.num_cards, "" if self.num_cards == 1 else "s",
+                                                     "" if self.num_cards == 0 else ". Top card: " + str(self.peek()))
