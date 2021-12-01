@@ -1,6 +1,7 @@
 import unittest
-import deck
+from pycardgolf import deck
 import string
+__unittest = True
 
 
 class TestCard(unittest.TestCase):
