@@ -129,7 +129,7 @@ class CardStack:
         """
         self.rand.shuffle(self._cards)
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'CardStack'):
         # noinspection PyProtectedMember
         return self.seed == other.seed and self._cards == other._cards
 
