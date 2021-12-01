@@ -43,6 +43,7 @@ class Card:
         Raises:
             ValueError: If value or suit are out of range.
         """
+        suit = suit.lower()
         if value not in Card.__value_dict:
             raise ValueError("Card value must be an int in range(1,14). Given value: {}".format(value))
         if suit not in Card.__suit_dict:
@@ -66,7 +67,7 @@ class Card:
 
     def __eq__(self, other: 'Card'):
         return self.value == other.value and \
-               self.suit.lower() == other.suit.lower()
+               self.suit == other.suit
 
 
 class CardStack(ABC):
