@@ -61,7 +61,7 @@ class Card:
         return Card.__suit_dict[self.suit.lower() + "_outline"]
 
     def __repr__(self):
-        return "Card({}, '{}')".format(self.value, self.suit.upper())
+        return "Card({}, '{}', '{}')".format(self.value, self.suit.upper(), self.color)
 
     def __str__(self):
         return self.__value_str + self.__suit_str
@@ -144,7 +144,7 @@ class CardStack:
                self._cards == other._cards
 
     def __repr__(self):
-        return "CardStack(seed={}, cards={})".format(self.seed, self._cards)
+        return "CardStack(cards={}, seed={})".format(self._cards, self.seed)
 
     def __str__(self):
         return "Stack of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
