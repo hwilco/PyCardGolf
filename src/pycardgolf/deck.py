@@ -30,7 +30,7 @@ class Card:
                                                      "D": '\u2662',
                                                      "C": '\u2667'}
 
-    def __init__(self, value: int, suit: str, color: str):
+    def __init__(self, value: int, suit: str, color: str) -> None:
         """
         Construct a Card object.
 
@@ -53,11 +53,11 @@ class Card:
         self.color = color
 
     @property
-    def __value_str(self):
+    def __value_str(self) -> str:
         return Card.__value_dict[self.value]
 
     @property
-    def __suit_str(self):
+    def __suit_str(self) -> str:
         # TODO: handle configuration of suit display (outline or filled)
         outline_suits = True
         if outline_suits:
@@ -65,20 +65,20 @@ class Card:
         else:
             return Card.__suit_dict[self.suit]
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key, value) -> None:
         if key == 'suit':
             value = value.upper()
         elif key == 'color':
             value = value.lower()
         super().__setattr__(key, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Card({}, '{}', '{}')".format(self.value, self.suit, self.color)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__value_str + self.__suit_str
 
-    def __eq__(self, other: 'Card'):
+    def __eq__(self, other: 'Card') -> bool:
         return self.value == other.value and \
                self.suit == other.suit and \
                self.color == other.color
@@ -89,7 +89,7 @@ class CardStack:
     A class to represent a stack of cards.
     """
 
-    def __init__(self, cards: 'List[Card]' = None, seed: int = None):
+    def __init__(self, cards: 'List[Card]' = None, seed: int = None) -> None:
         """
         Construct a CardStack object.
 
@@ -102,10 +102,10 @@ class CardStack:
         self.rand = random.Random(self.seed)
 
     @property
-    def num_cards(self):
+    def num_cards(self) -> int:
         return len(self._cards)
 
-    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None):
+    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
         """
         Add the cards from a different card stack to this card stack. By default this also clears other stack.
 
@@ -124,7 +124,7 @@ class CardStack:
         if shuffle:
             self.shuffle()
 
-    def draw(self):
+    def draw(self) -> 'Card':
         """
         Draw the top card from the card stack.
 
@@ -138,27 +138,27 @@ class CardStack:
             raise IndexError("No cards left in deck")
         return self._cards.pop()
 
-    def clear(self):
+    def clear(self) -> None:
         """
         Clear the card stack.
         """
         self._cards = []
 
-    def shuffle(self):
+    def shuffle(self) -> None:
         """
         Randomly order the cards remaining in the stack.
         """
         self.rand.shuffle(self._cards)
 
-    def __eq__(self, other: 'CardStack'):
+    def __eq__(self, other: 'CardStack') -> bool:
         # noinspection PyProtectedMember
         return self.seed == other.seed and \
                self._cards == other._cards
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "CardStack(cards={}, seed={})".format(self._cards, self.seed)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Stack of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
 
 
@@ -167,7 +167,7 @@ class Deck(CardStack):
     A class to represent a deck of cards.
     """
 
-    def __init__(self, color: str, seed: int = None):
+    def __init__(self, color: str, seed: int = None) -> None:
         """
         Construct a Deck object of 52 ordered cards.
 
@@ -178,7 +178,7 @@ class Deck(CardStack):
         self.color = color
         self.reset()
 
-    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None):
+    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
         """
         Add the cards from a different card stack to this deck. The other card stack must contain only cards of the
             deck's color and may not contain cards already in the deck. By default this also clears other stack.
@@ -200,16 +200,16 @@ class Deck(CardStack):
             raise ValueError("Card to be added is a duplicate of a card in the deck.")
         super().add_card_stack(other, clear_other, shuffle)
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
         self._cards = [Card(v, s, self.color) for s in ('c', 'd', 'h', 's') for v in range(1, 14)]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Deck <color={}, seed={}, _cards={}>".format(self.color, self.seed, self._cards)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Deck of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
 
 
@@ -219,10 +219,10 @@ class DiscardStack(CardStack):
     """
 
     @property
-    def cards(self):
+    def cards(self) -> 'List[Card]':
         return self._cards
 
-    def add_card(self, new_card: 'Card'):
+    def add_card(self, new_card: 'Card') -> None:
         """
         Add a card to the top of the discard stack.
 
@@ -231,7 +231,7 @@ class DiscardStack(CardStack):
         """
         self._cards.append(new_card)
 
-    def peek(self):
+    def peek(self) -> Card:
         """
         Peek at the top card of the discard stack without removing it.
 
@@ -240,9 +240,9 @@ class DiscardStack(CardStack):
         """
         return self._cards[-1]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "DiscardStack(cards={})".format(self._cards)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Discard stack of {} card{}{}".format(self.num_cards, "" if self.num_cards == 1 else "s",
                                                      "" if self.num_cards == 0 else ". Top card: " + str(self.peek()))
