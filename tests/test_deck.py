@@ -118,8 +118,22 @@ class TestCardStack(unittest.TestCase):
             self.assertEqual(card_stack._cards, comp_cards)
 
     def test_eq(self):
-        # TODO: create tests for __eq__
-        self.fail()
+        cards = random_cards(4)
+        self.assertEqual(deck.CardStack(seed=1), deck.CardStack(seed=1))
+        self.assertEqual(deck.CardStack(seed=1, cards=cards.copy()), deck.CardStack(seed=1, cards=cards.copy()))
+
+        self.assertNotEqual(deck.CardStack(seed=1), deck.CardStack(seed=2))
+        self.assertNotEqual(deck.CardStack(seed=1, cards=cards.copy()), deck.CardStack(seed=2, cards=cards.copy()))
+        self.assertNotEqual(deck.CardStack(seed=1, cards=cards.copy()), deck.CardStack(seed=1))
+        self.assertNotEqual(deck.CardStack(seed=1, cards=cards.copy()), deck.CardStack(seed=1, cards=cards.copy()[:2]))
+
+
+class TestDeck(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_standard_deck(self):
+        pass
 
 
 if __name__ == '__main__':
