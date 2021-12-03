@@ -130,9 +130,9 @@ class TestCardStack(unittest.TestCase):
 
 class TestDeck(unittest.TestCase):
     def setUp(self):
-        pass
+        self.red_deck = deck.Deck(color='red', seed=1)
 
-    def test_standard_deck(self):
+    def test_deck_cards(self):
         pass
 
 
