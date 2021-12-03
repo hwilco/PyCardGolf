@@ -77,7 +77,14 @@ class CardStack:
     A class to represent a stack of cards.
     """
 
-    def __init__(self, seed: int = None, cards: 'List[Card]' = None):
+    def __init__(self, cards: 'List[Card]' = None, seed: int = None):
+        """
+        Construct a CardStack object.
+
+        Args:
+            cards (optional): List of Cards to place in the stack.
+            seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
+        """
         self._cards: 'List[Card]' = [] if cards is None else cards
         self.seed = random.randrange(sys.maxsize) if seed is None else seed
         self.rand = random.Random(self.seed)
