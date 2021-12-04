@@ -1,4 +1,5 @@
 from typing import ClassVar, Dict
+from pycardgolf.utils.const import Suit
 
 
 class Card:
@@ -19,23 +20,23 @@ class Card:
                                               11: "J",
                                               12: "Q",
                                               13: "K"}
-    __suit_dict: ClassVar[Dict[str, str]] = {"S": '\u2660',
-                                             "H": '\u2665',
-                                             "D": '\u2666',
-                                             "C": '\u2663'}
-    __suit_outline_dict: ClassVar[Dict[str, str]] = {"S": '\u2664',
-                                                     "H": '\u2661',
-                                                     "D": '\u2662',
-                                                     "C": '\u2667'}
+    __suit_dict: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2660',
+                                                Suit.HEARTS: '\u2665',
+                                                Suit.DIAMONDS: '\u2666',
+                                                Suit.CLUBS: '\u2663'}
+    __suit_outline_dict: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2664',
+                                                        Suit.HEARTS: '\u2661',
+                                                        Suit.DIAMONDS: '\u2662',
+                                                        Suit.CLUBS: '\u2667'}
 
-    def __init__(self, rank: int, suit: str, color: str) -> None:
+    def __init__(self, rank: int, suit: 'Suit', color: str) -> None:
         """
         Construct a Card object.
 
         Args:
             rank: The rank of the card. 1 -> Ace, 2-10 -> 2-10, 11 -> Jack, 12 -> Queen, 13 -> King.
-            suit: A single letter indicating the suit of the card. 's' -> Spades, 'h' - > Hearts, 'd' -> Diamonds,
-                'c' -> Clubs. Converted to upper case.
+            suit: The suit of the card. Must be a member of the utils.const.Suit enum. (Suit.CLUBS, Suit.DIAMONDS,
+                Suit.HEARTS, or Suit.SPADES)
             color: A string representing the color of the card. Used to differentiate cards from different decks.
                 Converted to lower case.
 
@@ -47,7 +48,8 @@ class Card:
             raise ValueError("Card rank must be an int in range(1,14). Given rank: {}".format(rank))
         self.suit = suit
         if self.suit not in Card.__suit_dict:
-            raise ValueError("Card suit must be in ['S', 'H', 'D', 'C']. Given rank: {}".format(suit))
+            raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
+                             "suit: {}".format(suit))
         self.color = color
 
     @property
@@ -64,14 +66,12 @@ class Card:
             return Card.__suit_dict[self.suit]
 
     def __setattr__(self, key, value) -> None:
-        if key == 'suit':
-            value = value.upper()
-        elif key == 'color':
+        if key == 'color':
             value = value.lower()
         super().__setattr__(key, value)
 
     def __repr__(self) -> str:
-        return "Card({}, '{}', '{}')".format(self.rank, self.suit, self.color)
+        return "Card({}, {}, '{}')".format(self.rank, self.suit, self.color)
 
     def __str__(self) -> str:
         return self.__value_str + self.__suit_str

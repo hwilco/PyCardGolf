@@ -1,6 +1,7 @@
 import unittest
 from unittest import mock
 from pycardgolf.utils import card, deck
+from pycardgolf.utils.const import Suit
 import sys
 import random
 
@@ -8,7 +9,7 @@ __unittest = True
 
 
 def random_cards(num_cards: int):
-    return [card.Card(random.randint(1, 13), random.choice('cdhs'), random.choice(['red', 'blue'])) for
+    return [card.Card(random.randint(1, 13), random.choice(list(Suit)), random.choice(['red', 'blue'])) for
             _ in range(num_cards)]
 
 
