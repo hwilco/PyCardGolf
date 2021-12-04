@@ -1,7 +1,6 @@
 import unittest
 from unittest import mock
-from pycardgolf import deck
-import string
+from pycardgolf.utils import card, deck
 import sys
 import random
 
@@ -9,45 +8,8 @@ __unittest = True
 
 
 def random_cards(num_cards: int):
-    return [deck.Card(random.randint(1, 13), random.choice('cdhs'), random.choice(['red', 'blue'])) for
+    return [card.Card(random.randint(1, 13), random.choice('cdhs'), random.choice(['red', 'blue'])) for
             _ in range(num_cards)]
-
-
-class TestCard(unittest.TestCase):
-    def test_value_outside_range(self):
-        for value in [0, 14]:
-            with self.subTest(value=value):
-                self.assertRaises(ValueError, deck.Card, value, 'h', 'blue')
-
-    def test_value_inside_range(self):
-        for value in range(1, 14):
-            with self.subTest(msg="ValueError unexpectedly raised by Card({}, 'h')".format(value), value=value):
-                try:
-                    deck.Card(value, 'h', 'blue')
-                except ValueError:
-                    self.fail()
-
-    def test_suit_invalid(self):
-        for suit in ['clubs', 'diamonds', 'hearts', 'spades'] + [s for s in string.ascii_lowercase if s not in 'cdhs']:
-            with self.subTest(suit=suit):
-                self.assertRaises(ValueError, deck.Card, 1, suit, 'blue')
-
-    def test_suit_valid(self):
-        for suit in 'cdhsCDHS':
-            with self.subTest(msg="ValueError unexpectedly raised by Card(1, {})".format(suit), suit=suit):
-                try:
-                    deck.Card(1, suit, 'blue')
-                except ValueError:
-                    self.fail()
-
-    def test_eq(self):
-        self.assertEqual(deck.Card(3, 'h', 'red'), deck.Card(3, 'h', 'red'))
-        self.assertEqual(deck.Card(3, 'H', 'red'), deck.Card(3, 'h', 'red'))
-        self.assertEqual(deck.Card(3, 'h', 'red'), deck.Card(3, 'h', 'RED'))
-
-        self.assertNotEqual(deck.Card(3, 'h', 'red'), deck.Card(4, 'h', 'red'))
-        self.assertNotEqual(deck.Card(3, 'h', 'red'), deck.Card(3, 's', 'red'))
-        self.assertNotEqual(deck.Card(3, 'h', 'red'), deck.Card(3, 'h', 'blue'))
 
 
 class TestCardStack(unittest.TestCase):
