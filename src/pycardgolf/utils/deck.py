@@ -124,7 +124,7 @@ class Deck(CardStack):
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [card.Card(v, s, self.color) for s in ('c', 'd', 'h', 's') for v in range(1, 14)]
+        self._cards = [card.Card(r, s, self.color) for s in ('c', 'd', 'h', 's') for r in range(1, 14)]
 
     def __repr__(self) -> str:
         return "Deck <color={}, seed={}, _cards={}>".format(self.color, self.seed, self._cards)

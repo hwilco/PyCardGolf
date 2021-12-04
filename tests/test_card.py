@@ -6,16 +6,16 @@ __unittest = True
 
 
 class TestCard(unittest.TestCase):
-    def test_value_outside_range(self):
-        for value in [0, 14]:
-            with self.subTest(value=value):
-                self.assertRaises(ValueError, card.Card, value, 'h', 'blue')
+    def test_rank_outside_range(self):
+        for rank in [0, 14]:
+            with self.subTest(rank=rank):
+                self.assertRaises(ValueError, card.Card, rank, 'h', 'blue')
 
-    def test_value_inside_range(self):
-        for value in range(1, 14):
-            with self.subTest(msg="ValueError unexpectedly raised by Card({}, 'h')".format(value), value=value):
+    def test_rank_inside_range(self):
+        for rank in range(1, 14):
+            with self.subTest(msg="ValueError unexpectedly raised by Card({}, 'h')".format(rank), rank=rank):
                 try:
-                    card.Card(value, 'h', 'blue')
+                    card.Card(rank, 'h', 'blue')
                 except ValueError:
                     self.fail()
 
