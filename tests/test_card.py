@@ -41,6 +41,23 @@ class TestCard(unittest.TestCase):
         self.assertNotEqual(card.Card(3, 'h', 'red'), card.Card(3, 's', 'red'))
         self.assertNotEqual(card.Card(3, 'h', 'red'), card.Card(3, 'h', 'blue'))
 
+    def test_str(self):
+        self.assertEqual(str(card.Card(1, 'c', 'red')), "A\u2667")
+        self.assertEqual(str(card.Card(2, 'c', 'red')), "2\u2667")
+        self.assertEqual(str(card.Card(11, 'c', 'red')), "J\u2667")
+        self.assertEqual(str(card.Card(12, 'c', 'red')), "Q\u2667")
+        self.assertEqual(str(card.Card(13, 'c', 'red')), "K\u2667")
+
+        self.assertEqual(str(card.Card(13, 'd', 'red')), "K\u2662")
+        self.assertEqual(str(card.Card(13, 'h', 'red')), "K\u2661")
+        self.assertEqual(str(card.Card(13, 's', 'red')), "K\u2664")
+
+    def test_repr(self):
+        self.assertEqual(repr(card.Card(1, 'c', 'red')), "Card(1, 'C', 'red')")
+        self.assertEqual(repr(card.Card(1, 'C', 'red')), "Card(1, 'C', 'red')")
+        self.assertEqual(repr(card.Card(1, 'C', 'Red')), "Card(1, 'C', 'red')")
+        self.assertEqual(repr(card.Card(1, 'C', 'RED')), "Card(1, 'C', 'red')")
+
 
 if __name__ == '__main__':
     unittest.main()
