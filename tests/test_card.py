@@ -1,7 +1,6 @@
 import unittest
 from pycardgolf.utils import card
 from pycardgolf.utils.const import Suit
-import string
 
 __unittest = True
 
@@ -19,11 +18,6 @@ class TestCard(unittest.TestCase):
                     card.Card(rank, Suit.HEARTS, 'blue')
                 except ValueError:
                     self.fail()
-
-    def test_suit_invalid(self):
-        for suit in ['clubs', 'diamonds', 'hearts', 'spades'] + [s for s in string.ascii_lowercase if s not in 'cdhs']:
-            with self.subTest(suit=suit):
-                self.assertRaises(ValueError, card.Card, 1, suit, 'blue')
 
     def test_suit_valid(self):
         for suit in Suit:
