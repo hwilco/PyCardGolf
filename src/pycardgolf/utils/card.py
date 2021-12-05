@@ -7,19 +7,19 @@ class Card:
     A class to represent a playing card.
     """
 
-    __value_dict: ClassVar[Dict[int, str]] = {1: "A",
-                                              2: "2",
-                                              3: "3",
-                                              4: "4",
-                                              5: "5",
-                                              6: "6",
-                                              7: "7",
-                                              8: "8",
-                                              9: "9",
-                                              10: "10",
-                                              11: "J",
-                                              12: "Q",
-                                              13: "K"}
+    __value_dict: ClassVar[Dict[int, str]] = {1: 'A',
+                                              2: '2',
+                                              3: '3',
+                                              4: '4',
+                                              5: '5',
+                                              6: '6',
+                                              7: '7',
+                                              8: '8',
+                                              9: '9',
+                                              10: '10',
+                                              11: 'J',
+                                              12: 'Q',
+                                              13: 'K'}
     __suit_dict: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2660',
                                                 Suit.HEARTS: '\u2665',
                                                 Suit.DIAMONDS: '\u2666',
@@ -43,14 +43,26 @@ class Card:
         Raises:
             ValueError: If rank or suit are out of range.
         """
-        self.rank = rank
-        if self.rank not in Card.__value_dict:
+        self.__rank = rank
+        if self.__rank not in Card.__value_dict:
             raise ValueError("Card rank must be an int in range(1,14). Given rank: {}".format(rank))
-        self.suit = suit
-        if self.suit not in Card.__suit_dict:
+        self.__suit = suit
+        if self.__suit not in Suit:
             raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
                              "suit: {}".format(suit))
-        self.color = color
+        self.__color = color.lower()
+        
+    @property
+    def rank(self):
+        return self.__rank
+    
+    @property
+    def suit(self):
+        return self.__suit
+
+    @property
+    def color(self):
+        return self.__color
 
     @property
     def __value_str(self) -> str:
@@ -64,11 +76,6 @@ class Card:
             return Card.__suit_outline_dict[self.suit]
         else:
             return Card.__suit_dict[self.suit]
-
-    def __setattr__(self, key, value) -> None:
-        if key == 'color':
-            value = value.lower()
-        super().__setattr__(key, value)
 
     def __repr__(self) -> str:
         return "Card({}, {}, '{}')".format(self.rank, self.suit, self.color)
