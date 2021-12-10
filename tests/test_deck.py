@@ -59,6 +59,14 @@ class TestCardStack(unittest.TestCase):
             with self.subTest(num_draws=num_draws):
                 self.assertEqual(card_stack.draw(), self.cards_5[-num_draws])
 
+    def test_num_cards(self):
+        card_stack = deck.CardStack(self.cards_5)
+        self.assertEqual(card_stack.num_cards, 5)
+        card_stack.draw()
+        self.assertEqual(card_stack.num_cards, 4)
+        card_stack.clear()
+        self.assertEqual(card_stack.num_cards, 0)
+
     def test_draw_empty(self):
         card_stack = deck.CardStack()
         self.assertRaises(IndexError, card_stack.draw)
