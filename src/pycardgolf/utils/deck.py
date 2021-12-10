@@ -140,7 +140,7 @@ class Deck(CardStack):
         return "Deck <color={}, seed={}, _cards={}>".format(self.color, self.seed, self._cards)
 
     def __str__(self) -> str:
-        return "Deck of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
+        return "Deck of {} {} card{}".format(self.num_cards, self.color, "" if self.num_cards == 1 else "s")
 
 
 class DiscardStack(CardStack):
