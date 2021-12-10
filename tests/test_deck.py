@@ -44,6 +44,15 @@ class TestCardStack(unittest.TestCase):
         self.assertEqual(card_stack._cards, self.cards_5 + other_cards)
         self.assertEqual(other_card_stack.num_cards, 0)
 
+    def test_peek_color(self):
+        cards = [card.Card(3, card.Suit.CLUBS, 'red'), card.Card(3, card.Suit.CLUBS, 'blue')]
+        card_stack = deck.CardStack(cards=cards.copy())
+        self.assertEqual(card_stack.peek_color(), cards[-1].color)
+        self.assertEqual(card_stack._cards[-1], cards[-1])
+        card_stack.draw()
+        self.assertEqual(card_stack.peek_color(), cards[-2].color)
+        self.assertEqual(card_stack._cards[-1], cards[-2])
+
     def test_draw(self):
         card_stack = deck.CardStack(cards=self.cards_5.copy())
         for num_draws in range(1, len(self.cards_5) + 1):

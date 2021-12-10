@@ -45,6 +45,15 @@ class CardStack:
         if shuffle:
             self.shuffle()
 
+    def peek_color(self) -> str:
+        """
+        Find the color of the top card on the pile.
+
+        Returns:
+            str: The color of the top card on the pile.
+        """
+        return self._cards[-1].color
+
     def draw(self) -> 'card.Card':
         """
         Draw the top card from the card stack.
