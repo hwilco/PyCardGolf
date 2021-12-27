@@ -19,6 +19,9 @@ class TestCard(unittest.TestCase):
                 except ValueError:
                     self.fail()
 
+    def test_invalid_suit(self):
+        self.assertRaises(ValueError, card.Card, 1, 1, 'red')
+
     def test_suit_valid(self):
         for suit in Suit:
             with self.subTest(msg="ValueError unexpectedly raised by Card(1, {})".format(suit), suit=suit):
@@ -46,6 +49,12 @@ class TestCard(unittest.TestCase):
         self.assertEqual(str(card.Card(13, Suit.DIAMONDS, 'red')), "K\u2662")
         self.assertEqual(str(card.Card(13, Suit.HEARTS, 'red')), "K\u2661")
         self.assertEqual(str(card.Card(13, Suit.SPADES, 'red')), "K\u2664")
+
+    def test_str_no_outline(self):
+        for s, s_str in zip(Suit, ['\u2663', '\u2666', '\u2665', '\u2660']):
+            c = card.Card(1, s, 'red')
+            c._outline_suits = False
+            self.assertEqual(str(c), "A{}".format(s_str))
 
     def test_repr(self):
         self.assertEqual(repr(card.Card(1, Suit.CLUBS, 'red')), "Card(1, Suit.CLUBS, 'red')")

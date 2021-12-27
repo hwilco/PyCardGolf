@@ -51,7 +51,8 @@ class Card:
             raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
                              "suit: {}".format(suit))
         self.__color = color.lower()
-        
+        self._outline_suits = True
+
     @property
     def rank(self):
         return self.__rank
@@ -71,8 +72,7 @@ class Card:
     @property
     def __suit_str(self) -> str:
         # TODO: handle configuration of suit display (outline or filled)
-        outline_suits = True
-        if outline_suits:
+        if self._outline_suits:
             return Card.__suit_outline_dict[self.suit]
         else:
             return Card.__suit_dict[self.suit]
