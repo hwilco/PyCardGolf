@@ -16,7 +16,7 @@ class CardStack:
 
         Args:
             cards (optional): List of Cards to place in the stack.
-            seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
+            seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize.
         """
         self._cards: 'List[card.Card]' = [] if cards is None else cards
         self.seed = random.randrange(sys.maxsize) if seed is None else seed

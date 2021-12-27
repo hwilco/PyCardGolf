@@ -127,8 +127,63 @@ class TestDeck(unittest.TestCase):
     def setUp(self):
         self.red_deck = deck.Deck(color='red', seed=1)
 
-    def test_deck_cards(self):
-        pass
+    def test_cards(self):
+        self.assertTrue(all(card.Card(rank, suit, 'red') in self.red_deck._cards
+                            for rank in range(1, 14) for suit in Suit))
+
+    def test_reset(self):
+        self.red_deck.draw()
+        self.red_deck.reset()
+        self.test_cards()
+
+    def test_add_card_stack_valid(self):
+        other_cards = self.red_deck._cards[:3].copy()
+        del(self.red_deck._cards[:3])
+        other_card_stack = deck.CardStack(cards=other_cards)
+        self.red_deck.add_card_stack(other_card_stack)
+        self.test_cards()
+        self.assertEqual(other_card_stack.num_cards, 0)
+
+    def test_add_card_stack_already_in_deck(self):
+        other_card_stack = deck.CardStack(cards=[card.Card(3, Suit.CLUBS, 'red')])
+        self.assertRaises(ValueError, self.red_deck.add_card_stack, other_card_stack)
+        self.assertEqual(other_card_stack.num_cards, 1)
+
+    def test_add_card_stack_wrong_suit(self):
+        copied_card = self.red_deck._cards[-1]
+        del(self.red_deck._cards[-1])
+        other_card_stack = deck.CardStack(cards=[card.Card(copied_card.rank, copied_card.suit, 'blue')])
+        self.assertRaises(ValueError, self.red_deck.add_card_stack, other_card_stack)
+        self.assertEqual(other_card_stack.num_cards, 1)
+
+    def test_add_card_stack_no_clear(self):
+        other_cards = self.red_deck._cards[:3].copy()
+        del (self.red_deck._cards[:3])
+        other_card_stack = deck.CardStack(cards=other_cards.copy())
+        self.red_deck.add_card_stack(other_card_stack, clear_other=False)
+        self.test_cards()
+        self.assertEqual(other_card_stack._cards, other_cards)
+
+    def test_add_card_stack_shuffle(self):
+        other_cards = self.red_deck._cards[:3].copy()
+        del (self.red_deck._cards[:3])
+        other_card_stack = deck.CardStack(cards=other_cards.copy())
+        self.red_deck.rand = mock.MagicMock()
+        self.red_deck.add_card_stack(other_card_stack, shuffle=True)
+        self.red_deck.rand.shuffle.assert_called_once()
+        self.test_cards()
+        self.assertEqual(other_card_stack.num_cards, 0)
+
+    def test_str(self):
+        self.assertEqual(str(self.red_deck), "Deck of 52 red cards")
+        self.red_deck.draw()
+        self.assertEqual(str(self.red_deck), "Deck of 51 red cards")
+        card_deck = deck.Deck('blue')
+        self.assertEqual(str(card_deck), "Deck of 52 blue cards")
+
+    def test_repr(self):
+        self.red_deck.clear()
+        self.assertEqual(repr(self.red_deck), "Deck <color=red, seed=1, _cards=[]>")
 
 
 if __name__ == '__main__':
