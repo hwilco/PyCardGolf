@@ -102,10 +102,11 @@ class Deck(CardStack):
         Construct a Deck object of 52 ordered cards.
 
         Args:
+            color: Color of cards in this deck. Converted to lowercase.
             seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize
         """
         super().__init__(seed=seed)
-        self.color = color
+        self.color = color.lower()
         self.reset()
 
     def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
@@ -134,7 +135,7 @@ class Deck(CardStack):
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [card.Card(r, s, self.color) for s in Suit for r in range(1, 14)]
+        self._cards = [card.Card(rank, suit, self.color) for suit in Suit for rank in range(1, 14)]
 
     def __repr__(self) -> str:
         return "Deck <color={}, seed={}, _cards={}>".format(self.color, self.seed, self._cards)
