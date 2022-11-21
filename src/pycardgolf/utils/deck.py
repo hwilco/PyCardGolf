@@ -28,7 +28,7 @@ class CardStack:
 
     def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
         """
-        Add the cards from a different card stack to this card stack. By default this also clears other stack.
+        Add the cards from a different card stack to this card stack. By default, this also clears other stack.
 
         Args:
             other: The card stack to add to this stack.
@@ -111,7 +111,7 @@ class Deck(CardStack):
     def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
         """
         Add the cards from a different card stack to this deck. The other card stack must contain only cards of the
-            deck's color and may not contain cards already in the deck. By default this also clears other stack.
+            deck's color and may not contain cards already in the deck. By default, this also clears other stack.
 
         Args:
             other: The card stack to add to this stack.
