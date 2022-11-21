@@ -13,7 +13,7 @@ class TestCard(unittest.TestCase):
 
     def test_rank_inside_range(self):
         for rank in range(1, 14):
-            with self.subTest(msg="ValueError unexpectedly raised by Card({}, Suit.HEARTS)".format(rank), rank=rank):
+            with self.subTest(msg=f"ValueError unexpectedly raised by Card({rank}, Suit.HEARTS)", rank=rank):
                 try:
                     card.Card(rank, Suit.HEARTS, 'blue')
                 except ValueError:
@@ -24,7 +24,7 @@ class TestCard(unittest.TestCase):
 
     def test_suit_valid(self):
         for suit in Suit:
-            with self.subTest(msg="ValueError unexpectedly raised by Card(1, {})".format(suit), suit=suit):
+            with self.subTest(msg=f"ValueError unexpectedly raised by Card(1, {suit})", suit=suit):
                 try:
                     card.Card(1, suit, 'blue')
                 except ValueError:
@@ -54,7 +54,7 @@ class TestCard(unittest.TestCase):
         for s, s_str in zip(Suit, ['\u2663', '\u2666', '\u2665', '\u2660']):
             c = card.Card(1, s, 'red')
             c._outline_suits = False
-            self.assertEqual(str(c), "A{}".format(s_str))
+            self.assertEqual(str(c), f"A{s_str}")
 
     def test_repr(self):
         self.assertEqual(repr(card.Card(1, Suit.CLUBS, 'red')), "Card(1, Suit.CLUBS, 'red')")

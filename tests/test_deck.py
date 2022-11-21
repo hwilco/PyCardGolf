@@ -111,16 +111,16 @@ class TestCardStack(unittest.TestCase):
     def test_str(self):
         self.assertEqual(str(deck.CardStack(seed=1)), "Stack of 0 cards")
         card_stack = deck.CardStack(cards=self.cards_5.copy())
-        self.assertEqual(str(card_stack), "Stack of {} cards".format(len(self.cards_5)))
+        self.assertEqual(str(card_stack), f"Stack of {len(self.cards_5)} cards")
         card_stack.draw()
-        self.assertEqual(str(card_stack), "Stack of {} cards".format(len(self.cards_5) - 1))
+        self.assertEqual(str(card_stack), f"Stack of {len(self.cards_5) - 1} cards")
 
     def test_repr(self):
         self.assertEqual(repr(deck.CardStack(seed=1)), "CardStack(cards=[], seed=1)")
         card_stack = deck.CardStack(cards=self.cards_5.copy(), seed=1)
-        self.assertEqual(repr(card_stack), "CardStack(cards={}, seed=1)".format(self.cards_5))
+        self.assertEqual(repr(card_stack), f"CardStack(cards={self.cards_5}, seed=1)")
         card_stack.draw()
-        self.assertEqual(repr(card_stack), "CardStack(cards={}, seed=1)".format(self.cards_5[:-1]))
+        self.assertEqual(repr(card_stack), f"CardStack(cards={self.cards_5[:-1]}, seed=1)")
 
 
 class TestDeck(unittest.TestCase):

@@ -86,7 +86,7 @@ class CardStack:
                self._cards == other._cards
 
     def __repr__(self) -> str:
-        return "CardStack(cards={}, seed={})".format(self._cards, self.seed)
+        return f"CardStack(cards={self._cards}, seed={self.seed})"
 
     def __str__(self) -> str:
         return "Stack of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
@@ -125,7 +125,7 @@ class Deck(CardStack):
         """
         # noinspection PyProtectedMember
         if any((c.color != self.color for c in other._cards)):
-            raise ValueError("Card to be added does not match the deck's color ({}).".format(self.color))
+            raise ValueError(f"Card to be added does not match the deck's color ({self.color}).")
         # noinspection PyProtectedMember
         if any((c in self._cards for c in other._cards)):
             raise ValueError("Card to be added is a duplicate of a card in the deck.")
@@ -138,7 +138,7 @@ class Deck(CardStack):
         self._cards = [card.Card(rank, suit, self.color) for suit in Suit for rank in range(1, 14)]
 
     def __repr__(self) -> str:
-        return "Deck <color={}, seed={}, _cards={}>".format(self.color, self.seed, self._cards)
+        return f"Deck <color={self.color}, seed={self.seed}, _cards={self._cards}>"
 
     def __str__(self) -> str:
         return "Deck of {} {} card{}".format(self.num_cards, self.color, "" if self.num_cards == 1 else "s")
@@ -172,7 +172,7 @@ class DiscardStack(CardStack):
         return self._cards[-1]
 
     def __repr__(self) -> str:
-        return "DiscardStack(cards={})".format(self._cards)
+        return f"DiscardStack(cards={self._cards})"
 
     def __str__(self) -> str:
         return "Discard stack of {} card{}{}".format(self.num_cards, "" if self.num_cards == 1 else "s",

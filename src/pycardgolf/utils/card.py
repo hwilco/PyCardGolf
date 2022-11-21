@@ -45,11 +45,11 @@ class Card:
         """
         self.__rank = rank
         if self.__rank not in Card.__value_dict:
-            raise ValueError("Card rank must be an int in range(1,14). Given rank: {}".format(rank))
+            raise ValueError(f"Card rank must be an int in range(1,14). Given rank: {rank}")
         self.__suit = suit
         if self.__suit not in Suit:
             raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
-                             "suit: {}".format(suit))
+                             f"suit: {suit}")
         self.__color = color.lower()
         self._outline_suits = True
 
@@ -78,7 +78,7 @@ class Card:
             return Card.__suit_dict[self.suit]
 
     def __repr__(self) -> str:
-        return "Card({}, {}, '{}')".format(self.rank, self.suit, self.color)
+        return f"Card({self.rank}, {self.suit}, '{self.color}')"
 
     def __str__(self) -> str:
         return self.__value_str + self.__suit_str
