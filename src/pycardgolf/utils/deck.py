@@ -24,6 +24,10 @@ class CardStack:
 
     @property
     def num_cards(self) -> int:
+        """
+        Returns:
+            num_cards: The number of cards in the CardStack.
+        """
         return len(self._cards)
 
     def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
@@ -162,7 +166,7 @@ class DiscardStack(CardStack):
         """
         self._cards.append(new_card)
 
-    def peek(self) -> card.Card:
+    def peek(self) -> 'card.Card':
         """
         Peek at the top card of the discard stack without removing it.
 
