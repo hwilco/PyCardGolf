@@ -6,7 +6,7 @@ class Card:
     """
     A class to represent a playing card.
     """
-
+    # TODO: move these dicts to pycardgolf.utils.const
     __rank_dict: ClassVar[Dict[int, str]] = {1: 'A',
                                              2: '2',
                                              3: '3',
@@ -29,7 +29,7 @@ class Card:
                                                         Suit.DIAMONDS: '\u2662',
                                                         Suit.CLUBS: '\u2667'}
 
-    def __init__(self, rank: int, suit: 'Suit', color: str) -> None:
+    def __init__(self, rank: int, suit: 'Suit', color: str, face_up: bool = None) -> None:
         """
         Construct a Card object.
 
@@ -39,10 +39,14 @@ class Card:
                 Suit.HEARTS, or Suit.SPADES)
             color: A string representing the color of the card. Used to differentiate cards from different decks.
                 Converted to lower case.
+            face_up (optional): True if the card is face up (showing its rank and suit), False if it is face down.
+                Defaults to False.
 
         Raises:
             ValueError: If rank or suit are out of range.
         """
+        face_up = False if face_up is None else face_up
+
         self.__rank = rank
         if self.__rank not in Card.__rank_dict:
             raise ValueError(f"Card rank must be an int in range(1,14). Given rank: {rank}")
@@ -52,6 +56,7 @@ class Card:
                              f"suit: {suit}")
         self.__color = color.lower()
         self._outline_suits = True
+        self.__face_up = face_up
 
     @property
     def rank(self) -> int:
@@ -78,6 +83,18 @@ class Card:
         return self.__color
 
     @property
+    def face_up(self) -> bool:
+        """
+        Returns:
+            face_up: True if the card is face up (showing its rank and suit), False if it is face down.
+        """
+        return self.__face_up
+
+    @face_up.setter
+    def face_up(self, value: bool) -> None:
+        self.__face_up = value
+
+    @property
     def __rank_str(self) -> str:
         """
         Returns:
@@ -99,12 +116,22 @@ class Card:
             return Card.__suit_dict[self.suit]
 
     def __repr__(self) -> str:
-        return f"Card({self.rank}, {self.suit}, '{self.color}')"
+        return f"Card({self.rank}, {self.suit}, '{self.color}', {self.face_up})"
 
     def __str__(self) -> str:
-        return self.__rank_str + self.__suit_str
+        if self.face_up:
+            return self.__rank_str + self.__suit_str
+        else:
+            return "??"
 
     def __eq__(self, other: 'Card') -> bool:
         return self.rank == other.rank and \
                self.suit == other.suit and \
-               self.color == other.color
+               self.color == other.color and \
+               self.face_up == other.face_up
+
+    def flip(self) -> None:
+        """
+        Flips the card. If the card was face up, it will become face down and vice versa.
+        """
+        self.face_up = not self.face_up
