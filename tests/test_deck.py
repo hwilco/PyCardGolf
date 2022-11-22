@@ -174,6 +174,18 @@ class TestDeck(unittest.TestCase):
         self.test_cards()
         self.assertEqual(other_card_stack.num_cards, 0)
 
+    def test_eq(self):
+        deck_a = deck.Deck('blue', 1)
+        deck_b = deck.Deck('blue', 1)
+        self.assertEqual(deck_a, deck_b)
+
+        deck_a.shuffle()
+        self.assertNotEqual(deck_a, deck_b)
+
+        deck_c = deck.Deck('blue', 1)
+        deck_d = deck.Deck('red', 1)
+        self.assertNotEqual(deck_c, deck_d)
+
     def test_str(self):
         self.assertEqual(str(self.red_deck), "Deck of 52 red cards")
         self.red_deck.draw()
