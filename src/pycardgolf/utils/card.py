@@ -1,11 +1,48 @@
-import pycardgolf.utils.const as const
-from pycardgolf.utils.suit import Suit
+from enum import Enum, EnumMeta
+from typing import ClassVar, Dict
+
+
+class _ContainsEnumMeta(EnumMeta):
+    def __contains__(self, item):
+        return item in self.__members__.values()
+
+
+class Suit(Enum, metaclass=_ContainsEnumMeta):
+    CLUBS = 0
+    DIAMONDS = 1
+    HEARTS = 2
+    SPADES = 3
+
+    def __lt__(self, other: 'Suit'):
+        return self.value < other.value
 
 
 class Card:
     """
     A class to represent a playing card.
     """
+    # TODO: move these dicts to pycardgolf.utils.const
+    __rank_dict: ClassVar[Dict[int, str]] = {1: 'A',
+                                             2: '2',
+                                             3: '3',
+                                             4: '4',
+                                             5: '5',
+                                             6: '6',
+                                             7: '7',
+                                             8: '8',
+                                             9: '9',
+                                             10: '10',
+                                             11: 'J',
+                                             12: 'Q',
+                                             13: 'K'}
+    __suit_dict: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2660',
+                                                Suit.HEARTS: '\u2665',
+                                                Suit.DIAMONDS: '\u2666',
+                                                Suit.CLUBS: '\u2663'}
+    __suit_outline_dict: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2664',
+                                                        Suit.HEARTS: '\u2661',
+                                                        Suit.DIAMONDS: '\u2662',
+                                                        Suit.CLUBS: '\u2667'}
 
     def __init__(self, rank: int, suit: 'Suit', color: str, face_up: bool = None) -> None:
         """
@@ -26,7 +63,7 @@ class Card:
         face_up = False if face_up is None else face_up
 
         self.__rank = rank
-        if self.__rank not in const.RANK_STR:
+        if self.__rank not in Card.__rank_dict:
             raise ValueError(f"Card rank must be an int in range(1,14). Given rank: {rank}")
         self.__suit = suit
         if self.__suit not in Suit:
@@ -79,7 +116,7 @@ class Card:
             __value_str: Human-readable representation of the rank of the card. Converts face cards to their letter
                 representations.
         """
-        return const.RANK_STR[self.rank]
+        return Card.__rank_dict[self.rank]
 
     @property
     def __suit_str(self) -> str:
@@ -89,9 +126,9 @@ class Card:
         """
         # TODO: handle configuration of suit display (outline or filled)
         if self._outline_suits:
-            return const.SUIT_OUTLINE_STR[self.suit]
+            return Card.__suit_outline_dict[self.suit]
         else:
-            return const.SUIT_STR[self.suit]
+            return Card.__suit_dict[self.suit]
 
     def __repr__(self) -> str:
         return f"Card({self.rank}, {self.suit}, '{self.color}', {self.face_up})"

@@ -1,9 +1,6 @@
 import unittest
+from pycardgolf.utils.card import Card, Suit
 
-from pycardgolf.utils.card import Card
-from pycardgolf.utils.suit import Suit
-
-# Hide the contents of the TestCase.assert* methods in the traceback.
 __unittest = True
 
 
