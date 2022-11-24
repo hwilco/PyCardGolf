@@ -1,7 +1,7 @@
 import random
 import sys
 from pycardgolf.utils import card
-from pycardgolf.utils.const import Suit
+from pycardgolf.utils.card import Suit
 from typing import List
 
 

@@ -1,7 +1,9 @@
 import unittest
 from unittest import mock
+
+import pycardgolf.utils.card
 from pycardgolf.utils import card, deck
-from pycardgolf.utils.const import Suit
+from pycardgolf.utils.card import Suit
 import sys
 import random
 
@@ -45,7 +47,7 @@ class TestCardStack(unittest.TestCase):
         self.assertEqual(other_card_stack.num_cards, 0)
 
     def test_peek_color(self):
-        cards = [card.Card(3, card.Suit.CLUBS, 'red'), card.Card(3, card.Suit.CLUBS, 'blue')]
+        cards = [card.Card(3, pycardgolf.utils.card.Suit.CLUBS, 'red'), card.Card(3, pycardgolf.utils.card.Suit.CLUBS, 'blue')]
         card_stack = deck.CardStack(cards=cards.copy())
         self.assertEqual(card_stack.peek_color(), cards[-1].color)
         self.assertEqual(card_stack._cards[-1], cards[-1])
