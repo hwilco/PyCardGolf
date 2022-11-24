@@ -1,8 +1,8 @@
 import random
 import sys
-from pycardgolf.utils import card
-from pycardgolf.utils.card import Suit
 from typing import List
+
+from pycardgolf.utils.card import Card, Suit
 
 
 class CardStack:
@@ -10,7 +10,7 @@ class CardStack:
     A class to represent a stack of cards.
     """
 
-    def __init__(self, cards: 'List[card.Card]' = None, seed: int = None) -> None:
+    def __init__(self, cards: 'List[Card]' = None, seed: int = None) -> None:
         """
         Construct a CardStack object.
 
@@ -18,7 +18,7 @@ class CardStack:
             cards (optional): List of Cards to place in the stack.
             seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize.
         """
-        self._cards: 'List[card.Card]' = [] if cards is None else cards
+        self._cards: 'List[Card]' = [] if cards is None else cards
         self.seed = random.randrange(sys.maxsize) if seed is None else seed
         self.rand = random.Random(self.seed)
 
@@ -58,7 +58,7 @@ class CardStack:
         """
         return self._cards[-1].color
 
-    def draw(self) -> 'card.Card':
+    def draw(self) -> 'Card':
         """
         Draw the top card from the card stack.
 
@@ -139,7 +139,7 @@ class Deck(CardStack):
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [card.Card(rank, suit, self.color) for suit in Suit for rank in range(1, 14)]
+        self._cards = [Card(rank, suit, self.color) for suit in Suit for rank in range(1, 14)]
 
     def __repr__(self) -> str:
         return f"Deck <color={self.color}, seed={self.seed}, _cards={self._cards}>"
@@ -154,10 +154,10 @@ class DiscardStack(CardStack):
     """
 
     @property
-    def cards(self) -> 'List[card.Card]':
+    def cards(self) -> 'List[Card]':
         return self._cards
 
-    def add_card(self, new_card: 'card.Card') -> None:
+    def add_card(self, new_card: 'Card') -> None:
         """
         Add a card to the top of the discard stack.
 
@@ -166,7 +166,7 @@ class DiscardStack(CardStack):
         """
         self._cards.append(new_card)
 
-    def peek(self) -> 'card.Card':
+    def peek(self) -> 'Card':
         """
         Peek at the top card of the discard stack without removing it.
 
