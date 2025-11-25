@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 from enum import Enum, EnumMeta
 from typing import ClassVar, Dict
 
 
 class _ContainsEnumMeta(EnumMeta):
-    def __contains__(self, item):
-        return item in self.__members__.values()
+    def __contains__(self, value):
+        return value in self.__members__.values()
 
 
 class Suit(Enum, metaclass=_ContainsEnumMeta):
@@ -13,7 +15,7 @@ class Suit(Enum, metaclass=_ContainsEnumMeta):
     HEARTS = 2
     SPADES = 3
 
-    def __lt__(self, other: 'Suit'):
+    def __lt__(self, other: Suit) -> bool:
         return self.value < other.value
 
 
@@ -34,16 +36,17 @@ class Card:
                                             11: 'J',
                                             12: 'Q',
                                             13: 'K'}
-    __SUIT_STR: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2660',
+    __SUIT_STR: ClassVar[Dict[Suit, str]] = {Suit.SPADES: '\u2660',
                                                Suit.HEARTS: '\u2665',
                                                Suit.DIAMONDS: '\u2666',
                                                Suit.CLUBS: '\u2663'}
-    __SUIT_OUTLINE_STR: ClassVar[Dict['Suit', str]] = {Suit.SPADES: '\u2664',
+    __SUIT_OUTLINE_STR: ClassVar[Dict[Suit, str]] = {Suit.SPADES: '\u2664',
                                                        Suit.HEARTS: '\u2661',
                                                        Suit.DIAMONDS: '\u2662',
                                                        Suit.CLUBS: '\u2667'}
+    _outline_suits: ClassVar[bool] = True
 
-    def __init__(self, rank: int, suit: 'Suit', color: str, face_up: bool = None) -> None:
+    def __init__(self, rank: int, suit: Suit, color: str, face_up: bool = False) -> None:
         """
         Construct a Card object.
 
@@ -59,7 +62,6 @@ class Card:
         Raises:
             ValueError: If rank or suit are out of range.
         """
-        face_up = False if face_up is None else face_up
 
         self.__rank = rank
         if self.__rank not in Card.__RANK_STR:
@@ -69,7 +71,6 @@ class Card:
             raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
                              f"suit: {suit}")
         self.__color = color.lower()
-        self._outline_suits = True
         self.__face_up = face_up
 
     @property
@@ -81,7 +82,7 @@ class Card:
         return self.__rank
     
     @property
-    def suit(self) -> 'Suit':
+    def suit(self) -> Suit:
         """
         Returns:
             suit: The suit of the card. One of Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES.
@@ -138,11 +139,15 @@ class Card:
         else:
             return "??"
 
-    def __eq__(self, other: 'Card') -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Card):
+            return NotImplemented
         return self.rank == other.rank and \
                self.suit == other.suit and \
                self.color == other.color and \
                self.face_up == other.face_up
+
+    __hash__ = None
 
     def flip(self) -> None:
         """

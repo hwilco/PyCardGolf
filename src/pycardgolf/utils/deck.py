@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import random
 import sys
-from typing import List
+from typing import List, Optional
 
 from pycardgolf.utils.card import Card, Suit
 
@@ -10,7 +12,7 @@ class CardStack:
     A class to represent a stack of cards.
     """
 
-    def __init__(self, cards: 'List[Card]' = None, seed: int = None) -> None:
+    def __init__(self, cards: Optional[List[Card]] = None, seed: Optional[int] = None) -> None:
         """
         Construct a CardStack object.
 
@@ -18,7 +20,7 @@ class CardStack:
             cards (optional): List of Cards to place in the stack.
             seed (optional): Seed for self.rand. Defaults to a random value between 0 and sys.maxsize.
         """
-        self._cards: 'List[Card]' = [] if cards is None else cards
+        self._cards: List[Card] = [] if cards is None else cards
         self.seed = random.randrange(sys.maxsize) if seed is None else seed
         self.rand = random.Random(self.seed)
 
@@ -30,7 +32,7 @@ class CardStack:
         """
         return len(self._cards)
 
-    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
+    def add_card_stack(self, other: CardStack, clear_other: Optional[bool] = None, shuffle: Optional[bool] = None) -> None:
         """
         Add the cards from a different card stack to this card stack. By default, this also clears other stack.
 
@@ -55,10 +57,15 @@ class CardStack:
 
         Returns:
             str: The color of the top card on the pile.
+
+        Raises:
+            IndexError: If the card stack is empty.
         """
+        if len(self._cards) == 0:
+            raise IndexError("No cards left in stack")
         return self._cards[-1].color
 
-    def draw(self) -> 'Card':
+    def draw(self) -> Card:
         """
         Draw the top card from the card stack.
 
@@ -69,7 +76,7 @@ class CardStack:
             IndexError: If no cards are left in the card stack but draw is called.
         """
         if len(self._cards) == 0:
-            raise IndexError("No cards left in deck")
+            raise IndexError("No cards left in stack")
         return self._cards.pop()
 
     def clear(self) -> None:
@@ -84,10 +91,10 @@ class CardStack:
         """
         self.rand.shuffle(self._cards)
 
-    def __eq__(self, other: 'CardStack') -> bool:
-        # noinspection PyProtectedMember
-        return self.seed == other.seed and \
-               self._cards == other._cards
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CardStack):
+            return NotImplemented
+        return self.seed == other.seed and self._cards == other._cards
 
     def __repr__(self) -> str:
         return f"CardStack(cards={self._cards}, seed={self.seed})"
@@ -101,7 +108,7 @@ class Deck(CardStack):
     A class to represent a deck of cards.
     """
 
-    def __init__(self, color: str, seed: int = None) -> None:
+    def __init__(self, color: str, seed: Optional[int] = None) -> None:
         """
         Construct a Deck object of 52 ordered cards.
 
@@ -113,7 +120,7 @@ class Deck(CardStack):
         self.color = color.lower()
         self.reset()
 
-    def add_card_stack(self, other: 'CardStack', clear_other: bool = None, shuffle: bool = None) -> None:
+    def add_card_stack(self, other: CardStack, clear_other: Optional[bool] = None, shuffle: Optional[bool] = None) -> None:
         """
         Add the cards from a different card stack to this deck. The other card stack must contain only cards of the
             deck's color and may not contain cards already in the deck. By default, this also clears other stack.
@@ -127,10 +134,8 @@ class Deck(CardStack):
         Raises:
             ValueError: If any of the cards to be added do not match the deck's color or already exist in the deck.
         """
-        # noinspection PyProtectedMember
         if any((c.color != self.color for c in other._cards)):
             raise ValueError(f"Card to be added does not match the deck's color ({self.color}).")
-        # noinspection PyProtectedMember
         if any((c in self._cards for c in other._cards)):
             raise ValueError("Card to be added is a duplicate of a card in the deck.")
         super().add_card_stack(other, clear_other, shuffle)
@@ -154,10 +159,11 @@ class DiscardStack(CardStack):
     """
 
     @property
-    def cards(self) -> 'List[Card]':
-        return self._cards
+    def cards(self) -> List[Card]:
+        """Returns a copy of the cards list to prevent external mutation."""
+        return self._cards.copy()
 
-    def add_card(self, new_card: 'Card') -> None:
+    def add_card(self, new_card: Card) -> None:
         """
         Add a card to the top of the discard stack.
 
@@ -166,13 +172,18 @@ class DiscardStack(CardStack):
         """
         self._cards.append(new_card)
 
-    def peek(self) -> 'Card':
+    def peek(self) -> Card:
         """
         Peek at the top card of the discard stack without removing it.
 
         Returns:
             Card: The top card of the discard stack.
+
+        Raises:
+            IndexError: If the discard stack is empty.
         """
+        if len(self._cards) == 0:
+            raise IndexError("No cards in discard stack")
         return self._cards[-1]
 
     def __repr__(self) -> str:

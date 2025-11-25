@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "pycardgolf"
+version = "0.1.0"
+description = ""
+authors = ["Harrison Wilco <hwilco@gmail.com>"]
+readme = "README.md"
+packages = [{include = "pycardgolf", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+pytest-cov = "^7.0.0"
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pyrefly = "^0.43.1"
+pytest-mock = "^3.15.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "tests/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
