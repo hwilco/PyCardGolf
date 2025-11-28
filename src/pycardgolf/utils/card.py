@@ -10,32 +10,42 @@ class _ContainsEnumMeta(EnumMeta):
 
 
 class Suit(Enum, metaclass=_ContainsEnumMeta):
-    CLUBS = 0
-    DIAMONDS = 1
-    HEARTS = 2
-    SPADES = 3
+    CLUBS = (0, 'C')
+    DIAMONDS = (1, 'D')
+    HEARTS = (2, 'H')
+    SPADES = (3, 'S')
 
     def __lt__(self, other: Suit) -> bool:
-        return self.value < other.value
+        return self.value[0] < other.value[0]
+
+
+class Rank(Enum, metaclass=_ContainsEnumMeta):
+    ACE = (1, 'A')
+    TWO = (2, '2')
+    THREE = (3, '3')
+    FOUR = (4, '4')
+    FIVE = (5, '5')
+    SIX = (6, '6')
+    SEVEN = (7, '7')
+    EIGHT = (8, '8')
+    NINE = (9, '9')
+    TEN = (10, '10')
+    JACK = (11, 'J')
+    QUEEN = (12, 'Q')
+    KING = (13, 'K')
+
+    def __lt__(self, other: Rank) -> bool:
+        return self.value[0] < other.value[0]
+    
+    def __str__(self) -> str:
+        """Return the string representation of the rank for display."""
+        return self.value[1]
 
 
 class Card:
     """
     A class to represent a playing card.
     """
-    __RANK_STR: ClassVar[Dict[int, str]] = {1: 'A',
-                                            2: '2',
-                                            3: '3',
-                                            4: '4',
-                                            5: '5',
-                                            6: '6',
-                                            7: '7',
-                                            8: '8',
-                                            9: '9',
-                                            10: '10',
-                                            11: 'J',
-                                            12: 'Q',
-                                            13: 'K'}
     __SUIT_STR: ClassVar[Dict[Suit, str]] = {Suit.SPADES: '\u2660',
                                                Suit.HEARTS: '\u2665',
                                                Suit.DIAMONDS: '\u2666',
@@ -46,13 +56,13 @@ class Card:
                                                        Suit.CLUBS: '\u2667'}
     _outline_suits: ClassVar[bool] = True
 
-    def __init__(self, rank: int, suit: Suit, color: str, face_up: bool = False) -> None:
+    def __init__(self, rank: Rank, suit: Suit, color: str, face_up: bool = False) -> None:
         """
         Construct a Card object.
 
         Args:
-            rank: The rank of the card. 1 -> Ace, 2-10 -> 2-10, 11 -> Jack, 12 -> Queen, 13 -> King.
-            suit: The suit of the card. Must be a member of the utils.const.Suit enum. (Suit.CLUBS, Suit.DIAMONDS,
+            rank: The rank of the card. Must be a member of the Rank enum.
+            suit: The suit of the card. Must be a member of the Suit enum. (Suit.CLUBS, Suit.DIAMONDS,
                 Suit.HEARTS, or Suit.SPADES)
             color: A string representing the color of the card. Used to differentiate cards from different decks.
                 Converted to lower case.
@@ -64,8 +74,8 @@ class Card:
         """
 
         self.__rank = rank
-        if self.__rank not in Card.__RANK_STR:
-            raise ValueError(f"Card rank must be an int in range(1,14). Given rank: {rank}")
+        if self.__rank not in Rank:
+            raise ValueError(f"Card rank must be a member of Rank enum. Given rank: {rank}")
         self.__suit = suit
         if self.__suit not in Suit:
             raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
@@ -74,10 +84,10 @@ class Card:
         self.__face_up = face_up
 
     @property
-    def rank(self) -> int:
+    def rank(self) -> Rank:
         """
         Returns:
-            rank: The rank of the card. 1 -> Ace, 2-10 -> 2-10, 11 -> Jack, 12 -> Queen, 13 -> King.
+            rank: The rank of the card as a Rank enum.
         """
         return self.__rank
     
@@ -116,7 +126,7 @@ class Card:
             __value_str: Human-readable representation of the rank of the card. Converts face cards to their letter
                 representations.
         """
-        return Card.__RANK_STR[self.rank]
+        return str(self.rank)
 
     @property
     def __suit_str(self) -> str:
@@ -131,7 +141,7 @@ class Card:
             return Card.__SUIT_STR[self.suit]
 
     def __repr__(self) -> str:
-        return f"Card({self.rank}, {self.suit}, '{self.color}', {self.face_up})"
+        return f"Card({self.rank!r}, {self.suit!r}, '{self.color}', {self.face_up})"
 
     def __str__(self) -> str:
         if self.face_up:

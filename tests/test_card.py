@@ -1,47 +1,47 @@
 import pytest
-from pycardgolf.utils.card import Card, Suit
+from pycardgolf.utils.card import Card, Suit, Rank
 
 @pytest.mark.parametrize("rank", [0, 14, -1, 15, 100])
 def test_rank_outside_range(rank):
     with pytest.raises(ValueError):
         Card(rank, Suit.HEARTS, 'blue')
 
-@pytest.mark.parametrize("rank", range(1, 14))
+@pytest.mark.parametrize("rank", list(Rank))
 def test_rank_inside_range(rank):
     # Should not raise
     Card(rank, Suit.HEARTS, 'blue')
 
 def test_invalid_suit():
     with pytest.raises(ValueError):
-        Card(1, 1, 'red')  # type: ignore[arg-type]
+        Card(Rank.ACE, 1, 'red')  # type: ignore[arg-type]
 
 @pytest.mark.parametrize("suit", list(Suit))
 def test_suit_valid(suit):
     # Should not raise
-    Card(1, suit, 'blue')
+    Card(Rank.ACE, suit, 'blue')
 
 def test_eq():
-    assert Card(3, Suit.HEARTS, 'red') == Card(3, Suit.HEARTS, 'red')
+    assert Card(Rank.THREE, Suit.HEARTS, 'red') == Card(Rank.THREE, Suit.HEARTS, 'red')
     # Color will be converted to lowercase
-    assert Card(3, Suit.HEARTS, 'red') == Card(3, Suit.HEARTS, 'RED')
+    assert Card(Rank.THREE, Suit.HEARTS, 'red') == Card(Rank.THREE, Suit.HEARTS, 'RED')
 
     # Different ranks
-    assert Card(3, Suit.HEARTS, 'red') != Card(4, Suit.HEARTS, 'red')
+    assert Card(Rank.THREE, Suit.HEARTS, 'red') != Card(Rank.FOUR, Suit.HEARTS, 'red')
     # Different suits
-    assert Card(3, Suit.HEARTS, 'red') != Card(3, Suit.SPADES, 'red')
+    assert Card(Rank.THREE, Suit.HEARTS, 'red') != Card(Rank.THREE, Suit.SPADES, 'red')
     # Different colors
-    assert Card(3, Suit.HEARTS, 'red') != Card(3, Suit.HEARTS, 'blue')
+    assert Card(Rank.THREE, Suit.HEARTS, 'red') != Card(Rank.THREE, Suit.HEARTS, 'blue')
     # Face down vs. face up
-    assert Card(3, Suit.HEARTS, 'red') != Card(3, Suit.HEARTS, 'red', True)
+    assert Card(Rank.THREE, Suit.HEARTS, 'red') != Card(Rank.THREE, Suit.HEARTS, 'red', True)
 
 
 
 @pytest.mark.parametrize("rank,expected_rank", [
-    (1, "A"),
-    (2, "2"),
-    (11, "J"),
-    (12, "Q"),
-    (13, "K"),
+    (Rank.ACE, "A"),
+    (Rank.TWO, "2"),
+    (Rank.JACK, "J"),
+    (Rank.QUEEN, "Q"),
+    (Rank.KING, "K"),
 ])
 def test_str_face_cards(rank, expected_rank):
     # Face cards are translated to their letter representations
@@ -55,7 +55,7 @@ def test_str_face_cards(rank, expected_rank):
 ])
 def test_str_suits(suit, expected_symbol):
     # Suits are translated to their unicode characters
-    assert str(Card(13, suit, 'red', True)) == f"K{expected_symbol}"
+    assert str(Card(Rank.KING, suit, 'red', True)) == f"K{expected_symbol}"
 
 @pytest.mark.parametrize("suit,expected_symbol", [
     (Suit.CLUBS, '\u2663'),
@@ -69,7 +69,7 @@ def test_str_no_outline(suit, expected_symbol):
     try:
         # Set the class variable to False
         Card._outline_suits = False
-        c = Card(1, suit, 'red')
+        c = Card(Rank.ACE, suit, 'red')
         c.face_up = True
         assert str(c) == f"A{expected_symbol}"
     finally:
@@ -77,26 +77,26 @@ def test_str_no_outline(suit, expected_symbol):
         Card._outline_suits = original_outline_suits
 
 def test_str_face_down():
-    assert str(Card(1, Suit.HEARTS, 'red', False)) == "??"
+    assert str(Card(Rank.ACE, Suit.HEARTS, 'red', False)) == "??"
 
 def test_repr():
-    assert repr(Card(1, Suit.SPADES, 'red')) == "Card(1, Suit.SPADES, 'red', False)"
+    assert repr(Card(Rank.ACE, Suit.SPADES, 'red')) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
     # Test a different suit
-    assert repr(Card(1, Suit.HEARTS, 'red')) == "Card(1, Suit.HEARTS, 'red', False)"
+    assert repr(Card(Rank.ACE, Suit.HEARTS, 'red')) == "Card(<Rank.ACE: (1, 'A')>, <Suit.HEARTS: (2, 'H')>, 'red', False)"
     # Test a different rank
-    assert repr(Card(2, Suit.SPADES, 'red')) == "Card(2, Suit.SPADES, 'red', False)"
+    assert repr(Card(Rank.TWO, Suit.SPADES, 'red')) == "Card(<Rank.TWO: (2, '2')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
     # Test a different color
-    assert repr(Card(1, Suit.SPADES, 'blue')) == "Card(1, Suit.SPADES, 'blue', False)"
+    assert repr(Card(Rank.ACE, Suit.SPADES, 'blue')) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'blue', False)"
 
     # Color will be converted to lowercase
-    assert repr(Card(1, Suit.SPADES, 'Red')) == "Card(1, Suit.SPADES, 'red', False)"
-    assert repr(Card(1, Suit.SPADES, 'RED')) == "Card(1, Suit.SPADES, 'red', False)"
+    assert repr(Card(Rank.ACE, Suit.SPADES, 'Red')) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
+    assert repr(Card(Rank.ACE, Suit.SPADES, 'RED')) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
 
     # Test setting face_up to True
-    assert repr(Card(1, Suit.SPADES, 'red', True)) == "Card(1, Suit.SPADES, 'red', True)"
+    assert repr(Card(Rank.ACE, Suit.SPADES, 'red', True)) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)"
 
 def test_flip():
-    c = Card(1, Suit.SPADES, 'red', False)
+    c = Card(Rank.ACE, Suit.SPADES, 'red', False)
     c.flip()
     assert c.face_up
     c.flip()
@@ -114,21 +114,21 @@ def test_suit_comparison_less_than(lesser, greater):
 
 def test_property_getters():
     # Test that all property getters return correct values
-    card = Card(11, Suit.DIAMONDS, 'Blue', face_up=True)
-    assert card.rank == 11
+    card = Card(Rank.JACK, Suit.DIAMONDS, 'Blue', face_up=True)
+    assert card.rank == Rank.JACK
     assert card.suit == Suit.DIAMONDS
     assert card.color == 'blue'  # Should be lowercase
     assert card.face_up is True
     
-    card2 = Card(1, Suit.SPADES, 'RED', face_up=False)
-    assert card2.rank == 1
+    card2 = Card(Rank.ACE, Suit.SPADES, 'RED', face_up=False)
+    assert card2.rank == Rank.ACE
     assert card2.suit == Suit.SPADES
     assert card2.color == 'red'  # Should be lowercase
     assert card2.face_up is False
 
 def test_face_up_setter():
     # Test face_up setter
-    card = Card(5, Suit.CLUBS, 'green', face_up=False)
+    card = Card(Rank.FIVE, Suit.CLUBS, 'green', face_up=False)
     assert card.face_up is False
     
     card.face_up = True
@@ -146,5 +146,5 @@ def test_face_up_setter():
 ])
 def test_eq_with_non_card(other):
     # Compare with non-Card objects
-    card = Card(3, Suit.HEARTS, 'red')
+    card = Card(Rank.THREE, Suit.HEARTS, 'red')
     assert card != other

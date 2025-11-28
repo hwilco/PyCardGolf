@@ -4,7 +4,7 @@ import random
 import sys
 from typing import List, Optional
 
-from pycardgolf.utils.card import Card, Suit
+from pycardgolf.utils.card import Card, Suit, Rank
 
 
 class CardStack:
@@ -144,7 +144,7 @@ class Deck(CardStack):
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [Card(rank, suit, self.color) for suit in Suit for rank in range(1, 14)]
+        self._cards = [Card(rank, suit, self.color) for rank in Rank for suit in Suit]
 
     def __repr__(self) -> str:
         return f"Deck <color={self.color}, seed={self.seed}, _cards={self._cards}>"

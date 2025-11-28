@@ -1,5 +1,5 @@
 from typing import List
-from pycardgolf.utils.card import Card
+from pycardgolf.utils.card import Card, Rank
 
 def calculate_score(hand: List[Card]) -> int:
     """
@@ -20,8 +20,7 @@ def calculate_score(hand: List[Card]) -> int:
     # 3 4 5
     
     if len(hand) != 6:
-        # Fallback for non-standard hands, just sum values
-        return sum(_card_value(c) for c in hand)
+        raise ValueError("Hand must be a list of 6 cards")
 
     # Check columns
     for col in range(3):
@@ -30,20 +29,20 @@ def calculate_score(hand: List[Card]) -> int:
         
         if top_card.rank == bottom_card.rank:
             continue # Pair cancels out
-        
+
         score += _card_value(top_card)
         score += _card_value(bottom_card)
         
     return score
 
 def _card_value(card: Card) -> int:
-    if card.rank == 1: # Ace
+    if card.rank == Rank.ACE:
         return 1
-    elif card.rank == 2:
+    elif card.rank == Rank.TWO:
         return -2
-    elif card.rank == 13: # King
+    elif card.rank == Rank.KING:
         return 0
-    elif card.rank >= 11: # Jack, Queen
+    elif card.rank in (Rank.JACK, Rank.QUEEN):
         return 10
     else:
-        return card.rank
+        return card.rank.value[0]

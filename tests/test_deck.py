@@ -1,6 +1,6 @@
 import pytest
 from pycardgolf.utils.deck import CardStack, Deck
-from pycardgolf.utils.card import Card, Suit
+from pycardgolf.utils.card import Card, Suit, Rank
 import sys
 import random
 
@@ -9,20 +9,20 @@ import random
 def cards_5():
     """Returns a fixed set of 5 cards for testing."""
     return [
-        Card(3, Suit.HEARTS, 'red'),
-        Card(7, Suit.CLUBS, 'blue'),
-        Card(1, Suit.SPADES, 'red'),
-        Card(13, Suit.DIAMONDS, 'blue'),
-        Card(5, Suit.HEARTS, 'green')
+        Card(Rank.THREE, Suit.HEARTS, 'red'),
+        Card(Rank.SEVEN, Suit.CLUBS, 'blue'),
+        Card(Rank.ACE, Suit.SPADES, 'red'),
+        Card(Rank.KING, Suit.DIAMONDS, 'blue'),
+        Card(Rank.FIVE, Suit.HEARTS, 'green')
     ]
 
 @pytest.fixture
 def cards_3():
     """Returns a fixed set of 3 cards for testing."""
     return [
-        Card(10, Suit.SPADES, 'red'),
-        Card(2, Suit.HEARTS, 'blue'),
-        Card(11, Suit.CLUBS, 'red')
+        Card(Rank.TEN, Suit.SPADES, 'red'),
+        Card(Rank.TWO, Suit.HEARTS, 'blue'),
+        Card(Rank.JACK, Suit.CLUBS, 'red')
     ]
 
 def test_add_card_stack(cards_5, cards_3):
@@ -49,7 +49,7 @@ def test_add_card_stack_shuffle(cards_5, cards_3, mocker):
     assert other_card_stack.num_cards == 0
 
 def test_peek_color():
-    cards = [Card(3, Suit.CLUBS, 'red'), Card(3, Suit.CLUBS, 'blue')]
+    cards = [Card(Rank.THREE, Suit.CLUBS, 'red'), Card(Rank.THREE, Suit.CLUBS, 'blue')]
     card_stack = CardStack(cards=cards.copy())
     assert card_stack.peek_color() == cards[-1].color
     assert card_stack._cards[-1] == cards[-1]
@@ -85,7 +85,7 @@ def test_clear(cards_5):
 
 def test_shuffle_deterministic():
     """Test that shuffling with the same seed produces deterministic results."""
-    cards = [Card(i, Suit.HEARTS, 'red') for i in range(1, 14)]
+    cards = [Card(i, Suit.HEARTS, 'red') for i in Rank]
     
     stack1 = CardStack(cards=cards.copy(), seed=42)
     stack1.shuffle()
@@ -130,14 +130,14 @@ def red_deck():
 
 def test_cards(red_deck):
     assert all(Card(rank, suit, 'red') in red_deck._cards
-               for rank in range(1, 14) for suit in Suit)
+               for rank in Rank for suit in Suit)
 
 def test_reset(red_deck):
     red_deck.draw()
     red_deck.reset()
     # Re-run test_cards logic
     assert all(Card(rank, suit, 'red') in red_deck._cards
-               for rank in range(1, 14) for suit in Suit)
+               for rank in Rank for suit in Suit)
 
 def test_add_card_stack_valid(red_deck):
     other_cards = red_deck._cards[:3].copy()
@@ -146,11 +146,11 @@ def test_add_card_stack_valid(red_deck):
     red_deck.add_card_stack(other_card_stack)
     # Re-run test_cards logic
     assert all(Card(rank, suit, 'red') in red_deck._cards
-               for rank in range(1, 14) for suit in Suit)
+               for rank in Rank for suit in Suit)
     assert other_card_stack.num_cards == 0
 
 def test_add_card_stack_already_in_deck(red_deck):
-    other_card_stack = CardStack(cards=[Card(3, Suit.CLUBS, 'red')])
+    other_card_stack = CardStack(cards=[Card(Rank.THREE, Suit.CLUBS, 'red')])
     with pytest.raises(ValueError):
         red_deck.add_card_stack(other_card_stack)
     assert other_card_stack.num_cards == 1
@@ -170,7 +170,7 @@ def test_add_card_stack_no_clear_deck(red_deck):
     red_deck.add_card_stack(other_card_stack, clear_other=False)
     # Re-run test_cards logic
     assert all(Card(rank, suit, 'red') in red_deck._cards
-               for rank in range(1, 14) for suit in Suit)
+               for rank in Rank for suit in Suit)
     assert other_card_stack._cards == other_cards
 
 def test_add_card_stack_shuffle_deck(red_deck, mocker):
@@ -182,7 +182,7 @@ def test_add_card_stack_shuffle_deck(red_deck, mocker):
     red_deck.rand.shuffle.assert_called_once()
     # Re-run test_cards logic
     assert all(Card(rank, suit, 'red') in red_deck._cards
-               for rank in range(1, 14) for suit in Suit)
+               for rank in Rank for suit in Suit)
     assert other_card_stack.num_cards == 0
 
 def test_eq_deck():
@@ -218,7 +218,7 @@ def test_peek_color_empty():
     "not a card stack",
     123,
     None,
-    Card(1, Suit.SPADES, 'red'),
+    Card(Rank.ACE, Suit.SPADES, 'red'),
     [],
     {},
 ])
@@ -244,7 +244,7 @@ def test_deck_initialization():
     assert deck.num_cards == 52
     
     # Verify all 52 unique cards are present
-    expected_cards = [Card(rank, suit, 'test') for suit in Suit for rank in range(1, 14)]
+    expected_cards = [Card(rank, suit, 'test') for suit in Suit for rank in Rank]
     assert len(deck._cards) == len(expected_cards)
     for card in expected_cards:
         assert card in deck._cards
@@ -264,8 +264,8 @@ def test_discard_stack_init(cards_3):
 
 def test_discard_add_card():
     discard = DiscardStack()
-    card1 = Card(5, Suit.HEARTS, 'red')
-    card2 = Card(10, Suit.CLUBS, 'blue')
+    card1 = Card(Rank.FIVE, Suit.HEARTS, 'red')
+    card2 = Card(Rank.TEN, Suit.CLUBS, 'blue')
     
     discard.add_card(card1)
     assert discard.num_cards == 1
@@ -278,7 +278,7 @@ def test_discard_add_card():
     assert discard._cards[-2] == card1
 
 def test_discard_peek():
-    cards = [Card(1, Suit.SPADES, 'red'), Card(2, Suit.HEARTS, 'blue'), Card(3, Suit.CLUBS, 'green')]
+    cards = [Card(Rank.ACE, Suit.SPADES, 'red'), Card(Rank.TWO, Suit.HEARTS, 'blue'), Card(Rank.THREE, Suit.CLUBS, 'green')]
     discard = DiscardStack(cards=cards.copy())
     
     # Peek should return top card without removing it
@@ -306,7 +306,7 @@ def test_discard_cards_property(cards_5):
     assert cards_copy is not discard._cards
     
     # Modifying the returned list shouldn't affect the discard stack
-    cards_copy.append(Card(13, Suit.SPADES, 'red'))
+    cards_copy.append(Card(Rank.KING, Suit.SPADES, 'red'))
     assert discard.num_cards == 5  # Should still be 5
 
 def test_discard_str():
@@ -315,12 +315,12 @@ def test_discard_str():
     assert str(discard) == "Discard stack of 0 cards"
     
     # Test with one card
-    card1 = Card(7, Suit.DIAMONDS, 'red', face_up=True)
+    card1 = Card(Rank.SEVEN, Suit.DIAMONDS, 'red', face_up=True)
     discard.add_card(card1)
     assert str(discard) == "Discard stack of 1 card. Top card: 7♢"
     
     # Test with multiple cards
-    card2 = Card(13, Suit.SPADES, 'blue', face_up=True)
+    card2 = Card(Rank.KING, Suit.SPADES, 'blue', face_up=True)
     discard.add_card(card2)
     assert str(discard) == "Discard stack of 2 cards. Top card: K♤"
 
@@ -330,6 +330,6 @@ def test_discard_repr():
     assert repr(discard) == "DiscardStack(cards=[])"
     
     # Test repr with cards
-    cards = [Card(1, Suit.HEARTS, 'red'), Card(5, Suit.CLUBS, 'blue')]
+    cards = [Card(Rank.ACE, Suit.HEARTS, 'red'), Card(Rank.FIVE, Suit.CLUBS, 'blue')]
     discard_with_cards = DiscardStack(cards=cards.copy())
     assert repr(discard_with_cards) == f"DiscardStack(cards={cards})"
