@@ -20,7 +20,7 @@ def main():
         players.append(HumanPlayer(name, interface))
         
     for i in range(args.bots):
-        players.append(RandomBot(f"Bot {i+1}"))
+        players.append(RandomBot(f"Bot {i+1}", interface))
         
     game = Game(players, num_rounds=args.rounds)
     game.start()
