@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import MagicMock
 from pycardgolf.core.round import Round
 from pycardgolf.core.player import Player
-from pycardgolf.utils.card import Card, Suit, Rank
+from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.card import Card
 
 class MockPlayer(Player):
     def take_turn(self, game_round: Round) -> None:

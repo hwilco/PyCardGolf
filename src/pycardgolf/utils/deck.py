@@ -4,7 +4,8 @@ import random
 import sys
 from typing import List, Optional
 
-from pycardgolf.utils.card import Card, Suit, Rank
+from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.card import Card
 
 
 class CardStack:

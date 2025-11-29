@@ -22,7 +22,7 @@ def main():
     for i in range(args.bots):
         players.append(RandomBot(f"Bot {i+1}", interface))
         
-    game = Game(players, num_rounds=args.rounds)
+    game = Game(players, interface, num_rounds=args.rounds)
     game.start()
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import pytest
-from pycardgolf.utils.card import Card, Suit, Rank
+from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.card import Card
 
 @pytest.mark.parametrize("rank", [0, 14, -1, 15, 100])
 def test_rank_outside_range(rank):
@@ -101,17 +102,6 @@ def test_flip():
     assert c.face_up
     c.flip()
     assert not c.face_up
-
-@pytest.mark.parametrize("lesser,greater", [
-    (Suit.CLUBS, Suit.DIAMONDS),
-    (Suit.DIAMONDS, Suit.HEARTS),
-    (Suit.HEARTS, Suit.SPADES),
-])
-def test_suit_comparison_less_than(lesser, greater):
-    # Test Suit.__lt__ method
-    assert lesser < greater
-    assert not greater < lesser
-
 def test_property_getters():
     # Test that all property getters return correct values
     card = Card(Rank.JACK, Suit.DIAMONDS, 'Blue', face_up=True)

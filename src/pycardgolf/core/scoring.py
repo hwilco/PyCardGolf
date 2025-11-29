@@ -1,5 +1,6 @@
 from typing import List
-from pycardgolf.utils.card import Card, Rank
+from pycardgolf.utils.enums import Rank
+from pycardgolf.utils.card import Card
 
 def calculate_score(hand: List[Card]) -> int:
     """

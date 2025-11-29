@@ -1,6 +1,7 @@
 import pytest
 from pycardgolf.utils.deck import CardStack, Deck
-from pycardgolf.utils.card import Card, Suit, Rank
+from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.card import Card
 import sys
 import random
 

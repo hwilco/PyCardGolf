@@ -31,6 +31,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
+[tool.pytest.ini_options.markers]
+integration = "mark test as an integration test"
+
 [tool.coverage.run]
 source = ["src"]
 omit = [
