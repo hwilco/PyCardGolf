@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+
 class GameInterface(ABC):
     @abstractmethod
     def display_state(self, game_round: Any) -> None:
@@ -15,7 +16,7 @@ class GameInterface(ABC):
         Get input from the user.
         """
         pass
-    
+
     @abstractmethod
     def notify(self, message: str) -> None:
         """

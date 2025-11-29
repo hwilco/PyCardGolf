@@ -1,12 +1,13 @@
 from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.core.round import Round
 
+
 class CLIInterface(GameInterface):
     def display_state(self, game_round: Round) -> None:
-        print("\n" + "="*20)
+        print("\n" + "=" * 20)
         print(f"Discard Pile Top: {game_round.discard_pile.peek()}")
-        print("="*20)
-        
+        print("=" * 20)
+
         for player in game_round.players:
             print(f"\nPlayer: {player.name}")
             # Display hand as 2x3 grid

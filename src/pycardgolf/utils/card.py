@@ -9,17 +9,24 @@ class Card:
     """
     A class to represent a playing card.
     """
-    __SUIT_STR: ClassVar[Dict[Suit, str]] = {Suit.SPADES: '\u2660',
-                                               Suit.HEARTS: '\u2665',
-                                               Suit.DIAMONDS: '\u2666',
-                                               Suit.CLUBS: '\u2663'}
-    __SUIT_OUTLINE_STR: ClassVar[Dict[Suit, str]] = {Suit.SPADES: '\u2664',
-                                                       Suit.HEARTS: '\u2661',
-                                                       Suit.DIAMONDS: '\u2662',
-                                                       Suit.CLUBS: '\u2667'}
+
+    __SUIT_STR: ClassVar[Dict[Suit, str]] = {
+        Suit.SPADES: "\u2660",
+        Suit.HEARTS: "\u2665",
+        Suit.DIAMONDS: "\u2666",
+        Suit.CLUBS: "\u2663",
+    }
+    __SUIT_OUTLINE_STR: ClassVar[Dict[Suit, str]] = {
+        Suit.SPADES: "\u2664",
+        Suit.HEARTS: "\u2661",
+        Suit.DIAMONDS: "\u2662",
+        Suit.CLUBS: "\u2667",
+    }
     _outline_suits: ClassVar[bool] = True
 
-    def __init__(self, rank: Rank, suit: Suit, color: str, face_up: bool = False) -> None:
+    def __init__(
+        self, rank: Rank, suit: Suit, color: str, face_up: bool = False
+    ) -> None:
         """
         Construct a Card object.
 
@@ -38,11 +45,15 @@ class Card:
 
         self.__rank = rank
         if self.__rank not in Rank:
-            raise ValueError(f"Card rank must be a member of Rank enum. Given rank: {rank}")
+            raise ValueError(
+                f"Card rank must be a member of Rank enum. Given rank: {rank}"
+            )
         self.__suit = suit
         if self.__suit not in Suit:
-            raise ValueError("Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
-                             f"suit: {suit}")
+            raise ValueError(
+                "Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES]. Given "
+                f"suit: {suit}"
+            )
         self.__color = color.lower()
         self.__face_up = face_up
 
@@ -53,7 +64,7 @@ class Card:
             rank: The rank of the card as a Rank enum.
         """
         return self.__rank
-    
+
     @property
     def suit(self) -> Suit:
         """
@@ -115,10 +126,12 @@ class Card:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Card):
             return NotImplemented
-        return self.rank == other.rank and \
-               self.suit == other.suit and \
-               self.color == other.color and \
-               self.face_up == other.face_up
+        return (
+            self.rank == other.rank
+            and self.suit == other.suit
+            and self.color == other.color
+            and self.face_up == other.face_up
+        )
 
     __hash__ = None
 

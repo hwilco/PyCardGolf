@@ -13,7 +13,9 @@ class CardStack:
     A class to represent a stack of cards.
     """
 
-    def __init__(self, cards: Optional[List[Card]] = None, seed: Optional[int] = None) -> None:
+    def __init__(
+        self, cards: Optional[List[Card]] = None, seed: Optional[int] = None
+    ) -> None:
         """
         Construct a CardStack object.
 
@@ -33,7 +35,12 @@ class CardStack:
         """
         return len(self._cards)
 
-    def add_card_stack(self, other: CardStack, clear_other: Optional[bool] = None, shuffle: Optional[bool] = None) -> None:
+    def add_card_stack(
+        self,
+        other: CardStack,
+        clear_other: Optional[bool] = None,
+        shuffle: Optional[bool] = None,
+    ) -> None:
         """
         Add the cards from a different card stack to this card stack. By default, this also clears other stack.
 
@@ -101,7 +108,9 @@ class CardStack:
         return f"CardStack(cards={self._cards}, seed={self.seed})"
 
     def __str__(self) -> str:
-        return "Stack of {} card{}".format(self.num_cards, "" if self.num_cards == 1 else "s")
+        return "Stack of {} card{}".format(
+            self.num_cards, "" if self.num_cards == 1 else "s"
+        )
 
 
 class Deck(CardStack):
@@ -121,7 +130,12 @@ class Deck(CardStack):
         self.color = color.lower()
         self.reset()
 
-    def add_card_stack(self, other: CardStack, clear_other: Optional[bool] = None, shuffle: Optional[bool] = None) -> None:
+    def add_card_stack(
+        self,
+        other: CardStack,
+        clear_other: Optional[bool] = None,
+        shuffle: Optional[bool] = None,
+    ) -> None:
         """
         Add the cards from a different card stack to this deck. The other card stack must contain only cards of the
             deck's color and may not contain cards already in the deck. By default, this also clears other stack.
@@ -136,22 +150,30 @@ class Deck(CardStack):
             ValueError: If any of the cards to be added do not match the deck's color or already exist in the deck.
         """
         if any((c.color != self.color for c in other._cards)):
-            raise ValueError(f"Card to be added does not match the deck's color ({self.color}).")
+            raise ValueError(
+                f"Card to be added does not match the deck's color ({self.color})."
+            )
         if any((c in self._cards for c in other._cards)):
-            raise ValueError("Card to be added is a duplicate of a card in the deck.")
+            raise ValueError(
+                "Card to be added is a duplicate of a card in the deck."
+            )
         super().add_card_stack(other, clear_other, shuffle)
 
     def reset(self) -> None:
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [Card(rank, suit, self.color) for rank in Rank for suit in Suit]
+        self._cards = [
+            Card(rank, suit, self.color) for rank in Rank for suit in Suit
+        ]
 
     def __repr__(self) -> str:
         return f"Deck <color={self.color}, seed={self.seed}, _cards={self._cards}>"
 
     def __str__(self) -> str:
-        return "Deck of {} {} card{}".format(self.num_cards, self.color, "" if self.num_cards == 1 else "s")
+        return "Deck of {} {} card{}".format(
+            self.num_cards, self.color, "" if self.num_cards == 1 else "s"
+        )
 
 
 class DiscardStack(CardStack):
@@ -191,5 +213,8 @@ class DiscardStack(CardStack):
         return f"DiscardStack(cards={self._cards})"
 
     def __str__(self) -> str:
-        return "Discard stack of {} card{}{}".format(self.num_cards, "" if self.num_cards == 1 else "s",
-                                                     "" if self.num_cards == 0 else ". Top card: " + str(self.peek()))
+        return "Discard stack of {} card{}{}".format(
+            self.num_cards,
+            "" if self.num_cards == 1 else "s",
+            "" if self.num_cards == 0 else ". Top card: " + str(self.peek()),
+        )

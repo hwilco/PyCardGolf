@@ -8,11 +8,14 @@ def test_rank_comparison():
     assert Rank.QUEEN == Rank.QUEEN
 
 
-@pytest.mark.parametrize("lesser,greater", [
-    (Suit.CLUBS, Suit.DIAMONDS),
-    (Suit.DIAMONDS, Suit.HEARTS),
-    (Suit.HEARTS, Suit.SPADES),
-])
+@pytest.mark.parametrize(
+    "lesser,greater",
+    [
+        (Suit.CLUBS, Suit.DIAMONDS),
+        (Suit.DIAMONDS, Suit.HEARTS),
+        (Suit.HEARTS, Suit.SPADES),
+    ],
+)
 def test_suit_comparison_less_than(lesser, greater):
     # Test Suit.__lt__ method
     assert lesser < greater
