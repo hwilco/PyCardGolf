@@ -14,9 +14,7 @@ class HumanPlayer(Player):
         self.interface.notify(f"It's {self.name}'s turn.")
 
         while True:
-            action = self.interface.get_input(
-                "Draw from (D)eck or (P)ile? "
-            ).lower()
+            action = self.interface.get_input("Draw from (D)eck or (P)ile? ").lower()
             if action in ["d", "p"]:
                 break
             self.interface.notify("Invalid input. Please enter 'D' or 'P'.")
@@ -32,9 +30,7 @@ class HumanPlayer(Player):
                 ).lower()
                 if choice in ["k", "d"]:
                     break
-                self.interface.notify(
-                    "Invalid input. Please enter 'K' or 'D'."
-                )
+                self.interface.notify("Invalid input. Please enter 'K' or 'D'.")
 
             if choice == "k":
                 self._replace_card(game_round, drawn_card)
@@ -43,9 +39,7 @@ class HumanPlayer(Player):
                 # If discarded, you can optionally flip a card (depending on rules).
                 # Standard golf often allows flipping a card if you discard the drawn card.
                 # Let's implement that.
-                flip_choice = self.interface.get_input(
-                    "Flip a card? (y/n) "
-                ).lower()
+                flip_choice = self.interface.get_input("Flip a card? (y/n) ").lower()
                 if flip_choice == "y":
                     self._flip_card(game_round)
 
@@ -63,9 +57,7 @@ class HumanPlayer(Player):
     def _replace_card(self, game_round: Round, new_card: Card) -> None:
         while True:
             try:
-                idx = int(
-                    self.interface.get_input("Which card to replace (0-5)? ")
-                )
+                idx = int(self.interface.get_input("Which card to replace (0-5)? "))
                 if 0 <= idx < 6:
                     break
                 self.interface.notify("Invalid index. Please enter 0-5.")
@@ -83,9 +75,7 @@ class HumanPlayer(Player):
     def _flip_card(self, game_round: Round) -> None:
         while True:
             try:
-                idx = int(
-                    self.interface.get_input("Which card to flip (0-5)? ")
-                )
+                idx = int(self.interface.get_input("Which card to flip (0-5)? "))
                 if 0 <= idx < 6:
                     if not self.hand[idx].face_up:
                         self.hand[idx].face_up = True

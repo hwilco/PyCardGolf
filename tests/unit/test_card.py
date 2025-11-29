@@ -27,26 +27,16 @@ def test_suit_valid(suit):
 
 
 def test_eq():
-    assert Card(Rank.THREE, Suit.HEARTS, "red") == Card(
-        Rank.THREE, Suit.HEARTS, "red"
-    )
+    assert Card(Rank.THREE, Suit.HEARTS, "red") == Card(Rank.THREE, Suit.HEARTS, "red")
     # Color will be converted to lowercase
-    assert Card(Rank.THREE, Suit.HEARTS, "red") == Card(
-        Rank.THREE, Suit.HEARTS, "RED"
-    )
+    assert Card(Rank.THREE, Suit.HEARTS, "red") == Card(Rank.THREE, Suit.HEARTS, "RED")
 
     # Different ranks
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(
-        Rank.FOUR, Suit.HEARTS, "red"
-    )
+    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(Rank.FOUR, Suit.HEARTS, "red")
     # Different suits
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(
-        Rank.THREE, Suit.SPADES, "red"
-    )
+    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(Rank.THREE, Suit.SPADES, "red")
     # Different colors
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(
-        Rank.THREE, Suit.HEARTS, "blue"
-    )
+    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(Rank.THREE, Suit.HEARTS, "blue")
     # Face down vs. face up
     assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(
         Rank.THREE, Suit.HEARTS, "red", True

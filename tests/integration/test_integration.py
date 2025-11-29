@@ -34,14 +34,8 @@ def test_full_game_execution():
 
     # 3. Verify interface calls
     # Should have notified start of rounds
-    assert (
-        call("--- Starting Round 1 ---")
-        in mock_interface.notify.call_args_list
-    )
-    assert (
-        call("--- Starting Round 2 ---")
-        in mock_interface.notify.call_args_list
-    )
+    assert call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
+    assert call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
 
     # Should have declared game over
     assert call("\n--- Game Over ---") in mock_interface.notify.call_args_list
@@ -54,7 +48,5 @@ def test_full_game_execution():
     assert len(winner_calls) == 1
 
     # Verify bots took turns (interface should have received notifications from bots)
-    bot_actions = [
-        c for c in mock_interface.notify.call_args_list if "Bot" in str(c)
-    ]
+    bot_actions = [c for c in mock_interface.notify.call_args_list if "Bot" in str(c)]
     assert len(bot_actions) > 0

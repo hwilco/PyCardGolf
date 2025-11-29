@@ -19,9 +19,7 @@ class Game:
     def start(self):
         for i in range(self.num_rounds):
             self.current_round_num = i + 1
-            self.interface.notify(
-                f"--- Starting Round {self.current_round_num} ---"
-            )
+            self.interface.notify(f"--- Starting Round {self.current_round_num} ---")
             game_round = Round(self.players)
             game_round.play()
             self.display_scores()
@@ -42,6 +40,4 @@ class Game:
     def declare_winner(self):
         self.interface.notify("\n--- Game Over ---")
         winner = self.get_winner()
-        self.interface.notify(
-            f"Winner: {winner.name} with score {winner.score}"
-        )
+        self.interface.notify(f"Winner: {winner.name} with score {winner.score}")

@@ -55,9 +55,7 @@ class Round:
         self.calculate_scores()
 
     def advance_turn(self):
-        self.current_player_idx = (self.current_player_idx + 1) % len(
-            self.players
-        )
+        self.current_player_idx = (self.current_player_idx + 1) % len(self.players)
 
         if (
             self.last_turn_player_idx is not None

@@ -7,12 +7,8 @@ from pycardgolf.players.bots.random_bot import RandomBot
 
 def main():
     parser = argparse.ArgumentParser(description="Play Card Golf")
-    parser.add_argument(
-        "--humans", type=int, default=1, help="Number of human players"
-    )
-    parser.add_argument(
-        "--bots", type=int, default=1, help="Number of bot players"
-    )
+    parser.add_argument("--humans", type=int, default=1, help="Number of human players")
+    parser.add_argument("--bots", type=int, default=1, help="Number of bot players")
     parser.add_argument(
         "--rounds", type=int, default=9, help="Number of rounds to play"
     )

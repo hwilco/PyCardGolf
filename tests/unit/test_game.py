@@ -41,14 +41,8 @@ def test_game_start(mock_player, mock_interface, mocker):
     assert game.current_round_num == 2
 
     # Check notify calls for round start
-    assert (
-        call("--- Starting Round 1 ---")
-        in mock_interface.notify.call_args_list
-    )
-    assert (
-        call("--- Starting Round 2 ---")
-        in mock_interface.notify.call_args_list
-    )
+    assert call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
+    assert call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
     assert call("\n--- Game Over ---") in mock_interface.notify.call_args_list
 
 
@@ -76,9 +70,7 @@ def test_declare_winner(mock_interface):
     game.declare_winner()
 
     assert call("\n--- Game Over ---") in mock_interface.notify.call_args_list
-    assert (
-        call("Winner: P2 with score 5") in mock_interface.notify.call_args_list
-    )
+    assert call("Winner: P2 with score 5") in mock_interface.notify.call_args_list
 
 
 def test_get_standings(game):

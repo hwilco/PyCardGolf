@@ -154,18 +154,14 @@ class Deck(CardStack):
                 f"Card to be added does not match the deck's color ({self.color})."
             )
         if any((c in self._cards for c in other._cards)):
-            raise ValueError(
-                "Card to be added is a duplicate of a card in the deck."
-            )
+            raise ValueError("Card to be added is a duplicate of a card in the deck.")
         super().add_card_stack(other, clear_other, shuffle)
 
     def reset(self) -> None:
         """
         Reset the deck to the full 52 card state (Ace, 2-10, Jack, Queen, King of each of the four suits).
         """
-        self._cards = [
-            Card(rank, suit, self.color) for rank in Rank for suit in Suit
-        ]
+        self._cards = [Card(rank, suit, self.color) for rank in Rank for suit in Suit]
 
     def __repr__(self) -> str:
         return f"Deck <color={self.color}, seed={self.seed}, _cards={self._cards}>"

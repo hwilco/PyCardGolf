@@ -155,9 +155,7 @@ def red_deck():
 
 def test_cards(red_deck):
     assert all(
-        Card(rank, suit, "red") in red_deck._cards
-        for rank in Rank
-        for suit in Suit
+        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
     )
 
 
@@ -166,9 +164,7 @@ def test_reset(red_deck):
     red_deck.reset()
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards
-        for rank in Rank
-        for suit in Suit
+        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
     )
 
 
@@ -179,9 +175,7 @@ def test_add_card_stack_valid(red_deck):
     red_deck.add_card_stack(other_card_stack)
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards
-        for rank in Rank
-        for suit in Suit
+        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
     )
     assert other_card_stack.num_cards == 0
 
@@ -211,9 +205,7 @@ def test_add_card_stack_no_clear_deck(red_deck):
     red_deck.add_card_stack(other_card_stack, clear_other=False)
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards
-        for rank in Rank
-        for suit in Suit
+        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
     )
     assert other_card_stack._cards == other_cards
 
@@ -227,9 +219,7 @@ def test_add_card_stack_shuffle_deck(red_deck, mocker):
     red_deck.rand.shuffle.assert_called_once()
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards
-        for rank in Rank
-        for suit in Suit
+        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
     )
     assert other_card_stack.num_cards == 0
 
@@ -305,9 +295,7 @@ def test_deck_initialization():
     assert deck.num_cards == 52
 
     # Verify all 52 unique cards are present
-    expected_cards = [
-        Card(rank, suit, "test") for suit in Suit for rank in Rank
-    ]
+    expected_cards = [Card(rank, suit, "test") for suit in Suit for rank in Rank]
     assert len(deck._cards) == len(expected_cards)
     for card in expected_cards:
         assert card in deck._cards

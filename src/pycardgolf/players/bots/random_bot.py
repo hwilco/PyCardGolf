@@ -69,8 +69,6 @@ class RandomBot(Player):
                 # Fallback to deck if pile empty (shouldn't happen with setup)
                 drawn_card = game_round.deck.draw()
                 drawn_card.face_up = True
-                self._notify(
-                    f"{self.name} drew from deck (pile empty): {drawn_card}"
-                )
+                self._notify(f"{self.name} drew from deck (pile empty): {drawn_card}")
                 game_round.discard_pile.add_card(drawn_card)
                 self._notify(f"{self.name} discarded {drawn_card}.")
