@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock, call
 from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
@@ -17,8 +16,8 @@ def mock_player():
 
 
 @pytest.fixture
-def mock_interface():
-    return MagicMock(spec=GameInterface)
+def mock_interface(mocker):
+    return mocker.MagicMock(spec=GameInterface)
 
 
 @pytest.fixture
@@ -31,7 +30,7 @@ def test_game_start(mock_player, mock_interface, mocker):
 
     mock_round_cls = mocker.patch("pycardgolf.core.game.Round")
 
-    mock_round_instance = MagicMock()
+    mock_round_instance = mocker.MagicMock()
     mock_round_cls.return_value = mock_round_instance
 
     game.start()
@@ -41,12 +40,16 @@ def test_game_start(mock_player, mock_interface, mocker):
     assert game.current_round_num == 2
 
     # Check notify calls for round start
-    assert call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
-    assert call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
-    assert call("\n--- Game Over ---") in mock_interface.notify.call_args_list
+    assert (
+        mocker.call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
+    )
+    assert (
+        mocker.call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
+    )
+    assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
 
 
-def test_display_scores(mock_interface):
+def test_display_scores(mock_interface, mocker):
     p1 = MockPlayer("P1")
     p1.score = 10
     p2 = MockPlayer("P2")
@@ -55,12 +58,12 @@ def test_display_scores(mock_interface):
     game = Game([p1, p2], mock_interface)
     game.display_scores()
 
-    assert call("\nCurrent Scores:") in mock_interface.notify.call_args_list
-    assert call("P1: 10") in mock_interface.notify.call_args_list
-    assert call("P2: 5") in mock_interface.notify.call_args_list
+    assert mocker.call("\nCurrent Scores:") in mock_interface.notify.call_args_list
+    assert mocker.call("P1: 10") in mock_interface.notify.call_args_list
+    assert mocker.call("P2: 5") in mock_interface.notify.call_args_list
 
 
-def test_declare_winner(mock_interface):
+def test_declare_winner(mock_interface, mocker):
     p1 = MockPlayer("P1")
     p1.score = 10
     p2 = MockPlayer("P2")
@@ -69,8 +72,10 @@ def test_declare_winner(mock_interface):
     game = Game([p1, p2], mock_interface)
     game.declare_winner()
 
-    assert call("\n--- Game Over ---") in mock_interface.notify.call_args_list
-    assert call("Winner: P2 with score 5") in mock_interface.notify.call_args_list
+    assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
+    assert (
+        mocker.call("Winner: P2 with score 5") in mock_interface.notify.call_args_list
+    )
 
 
 def test_get_standings(game):

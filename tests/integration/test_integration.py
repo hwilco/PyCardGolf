@@ -1,14 +1,11 @@
-import pytest
-from unittest.mock import MagicMock, call
 from pycardgolf.core.game import Game
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.interfaces.base import GameInterface
 
 
-@pytest.mark.integration
-def test_full_game_execution():
+def test_full_game_execution(mocker):
     # Setup
-    mock_interface = MagicMock(spec=GameInterface)
+    mock_interface = mocker.MagicMock(spec=GameInterface)
 
     # Create two random bots
     bot1 = RandomBot("Bot 1", mock_interface)
@@ -34,11 +31,15 @@ def test_full_game_execution():
 
     # 3. Verify interface calls
     # Should have notified start of rounds
-    assert call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
-    assert call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
+    assert (
+        mocker.call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
+    )
+    assert (
+        mocker.call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
+    )
 
     # Should have declared game over
-    assert call("\n--- Game Over ---") in mock_interface.notify.call_args_list
+    assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
 
     # Should have announced a winner
     # We don't know who won, but we know the format

@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock
 from pycardgolf.core.round import Round
 from pycardgolf.core.player import Player
 from pycardgolf.utils.enums import Rank, Suit
