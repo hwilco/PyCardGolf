@@ -17,9 +17,3 @@ class Player(ABC):
         Execute the player's turn.
         """
         pass
-
-    def notify(self, event: str, data: Any = None) -> None:
-        """
-        Notify the player of an event (e.g., another player's move).
-        """
-        pass
