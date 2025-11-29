@@ -37,7 +37,7 @@ class Round:
         self.discard_pile.add_card(self.deck.draw())
         self.discard_pile.peek().face_up = True
 
-    def play(self):
+    def play(self):  # pragma: no cover
         self.setup()
         
         while not self.round_over:

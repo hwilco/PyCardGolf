@@ -52,3 +52,43 @@ def test_calculate_scores_flips_all():
     assert all(c.face_up for c in p1.hand)
     # Score for 6 Aces (3 pairs) = 0
     assert p1.score == 0
+
+def test_advance_turn():
+    # Test normal turn advancement
+    p1 = MockPlayer("P1")
+    p2 = MockPlayer("P2")
+    p3 = MockPlayer("P3")
+    game_round = Round([p1, p2, p3])
+    
+    assert game_round.current_player_idx == 0
+    game_round.advance_turn()
+    assert game_round.current_player_idx == 1
+    game_round.advance_turn()
+    assert game_round.current_player_idx == 2
+
+def test_advance_turn_wraps_around():
+    # Test that turn wraps to 0 after last player
+    p1 = MockPlayer("P1")
+    p2 = MockPlayer("P2")
+    game_round = Round([p1, p2])
+    
+    game_round.current_player_idx = 1
+    game_round.advance_turn()
+    assert game_round.current_player_idx == 0
+    assert not game_round.round_over
+
+def test_advance_turn_ends_round():
+    # Test that round ends when we return to last_turn_player_idx
+    p1 = MockPlayer("P1")
+    p2 = MockPlayer("P2")
+    p3 = MockPlayer("P3")
+    game_round = Round([p1, p2, p3])
+    
+    # Set player 1 as the one who ended the round
+    game_round.last_turn_player_idx = 1
+    game_round.current_player_idx = 0
+    
+    # Advance from 0 to 1 - should end the round
+    game_round.advance_turn()
+    assert game_round.current_player_idx == 1
+    assert game_round.round_over
