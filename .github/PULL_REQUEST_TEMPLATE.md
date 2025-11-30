@@ -1,9 +1,9 @@
-### 1. **Summary & Context**
+### **Summary & Context**
 *Briefly explain the goal of this PR. What feature does it add, bug does it fix, or task does it complete?*
 
 ---
 
-### 2. **Type of Change** (Check all that apply)
+### **Type of Change** (Check all that apply)
 
 * [ ] Bug fix (non-breaking change that fixes an issue)
 * [ ] New feature (non-breaking change that adds functionality)
@@ -12,7 +12,13 @@
 
 ---
 
-### 3. **Self-Review Checklist**
+### **Details**
+
+- *Add any additional details about the changes here.*
+
+---
+
+### **Self-Review Checklist**
 *Perform confirming the following before merging.*
 
 * [ ] **Code Quality:** My code is simple, easy to understand, and follows project standards (e.g., linting passes locally).
