@@ -21,6 +21,6 @@
 ### **Self-Review Checklist**
 *Perform confirming the following before merging.*
 
-* [ ] **Code Quality:** My code is simple, easy to understand, and follows project standards (e.g., linting passes locally).
-* [ ] **Testing:** I have tested the changes (ran existing unit/integration tests and/or manually confirmed functionality).
-* [ ] **Documentation:** If this is a new feature or a change to public API, I have updated the necessary documentation (e.g., README, function comments, API docs).
+* [ ] **Code Quality:** Code is simple, easy to understand, and follows project standards (e.g., linting passes locally).
+* [ ] **Testing:** Changes are tested (ran existing unit/integration tests and/or manually confirmed functionality).
+* [ ] **Documentation:** If this is a new feature or a change to public API, necessary documentation has been updated (e.g., README, function comments, API docs).
