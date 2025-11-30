@@ -1,21 +1,34 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.7
-    hooks:
-      - id: ruff-format
-      - id: ruff-check
-        args: [ --fix ]
-
-  - repo: https://github.com/pycqa/isort
-    rev: 7.0.0
-    hooks:
-      - id: isort
-
+  # 1. Core Cleanup Hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+
+  # 2. Import Sorting Hook
+  - repo: https://github.com/pycqa/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
+
+  # 3. Code Formatting Hook
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.7
+    hooks:
+      - id: ruff-format # Runs before isort/ruff-check in a multi-repo config
+
+  # 4. Remaining Simple Check Hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
       - id: check-yaml
       - id: check-added-large-files
       - id: check-merge-conflict
+
+  # 5. Linter Check Hook
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.7
+    hooks:
+      - id: ruff-check
+        args: [ --fix ]
