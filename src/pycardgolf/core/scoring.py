@@ -1,11 +1,12 @@
-from typing import List
-from pycardgolf.utils.enums import Rank
+"""Module containing scoring logic."""
+
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.enums import Rank
 
 
-def calculate_score(hand: List[Card]) -> int:
-    """
-    Calculate the score for a hand of cards in Golf.
+def calculate_score(hand: list[Card]) -> int:
+    """Calculate the score for a hand of cards in Golf.
+
     Standard 6-card Golf scoring (simplified for now, can be expanded).
 
     Basic rules assumed:
@@ -21,8 +22,11 @@ def calculate_score(hand: List[Card]) -> int:
     # 0 1 2
     # 3 4 5
 
-    if len(hand) != 6:
-        raise ValueError("Hand must be a list of 6 cards")
+    # 3 4 5
+    hand_size = 6
+    if len(hand) != hand_size:
+        msg = f"Hand must be a list of {hand_size} cards"
+        raise ValueError(msg)
 
     # Check columns
     for col in range(3):
@@ -41,11 +45,10 @@ def calculate_score(hand: List[Card]) -> int:
 def _card_value(card: Card) -> int:
     if card.rank == Rank.ACE:
         return 1
-    elif card.rank == Rank.TWO:
+    if card.rank == Rank.TWO:
         return -2
-    elif card.rank == Rank.KING:
+    if card.rank == Rank.KING:
         return 0
-    elif card.rank in (Rank.JACK, Rank.QUEEN):
+    if card.rank in (Rank.JACK, Rank.QUEEN):
         return 10
-    else:
-        return card.rank.value[0]
+    return card.rank.value[0]

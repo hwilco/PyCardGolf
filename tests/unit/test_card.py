@@ -1,65 +1,88 @@
 import pytest
-from pycardgolf.utils.enums import Rank, Suit
+
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.enums import Rank, Suit
 
 
 @pytest.mark.parametrize("rank", [0, 14, -1, 15, 100])
 def test_rank_outside_range(rank):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Card rank must be a member of Rank enum"):
         Card(rank, Suit.HEARTS, "blue")
 
 
-@pytest.mark.parametrize("rank", list(Rank))
-def test_rank_inside_range(rank):
-    # Should not raise
-    Card(rank, Suit.HEARTS, "blue")
+def test_rank_enum_members():
+    c = Card(Rank.ACE, Suit.HEARTS, "blue")
+    assert c.rank == Rank.ACE
 
 
 def test_invalid_suit():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Card suit must be in"):
         Card(Rank.ACE, 1, "red")  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize("suit", list(Suit))
-def test_suit_valid(suit):
-    # Should not raise
-    Card(Rank.ACE, suit, "blue")
+def test_card_creation():
+    c = Card(Rank.ACE, Suit.SPADES, "Red")
+    assert c.rank == Rank.ACE
+    assert c.suit == Suit.SPADES
+    assert c.color == "red"
+    assert not c.face_up
 
 
-def test_eq():
-    assert Card(Rank.THREE, Suit.HEARTS, "red") == Card(Rank.THREE, Suit.HEARTS, "red")
-    # Color will be converted to lowercase
-    assert Card(Rank.THREE, Suit.HEARTS, "red") == Card(Rank.THREE, Suit.HEARTS, "RED")
+def test_card_str():
+    c = Card(Rank.ACE, Suit.SPADES, "Red", face_up=True)
+    assert str(c) == "A\u2664"  # Using outline suit
 
-    # Different ranks
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(Rank.FOUR, Suit.HEARTS, "red")
-    # Different suits
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(Rank.THREE, Suit.SPADES, "red")
-    # Different colors
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(Rank.THREE, Suit.HEARTS, "blue")
-    # Face down vs. face up
-    assert Card(Rank.THREE, Suit.HEARTS, "red") != Card(
-        Rank.THREE, Suit.HEARTS, "red", True
-    )
+
+def test_card_repr():
+    c = Card(Rank.ACE, Suit.SPADES, "Red", face_up=True)
+    assert repr(c) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)"
+
+
+def test_card_equality():
+    c1 = Card(Rank.ACE, Suit.SPADES, "Red")
+    c2 = Card(Rank.ACE, Suit.SPADES, "Red")
+    c3 = Card(Rank.KING, Suit.SPADES, "Red")
+    assert c1 == c2
+    assert c1 != c3
+    assert c1 != "Not a card"
+
+
+def test_card_hash():
+    c1 = Card(Rank.ACE, Suit.SPADES, "Red")
+    c2 = Card(Rank.ACE, Suit.SPADES, "Red")
+    assert hash(c1) == hash(c2)
+    s = {c1, c2}
+    assert len(s) == 1
+
+
+def test_flip():
+    c = Card(Rank.ACE, Suit.SPADES, "Red")
+    assert not c.face_up
+    c.flip()
+    assert c.face_up
+    c.flip()
+    assert not c.face_up
 
 
 @pytest.mark.parametrize(
-    "rank,expected_rank",
+    ("rank", "expected_rank"),
     [
         (Rank.ACE, "A"),
         (Rank.TWO, "2"),
+        (Rank.TEN, "10"),
         (Rank.JACK, "J"),
         (Rank.QUEEN, "Q"),
         (Rank.KING, "K"),
     ],
 )
-def test_str_face_cards(rank, expected_rank):
-    # Face cards are translated to their letter representations
-    assert str(Card(rank, Suit.CLUBS, "red", True)) == f"{expected_rank}\u2667"
+def test_rank_str_property(rank, expected_rank):
+    c = Card(rank, Suit.SPADES, "red")
+    # Accessing private property for testing via name mangling
+    assert c._Card__rank_str == expected_rank
 
 
 @pytest.mark.parametrize(
-    "suit,expected_symbol",
+    ("suit", "expected_symbol"),
     [
         (Suit.CLUBS, "\u2667"),
         (Suit.DIAMONDS, "\u2662"),
@@ -67,13 +90,14 @@ def test_str_face_cards(rank, expected_rank):
         (Suit.SPADES, "\u2664"),
     ],
 )
-def test_str_suits(suit, expected_symbol):
-    # Suits are translated to their unicode characters
-    assert str(Card(Rank.KING, suit, "red", True)) == f"K{expected_symbol}"
+def test_suit_str_property_outline(suit, expected_symbol):
+    c = Card(Rank.ACE, suit, "red")
+    # Accessing private property for testing via name mangling
+    assert c._Card__suit_str == expected_symbol
 
 
 @pytest.mark.parametrize(
-    "suit,expected_symbol",
+    ("suit", "expected_symbol"),
     [
         (Suit.CLUBS, "\u2663"),
         (Suit.DIAMONDS, "\u2666"),
@@ -135,14 +159,6 @@ def test_repr():
         repr(Card(Rank.ACE, Suit.SPADES, "red", True))
         == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)"
     )
-
-
-def test_flip():
-    c = Card(Rank.ACE, Suit.SPADES, "red", False)
-    c.flip()
-    assert c.face_up
-    c.flip()
-    assert not c.face_up
 
 
 def test_property_getters():

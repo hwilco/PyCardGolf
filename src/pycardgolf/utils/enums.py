@@ -1,24 +1,31 @@
+"""Module containing Suit and Rank enums."""
+
 from __future__ import annotations
 
 from enum import Enum, EnumMeta
 
 
 class _ContainsEnumMeta(EnumMeta):
-    def __contains__(self, value):
-        return value in self.__members__.values()
+    def __contains__(cls, value: object) -> bool:
+        return value in cls.__members__.values()
 
 
 class Suit(Enum, metaclass=_ContainsEnumMeta):
+    """Enum representing card suits."""
+
     CLUBS = (0, "C")
     DIAMONDS = (1, "D")
     HEARTS = (2, "H")
     SPADES = (3, "S")
 
     def __lt__(self, other: Suit) -> bool:
+        """Compare suits based on their value."""
         return self.value[0] < other.value[0]
 
 
 class Rank(Enum, metaclass=_ContainsEnumMeta):
+    """Enum representing card ranks."""
+
     ACE = (1, "A")
     TWO = (2, "2")
     THREE = (3, "3")
@@ -34,6 +41,7 @@ class Rank(Enum, metaclass=_ContainsEnumMeta):
     KING = (13, "K")
 
     def __lt__(self, other: Rank) -> bool:
+        """Compare ranks based on their value."""
         return self.value[0] < other.value[0]
 
     def __str__(self) -> str:

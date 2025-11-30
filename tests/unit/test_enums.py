@@ -1,4 +1,5 @@
 import pytest
+
 from pycardgolf.utils.enums import Rank, Suit
 
 
@@ -9,7 +10,7 @@ def test_rank_comparison():
 
 
 @pytest.mark.parametrize(
-    "lesser,greater",
+    ("lesser", "greater"),
     [
         (Suit.CLUBS, Suit.DIAMONDS),
         (Suit.DIAMONDS, Suit.HEARTS),

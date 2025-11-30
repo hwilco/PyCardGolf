@@ -1,9 +1,8 @@
 import pytest
-from pycardgolf.utils.deck import CardStack, Deck
-from pycardgolf.utils.enums import Rank, Suit
+
 from pycardgolf.utils.card import Card
-import sys
-import random
+from pycardgolf.utils.deck import CardStack, Deck, DiscardStack
+from pycardgolf.utils.enums import Rank, Suit
 
 
 # Fixed test data for deterministic, reproducible tests
@@ -119,16 +118,19 @@ def test_shuffle_deterministic():
 def test_eq_stack(cards_5):
     assert CardStack(seed=1) == CardStack(seed=1)
     assert CardStack(seed=1, cards=cards_5.copy()) == CardStack(
-        seed=1, cards=cards_5.copy()
+        seed=1,
+        cards=cards_5.copy(),
     )
 
     assert CardStack(seed=1) != CardStack(seed=2)
     assert CardStack(seed=1, cards=cards_5.copy()) != CardStack(
-        seed=2, cards=cards_5.copy()
+        seed=2,
+        cards=cards_5.copy(),
     )
     assert CardStack(seed=1, cards=cards_5.copy()) != CardStack(seed=1)
     assert CardStack(seed=1, cards=cards_5.copy()) != CardStack(
-        seed=1, cards=cards_5.copy()[:2]
+        seed=1,
+        cards=cards_5.copy()[:2],
     )
 
 
@@ -182,18 +184,24 @@ def test_add_card_stack_valid(red_deck):
 
 def test_add_card_stack_already_in_deck(red_deck):
     other_card_stack = CardStack(cards=[Card(Rank.THREE, Suit.CLUBS, "red")])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Card to be added is a duplicate"):
         red_deck.add_card_stack(other_card_stack)
     assert other_card_stack.num_cards == 1
 
 
 def test_add_card_stack_wrong_color(red_deck):
-    copied_card = red_deck._cards[-1]
-    del red_deck._cards[-1]
+    # Create a card from the red deck to copy its properties, but change color
+    # Since Card is immutable-ish (no setters for color), we create a new one
+    # But wait, we need a card that is NOT in the deck but has WRONG color.
+    # Actually, any card with wrong color will trigger the check.
+    # Let's just create a blue card.
     other_card_stack = CardStack(
-        cards=[Card(copied_card.rank, copied_card.suit, "blue")]
+        cards=[Card(Rank.ACE, Suit.SPADES, "blue")],
     )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Card to be added does not match the deck's color",
+    ):
         red_deck.add_card_stack(other_card_stack)
     assert other_card_stack.num_cards == 1
 
@@ -275,7 +283,7 @@ def test_eq_stack_with_non_cardstack(other):
 
 
 @pytest.mark.parametrize(
-    "input_color,expected_color",
+    ("input_color", "expected_color"),
     [
         ("RED", "red"),
         ("BlUe", "blue"),
@@ -302,7 +310,6 @@ def test_deck_initialization():
 
 
 # DiscardStack Tests
-from pycardgolf.utils.deck import DiscardStack
 
 
 def test_discard_stack_init(cards_3):

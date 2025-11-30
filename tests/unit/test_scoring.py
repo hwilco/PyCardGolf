@@ -1,7 +1,8 @@
 import pytest
+
 from pycardgolf.core.scoring import calculate_score
-from pycardgolf.utils.enums import Rank, Suit
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.enums import Rank, Suit
 
 
 # Helper function to create a hand from rank tuples
@@ -11,7 +12,7 @@ def _make_hand(ranks, color="blue"):
 
 
 @pytest.mark.parametrize(
-    "ranks,expected_score",
+    ("ranks", "expected_score"),
     [
         pytest.param(
             [

@@ -13,7 +13,7 @@ poetry install
 ### Pre-commit Hooks
 
 This project uses `pre-commit` hooks to ensure code quality. The hooks include:
-- **Black**: Code formatting
+- **Ruff**: Code formatting
 - **Trailing whitespace removal**
 - **End of file fixer**
 - **YAML validation**

@@ -1,6 +1,6 @@
 from pycardgolf.core.game import Game
-from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.players.bots.random_bot import RandomBot
 
 
 def test_full_game_execution(mocker):
@@ -24,7 +24,8 @@ def test_full_game_execution(mocker):
     # 1. Verify game completed (current_round_num should be 2)
     assert game.current_round_num == 2
 
-    # 2. Verify scores are calculated (should be non-zero usually, but technically could be 0 if lucky)
+    # 2. Verify scores are calculated (should be non-zero usually, but
+    # technically could be 0 if lucky)
     # At least check they are integers
     assert isinstance(bot1.score, int)
     assert isinstance(bot2.score, int)

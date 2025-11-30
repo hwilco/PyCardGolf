@@ -1,8 +1,7 @@
-import pytest
-from pycardgolf.core.round import Round
 from pycardgolf.core.player import Player
-from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.core.round import Round
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.enums import Rank, Suit
 
 
 class MockPlayer(Player):

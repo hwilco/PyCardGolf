@@ -1,20 +1,28 @@
+"""Module containing the HumanPlayer class."""
+
 from pycardgolf.core.player import Player
-from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.core.round import Round
+from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.card import Card
 
 
 class HumanPlayer(Player):
-    def __init__(self, name: str, interface: GameInterface):
+    """A human player that interacts via the game interface."""
+
+    def __init__(self, name: str, interface: GameInterface) -> None:
+        """Initialize the human player with a name and interface."""
         super().__init__(name)
         self.interface = interface
 
     def take_turn(self, game_round: Round) -> None:
+        """Execute the human player's turn."""
         self.interface.display_state(game_round)
         self.interface.notify(f"It's {self.name}'s turn.")
 
         while True:
-            action = self.interface.get_input("Draw from (D)eck or (P)ile? ").lower()
+            action = self.interface.get_input(
+                "Draw from (D)eck or (P)ile? ",
+            ).lower()
             if action in ["d", "p"]:
                 break
             self.interface.notify("Invalid input. Please enter 'D' or 'P'.")
@@ -26,65 +34,77 @@ class HumanPlayer(Player):
 
             while True:
                 choice = self.interface.get_input(
-                    "Action: (K)eep or (D)iscard? "
+                    "Action: (K)eep or (D)iscard? ",
                 ).lower()
                 if choice in ["k", "d"]:
                     break
-                self.interface.notify("Invalid input. Please enter 'K' or 'D'.")
+                self.interface.notify(
+                    "Invalid input. Please enter 'K' or 'D'.",
+                )
 
             if choice == "k":
-                self._replace_card(game_round, drawn_card)
+                idx = self._choose_index_to_replace()
+                old_card = self._replace_card(idx, drawn_card)
+                game_round.discard_pile.add_card(old_card)
+                self.interface.notify(
+                    f"Replaced card at {idx} with {drawn_card}. Discarded {old_card}.",
+                )
             else:
                 game_round.discard_pile.add_card(drawn_card)
-                # If discarded, you can optionally flip a card (depending on rules).
-                # Standard golf often allows flipping a card if you discard the drawn card.
+                # If discarded, you can optionally flip a card (depending on
+                # rules).
+                # Standard golf often allows flipping a card if you discard the
+                # drawn card.
                 # Let's implement that.
-                flip_choice = self.interface.get_input("Flip a card? (y/n) ").lower()
-                if flip_choice == "y":
-                    self._flip_card(game_round)
+                flip_choice = self.interface.get_input(
+                    "Flip a card? (y/n) ",
+                )
+                if flip_choice.lower() == "y":
+                    self._flip_card()
 
         else:  # action == 'p'
-            drawn_card = (
-                game_round.discard_pile.draw()
-            )  # Wait, DiscardStack.draw() is not implemented in original deck.py?
-            # Let's check deck.py again. It has draw() but it inherits from CardStack.
-            # DiscardStack inherits from CardStack.
-            # But we need to make sure we are taking the top card.
-            # CardStack.draw() pops from end, which is top. Correct.
+            drawn_card = game_round.discard_pile.draw()
             self.interface.notify(f"You took from pile: {drawn_card}")
-            self._replace_card(game_round, drawn_card)
+            idx = self._choose_index_to_replace()
+            old_card = self._replace_card(idx, drawn_card)
+            game_round.discard_pile.add_card(old_card)
+            self.interface.notify(
+                f"Replaced card at {idx} with {drawn_card}. Discarded {old_card}.",
+            )
 
-    def _replace_card(self, game_round: Round, new_card: Card) -> None:
+    def _replace_card(self, idx: int, new_card: Card) -> Card:
+        old_card = self.hand[idx]
+        self.hand[idx] = new_card
+        self.hand[idx].face_up = True
+        return old_card
+
+    def _choose_index_to_replace(self) -> int:
         while True:
             try:
-                idx = int(self.interface.get_input("Which card to replace (0-5)? "))
-                if 0 <= idx < 6:
+                idx = int(
+                    self.interface.get_input("Which card to replace (0-5)? "),
+                )
+                if 0 <= idx < 6:  # noqa: PLR2004
                     break
                 self.interface.notify("Invalid index. Please enter 0-5.")
             except ValueError:
                 self.interface.notify("Invalid input. Please enter a number.")
+        return idx
 
-        old_card = self.hand[idx]
-        old_card.face_up = True  # Ensure it's face up when discarded
-        self.hand[idx] = new_card
-        game_round.discard_pile.add_card(old_card)
-        self.interface.notify(
-            f"Replaced card at {idx} with {new_card}. Discarded {old_card}."
-        )
-
-    def _flip_card(self, game_round: Round) -> None:
+    def _flip_card(self) -> None:
         while True:
             try:
-                idx = int(self.interface.get_input("Which card to flip (0-5)? "))
-                if 0 <= idx < 6:
+                idx = int(
+                    self.interface.get_input("Which card to flip (0-5)? "),
+                )
+                if 0 <= idx < 6:  # noqa: PLR2004
                     if not self.hand[idx].face_up:
                         self.hand[idx].face_up = True
                         self.interface.notify(
-                            f"Flipped card at {idx}: {self.hand[idx]}"
+                            f"Flipped card at {idx}: {self.hand[idx]}",
                         )
                         break
-                    else:
-                        self.interface.notify("Card is already face up.")
+                    self.interface.notify("Card is already face up.")
                 else:
                     self.interface.notify("Invalid index. Please enter 0-5.")
             except ValueError:
