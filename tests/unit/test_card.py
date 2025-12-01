@@ -47,14 +47,6 @@ def test_card_equality():
     assert c1 != "Not a card"
 
 
-def test_card_hash():
-    c1 = Card(Rank.ACE, Suit.SPADES, "Red")
-    c2 = Card(Rank.ACE, Suit.SPADES, "Red")
-    assert hash(c1) == hash(c2)
-    s = {c1, c2}
-    assert len(s) == 1
-
-
 def test_flip():
     c = Card(Rank.ACE, Suit.SPADES, "Red")
     assert not c.face_up

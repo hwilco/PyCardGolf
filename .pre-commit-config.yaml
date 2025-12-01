@@ -32,3 +32,15 @@ repos:
     hooks:
       - id: ruff-check
         args: [ --fix ]
+
+  # 6. Fast Tests Hook
+  - repo: local
+    hooks:
+      - id: fast-pytest
+        name: Run Fast Pytest Tests
+        language: script
+        entry: ./scripts/run_fast_tests.sh
+        types: [python]
+        pass_filenames: false # run pytest on all files, not just staged files
+        # Files to watch: only run when Python files or config changes
+        files: '\.(py|ini|toml)$'
