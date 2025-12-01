@@ -2,7 +2,7 @@ import pytest
 
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.utils.card import Card
-from pycardgolf.utils.constants import Constants
+from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank, Suit
 
 
@@ -115,9 +115,7 @@ def test_calculate_score_valid_hands(ranks, expected_score):
     ],
 )
 def test_calculate_score_invalid_hand_size(hand_size):
-    """Test that non-<Constants.HAND_SIZE>-card hands raise ValueError."""
+    """Test that non-<HAND_SIZE>-card hands raise ValueError."""
     hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
-    with pytest.raises(
-        ValueError, match=f"Hand must be a list of {Constants.HAND_SIZE} cards"
-    ):
+    with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
         calculate_score(hand)

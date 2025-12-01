@@ -2,7 +2,7 @@
 
 from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
-from pycardgolf.utils.constants import Constants
+from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import Deck, DiscardStack
 
 
@@ -25,7 +25,7 @@ class Round:
         # Deal cards to each player
         for player in self.players:
             player.hand = []  # Clear hand before dealing
-            for _ in range(Constants.HAND_SIZE):
+            for _ in range(HAND_SIZE):
                 player.hand.append(self.deck.draw())
 
         # Flip 2 random cards for each player

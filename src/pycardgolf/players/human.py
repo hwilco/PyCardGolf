@@ -4,7 +4,7 @@ from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.card import Card
-from pycardgolf.utils.constants import Constants
+from pycardgolf.utils.constants import HAND_SIZE
 
 
 class HumanPlayer(Player):
@@ -87,7 +87,7 @@ class HumanPlayer(Player):
                 idx = int(
                     self.interface.get_input("Which card to replace (0-5)? "),
                 )
-                if 0 <= idx < Constants.HAND_SIZE:
+                if 0 <= idx < HAND_SIZE:
                     break
                 self.interface.notify("Invalid index. Please enter 0-5.")
             except ValueError:
@@ -100,7 +100,7 @@ class HumanPlayer(Player):
                 idx = int(
                     self.interface.get_input("Which card to flip (0-5)? "),
                 )
-                if 0 <= idx < Constants.HAND_SIZE:
+                if 0 <= idx < HAND_SIZE:
                     if not self.hand[idx].face_up:
                         self.hand[idx].flip()
                         self.interface.notify(

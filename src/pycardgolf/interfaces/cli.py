@@ -1,8 +1,8 @@
 """Module containing the CLI interface implementation."""
 
-from pycardgolf.constants import Constants
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.utils.constants import HAND_SIZE
 
 
 class CLIInterface(GameInterface):
@@ -22,9 +22,7 @@ class CLIInterface(GameInterface):
             #          3 4 5
             for row in range(2):
                 row_cards = player.hand[
-                    (row * (Constants.HAND_SIZE // 2)) : (
-                        (row + 1) * (Constants.HAND_SIZE // 2)
-                    )
+                    (row * (HAND_SIZE // 2)) : ((row + 1) * (HAND_SIZE // 2))
                 ]
                 row_str = " ".join(str(c) for c in row_cards)
                 print(row_str)

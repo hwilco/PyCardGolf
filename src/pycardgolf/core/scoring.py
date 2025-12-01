@@ -1,7 +1,7 @@
 """Module containing scoring logic."""
 
 from pycardgolf.utils.card import Card
-from pycardgolf.utils.constants import Constants
+from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank
 
 
@@ -17,18 +17,18 @@ def calculate_score(hand: list[Card]) -> int:
     - King: 0
     """
     score = 0
-    # Assuming hand is a 1D list representing a 2xConstants.HAND_SIZE//2 grid:
+    # Assuming hand is a 1D list representing a 2xHAND_SIZE//2 grid:
     # 0 1 2
     # 3 4 5
 
-    if len(hand) != Constants.HAND_SIZE:
-        msg = f"Hand must be a list of {Constants.HAND_SIZE} cards"
+    if len(hand) != HAND_SIZE:
+        msg = f"Hand must be a list of {HAND_SIZE} cards"
         raise ValueError(msg)
 
     # Check columns
-    for col in range(Constants.HAND_SIZE // 2):
+    for col in range(HAND_SIZE // 2):
         top_card = hand[col]
-        bottom_card = hand[col + Constants.HAND_SIZE // 2]
+        bottom_card = hand[col + HAND_SIZE // 2]
 
         if top_card.rank == bottom_card.rank:
             continue  # Pair cancels out
