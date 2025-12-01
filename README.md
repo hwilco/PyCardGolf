@@ -51,5 +51,5 @@ poetry run pytest tests/unit
 Run only integration tests:
 
 ```bash
-poetry run pytest -m integration
+poetry run pytest tests/integration
 ```
