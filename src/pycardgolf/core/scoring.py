@@ -1,15 +1,14 @@
 """Module containing scoring logic."""
 
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.constants import Constants
 from pycardgolf.utils.enums import Rank
 
 
 def calculate_score(hand: list[Card]) -> int:
     """Calculate the score for a hand of cards in Golf.
 
-    Standard 6-card Golf scoring (simplified for now, can be expanded).
-
-    Basic rules assumed:
+    Scoring rules:
     - Pairs in a column cancel out (score 0).
     - Ace: 1
     - 2: -2
@@ -18,20 +17,18 @@ def calculate_score(hand: list[Card]) -> int:
     - King: 0
     """
     score = 0
-    # Assuming hand is a 1D list representing a 2x3 grid:
+    # Assuming hand is a 1D list representing a 2xConstants.HAND_SIZE//2 grid:
     # 0 1 2
     # 3 4 5
 
-    # 3 4 5
-    hand_size = 6
-    if len(hand) != hand_size:
-        msg = f"Hand must be a list of {hand_size} cards"
+    if len(hand) != Constants.HAND_SIZE:
+        msg = f"Hand must be a list of {Constants.HAND_SIZE} cards"
         raise ValueError(msg)
 
     # Check columns
-    for col in range(3):
+    for col in range(Constants.HAND_SIZE // 2):
         top_card = hand[col]
-        bottom_card = hand[col + 3]
+        bottom_card = hand[col + Constants.HAND_SIZE // 2]
 
         if top_card.rank == bottom_card.rank:
             continue  # Pair cancels out
@@ -43,12 +40,14 @@ def calculate_score(hand: list[Card]) -> int:
 
 
 def _card_value(card: Card) -> int:
-    if card.rank == Rank.ACE:
-        return 1
-    if card.rank == Rank.TWO:
-        return -2
-    if card.rank == Rank.KING:
-        return 0
-    if card.rank in (Rank.JACK, Rank.QUEEN):
-        return 10
-    return card.rank.value[0]
+    match card.rank:
+        case Rank.ACE:
+            return 1
+        case Rank.TWO:
+            return -2
+        case Rank.KING:
+            return 0
+        case Rank.JACK | Rank.QUEEN:
+            return 10
+        case _:
+            return card.rank.value[0]

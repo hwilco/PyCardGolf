@@ -1,5 +1,6 @@
 """Module containing the CLI interface implementation."""
 
+from pycardgolf.constants import Constants
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
 
@@ -16,11 +17,15 @@ class CLIInterface(GameInterface):
         for i, player in enumerate(game_round.players):
             marker = "*" if i == game_round.current_player_idx else " "
             print(f"{marker} Player: {player.name}")
-            # Display hand in 2 rows of 3
+            # Display hand in 2 rows
             # Indices: 0 1 2
             #          3 4 5
             for row in range(2):
-                row_cards = player.hand[row * 3 : (row + 1) * 3]
+                row_cards = player.hand[
+                    (row * (Constants.HAND_SIZE // 2)) : (
+                        (row + 1) * (Constants.HAND_SIZE // 2)
+                    )
+                ]
                 row_str = " ".join(str(c) for c in row_cards)
                 print(row_str)
 

@@ -47,11 +47,11 @@ class Card:
             ValueError: If rank or suit are out of range.
 
         """
-        self.__rank = rank
+        self.__rank: Rank = rank
         if self.__rank not in Rank:
             msg = f"Card rank must be a member of Rank enum. Given rank: {rank}"
             raise ValueError(msg)
-        self.__suit = suit
+        self.__suit: Suit = suit
         if self.__suit not in Suit:
             msg = (
                 "Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, "
@@ -59,8 +59,8 @@ class Card:
                 f"suit: {suit}"
             )
             raise ValueError(msg)
-        self.__color = color.lower()
-        self.__face_up = face_up
+        self.__color: str = color.lower()
+        self.__face_up: bool = face_up
 
     @property
     def rank(self) -> Rank:

@@ -4,6 +4,7 @@ from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.constants import Constants
 
 
 class HumanPlayer(Player):
@@ -12,7 +13,7 @@ class HumanPlayer(Player):
     def __init__(self, name: str, interface: GameInterface) -> None:
         """Initialize the human player with a name and interface."""
         super().__init__(name)
-        self.interface = interface
+        self.interface: GameInterface = interface
 
     def take_turn(self, game_round: Round) -> None:
         """Execute the human player's turn."""
@@ -21,11 +22,11 @@ class HumanPlayer(Player):
 
         while True:
             action = self.interface.get_input(
-                "Draw from (D)eck or (P)ile? ",
+                "Draw from (d)eck or ()ile? ",
             ).lower()
             if action in ["d", "p"]:
                 break
-            self.interface.notify("Invalid input. Please enter 'D' or 'P'.")
+            self.interface.notify("Invalid input. Please enter 'd' or 'p'.")
 
         if action == "d":
             drawn_card = game_round.deck.draw()
@@ -34,12 +35,12 @@ class HumanPlayer(Player):
 
             while True:
                 choice = self.interface.get_input(
-                    "Action: (K)eep or (D)iscard? ",
+                    "Action: (k)eep or (d)iscard? ",
                 ).lower()
                 if choice in ["k", "d"]:
                     break
                 self.interface.notify(
-                    "Invalid input. Please enter 'K' or 'D'.",
+                    "Invalid input. Please enter 'k' or 'd'.",
                 )
 
             if choice == "k":
@@ -51,15 +52,17 @@ class HumanPlayer(Player):
                 )
             else:
                 game_round.discard_pile.add_card(drawn_card)
-                # If discarded, you can optionally flip a card (depending on
-                # rules).
-                # Standard golf often allows flipping a card if you discard the
-                # drawn card.
-                # Let's implement that.
-                flip_choice = self.interface.get_input(
-                    "Flip a card? (y/n) ",
-                )
-                if flip_choice.lower() == "y":
+                # If discarded, you can optionally flip a card.
+                while True:
+                    flip_choice = self.interface.get_input(
+                        "Flip a card? (y/n) ",
+                    ).lower()
+                    if flip_choice in ["y", "n"]:
+                        break
+                    self.interface.notify(
+                        "Invalid input. Please enter 'y' or 'n'.",
+                    )
+                if flip_choice == "y":
                     self._flip_card()
 
         else:  # action == 'p'
@@ -84,7 +87,7 @@ class HumanPlayer(Player):
                 idx = int(
                     self.interface.get_input("Which card to replace (0-5)? "),
                 )
-                if 0 <= idx < 6:  # noqa: PLR2004
+                if 0 <= idx < Constants.HAND_SIZE:
                     break
                 self.interface.notify("Invalid index. Please enter 0-5.")
             except ValueError:
@@ -97,9 +100,9 @@ class HumanPlayer(Player):
                 idx = int(
                     self.interface.get_input("Which card to flip (0-5)? "),
                 )
-                if 0 <= idx < 6:  # noqa: PLR2004
+                if 0 <= idx < Constants.HAND_SIZE:
                     if not self.hand[idx].face_up:
-                        self.hand[idx].face_up = True
+                        self.hand[idx].flip()
                         self.interface.notify(
                             f"Flipped card at {idx}: {self.hand[idx]}",
                         )

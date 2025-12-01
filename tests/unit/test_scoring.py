@@ -2,12 +2,12 @@ import pytest
 
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.constants import Constants
 from pycardgolf.utils.enums import Rank, Suit
 
 
-# Helper function to create a hand from rank tuples
 def _make_hand(ranks, color="blue"):
-    """Create a hand from a list of 6 rank tuples (rank, suit)."""
+    """Create a hand from a list of tuples (rank, suit)."""
     return [Card(rank, suit, color) for rank, suit in ranks]
 
 
@@ -115,7 +115,9 @@ def test_calculate_score_valid_hands(ranks, expected_score):
     ],
 )
 def test_calculate_score_invalid_hand_size(hand_size):
-    """Test that non-6-card hands raise ValueError."""
+    """Test that non-<Constants.HAND_SIZE>-card hands raise ValueError."""
     hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
-    with pytest.raises(ValueError, match="Hand must be a list of 6 cards"):
+    with pytest.raises(
+        ValueError, match=f"Hand must be a list of {Constants.HAND_SIZE} cards"
+    ):
         calculate_score(hand)

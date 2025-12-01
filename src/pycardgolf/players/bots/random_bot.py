@@ -5,6 +5,7 @@ import random
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.utils.constants import Constants
 
 
 class RandomBot(Player):
@@ -13,7 +14,7 @@ class RandomBot(Player):
     def __init__(self, name: str, interface: GameInterface | None = None) -> None:
         """Initialize the bot with a name and optional interface."""
         super().__init__(name)
-        self.interface = interface
+        self.interface: GameInterface | None = interface
 
     def _notify(self, message: str) -> None:
         if self.interface:
@@ -32,7 +33,7 @@ class RandomBot(Player):
 
             if random.choice([True, False]):
                 # Keep
-                idx = random.randint(0, 5)
+                idx = random.randint(0, Constants.HAND_SIZE - 1)
                 old_card = self.hand[idx]
                 old_card.face_up = True
                 self.hand[idx] = drawn_card
@@ -63,7 +64,7 @@ class RandomBot(Player):
             drawn_card = game_round.discard_pile.draw()
             self._notify(f"{self.name} took from pile: {drawn_card}")
 
-            idx = random.randint(0, 5)
+            idx = random.randint(0, Constants.HAND_SIZE - 1)
             old_card = self.hand[idx]
             old_card.face_up = True
             self.hand[idx] = drawn_card

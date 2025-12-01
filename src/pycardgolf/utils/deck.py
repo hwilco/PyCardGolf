@@ -25,8 +25,8 @@ class CardStack:
 
         """
         self._cards: list[Card] = [] if cards is None else cards
-        self.seed = random.randrange(sys.maxsize) if seed is None else seed
-        self.rand = random.Random(self.seed)
+        self.seed: int = random.randrange(sys.maxsize) if seed is None else seed
+        self.rand: random.Random = random.Random(self.seed)
 
     @property
     def num_cards(self) -> int:
@@ -130,7 +130,7 @@ class Deck(CardStack):
 
         """
         super().__init__(seed=seed)
-        self.color = color.lower()
+        self.color: str = color.lower()
         self.reset()
 
     def add_card_stack(

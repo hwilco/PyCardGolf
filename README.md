@@ -4,6 +4,11 @@ A Python implementation of a card golf game.
 
 ## Development Setup
 
+### Prerequisites
+
+- [Poetry](https://python-poetry.org/docs/) (>=2.2.1)
+- [Python](https://www.python.org/downloads/) (>=3.13)
+
 ### Installing Dependencies
 
 ```bash

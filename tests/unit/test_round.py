@@ -1,6 +1,7 @@
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.utils.card import Card
+from pycardgolf.utils.constants import Constants
 from pycardgolf.utils.enums import Rank, Suit
 
 
@@ -15,8 +16,8 @@ def test_round_setup():
     game_round = Round([p1, p2])
     game_round.setup()
 
-    assert len(p1.hand) == 6
-    assert len(p2.hand) == 6
+    assert len(p1.hand) == Constants.HAND_SIZE
+    assert len(p2.hand) == Constants.HAND_SIZE
     # Check 2 cards are face up
     assert sum(1 for c in p1.hand if c.face_up) == 2
     assert sum(1 for c in p2.hand if c.face_up) == 2
@@ -29,7 +30,7 @@ def test_check_round_end_condition():
     p1 = MockPlayer("P1")
     game_round = Round([p1])
     # Give p1 a hand
-    p1.hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(6)]
+    p1.hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(Constants.HAND_SIZE)]
 
     # All face down
     for c in p1.hand:
@@ -45,7 +46,7 @@ def test_check_round_end_condition():
 def test_calculate_scores_flips_all():
     p1 = MockPlayer("P1")
     game_round = Round([p1])
-    p1.hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(6)]
+    p1.hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(Constants.HAND_SIZE)]
     for c in p1.hand:
         c.face_up = False
 

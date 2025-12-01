@@ -2,6 +2,7 @@
 
 from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
+from pycardgolf.utils.constants import Constants
 from pycardgolf.utils.deck import Deck, DiscardStack
 
 
@@ -10,21 +11,21 @@ class Round:
 
     def __init__(self, players: list[Player]) -> None:
         """Initialize a round with players."""
-        self.players = players
-        self.deck = Deck(color="blue")  # Default color
-        self.discard_pile = DiscardStack()
-        self.current_player_idx = 0
-        self.round_over = False
+        self.players: list[Player] = players
+        self.deck: Deck = Deck(color="blue")  # Default color
+        self.discard_pile: DiscardStack = DiscardStack()
+        self.current_player_idx: int = 0
+        self.round_over: bool = False
         self.last_turn_player_idx: int | None = None
 
     def setup(self) -> None:
         """Set up the round: shuffle, deal, and flip initial cards."""
         self.deck.shuffle()
 
-        # Deal 6 cards to each player
+        # Deal cards to each player
         for player in self.players:
             player.hand = []  # Clear hand before dealing
-            for _ in range(6):
+            for _ in range(Constants.HAND_SIZE):
                 player.hand.append(self.deck.draw())
 
         # Flip 2 random cards for each player
