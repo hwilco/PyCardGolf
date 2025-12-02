@@ -3,7 +3,6 @@
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
-from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 
 
@@ -22,7 +21,7 @@ class HumanPlayer(Player):
 
         while True:
             action = self.interface.get_input(
-                "Draw from (d)eck or ()ile? ",
+                "Draw from (d)eck or (p)ile? ",
             ).lower()
             if action in ["d", "p"]:
                 break
@@ -45,7 +44,8 @@ class HumanPlayer(Player):
 
             if choice == "k":
                 idx = self._choose_index_to_replace()
-                old_card = self._replace_card(idx, drawn_card)
+                old_card = self.hand.replace(idx, drawn_card)
+                old_card.face_up = True
                 game_round.discard_pile.add_card(old_card)
                 self.interface.notify(
                     f"Replaced card at {idx} with {drawn_card}. Discarded {old_card}.",
@@ -69,17 +69,12 @@ class HumanPlayer(Player):
             drawn_card = game_round.discard_pile.draw()
             self.interface.notify(f"You took from pile: {drawn_card}")
             idx = self._choose_index_to_replace()
-            old_card = self._replace_card(idx, drawn_card)
+            old_card = self.hand.replace(idx, drawn_card)
+            old_card.face_up = True
             game_round.discard_pile.add_card(old_card)
             self.interface.notify(
                 f"Replaced card at {idx} with {drawn_card}. Discarded {old_card}.",
             )
-
-    def _replace_card(self, idx: int, new_card: Card) -> Card:
-        old_card = self.hand[idx]
-        self.hand[idx] = new_card
-        self.hand[idx].face_up = True
-        return old_card
 
     def _choose_index_to_replace(self) -> int:
         while True:
@@ -102,7 +97,7 @@ class HumanPlayer(Player):
                 )
                 if 0 <= idx < HAND_SIZE:
                     if not self.hand[idx].face_up:
-                        self.hand[idx].flip()
+                        self.hand.flip_card(idx)
                         self.interface.notify(
                             f"Flipped card at {idx}: {self.hand[idx]}",
                         )

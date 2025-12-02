@@ -36,8 +36,8 @@ class CardStack:
     def add_card_stack(
         self,
         other: CardStack,
-        clear_other: bool | None = None,
-        shuffle: bool | None = None,
+        clear_other: bool = True,
+        shuffle: bool = False,
     ) -> None:
         """Add the cards from a different card stack to this card stack.
 
@@ -51,9 +51,6 @@ class CardStack:
                 the other stack. Defaults to False.
 
         """
-        clear_other = True if clear_other is None else clear_other
-        shuffle = False if shuffle is None else shuffle
-
         self._cards.extend(other._cards)
         if clear_other:
             other.clear()
@@ -136,8 +133,8 @@ class Deck(CardStack):
     def add_card_stack(
         self,
         other: CardStack,
-        clear_other: bool | None = None,
-        shuffle: bool | None = None,
+        clear_other: bool = True,
+        shuffle: bool = False,
     ) -> None:
         """Add the cards from a different card stack to this deck.
 
@@ -158,10 +155,10 @@ class Deck(CardStack):
 
         """
         if any(c.color != self.color for c in other._cards):
-            msg = f"Card to be added does not match the deck's color ({self.color})."
+            msg = f"Card to be added does not match the deck's color ({self.color})"
             raise ValueError(msg)
         if any(c in self._cards for c in other._cards):
-            msg = "Card to be added is a duplicate of a card in the deck."
+            msg = "Card to be added is a duplicate of a card in the deck"
             raise ValueError(msg)
         super().add_card_stack(other, clear_other, shuffle)
 

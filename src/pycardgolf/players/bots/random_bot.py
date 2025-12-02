@@ -34,9 +34,9 @@ class RandomBot(Player):
             if random.choice([True, False]):
                 # Keep
                 idx = random.randint(0, HAND_SIZE - 1)
-                old_card = self.hand[idx]
+                # Replace returns the old card
+                old_card = self.hand.replace(idx, drawn_card)
                 old_card.face_up = True
-                self.hand[idx] = drawn_card
                 game_round.discard_pile.add_card(old_card)
                 self._notify(
                     f"{self.name} replaced card at {idx} with {drawn_card}. "
@@ -54,7 +54,7 @@ class RandomBot(Player):
                     ]
                     if face_down_indices:
                         idx = random.choice(face_down_indices)
-                        self.hand[idx].face_up = True
+                        self.hand.flip_card(idx)
                         self._notify(
                             f"{self.name} flipped card at {idx}: {self.hand[idx]}",
                         )
@@ -65,9 +65,8 @@ class RandomBot(Player):
             self._notify(f"{self.name} took from pile: {drawn_card}")
 
             idx = random.randint(0, HAND_SIZE - 1)
-            old_card = self.hand[idx]
+            old_card = self.hand.replace(idx, drawn_card)
             old_card.face_up = True
-            self.hand[idx] = drawn_card
             game_round.discard_pile.add_card(old_card)
             self._notify(
                 f"{self.name} replaced card at {idx} with {drawn_card}. "

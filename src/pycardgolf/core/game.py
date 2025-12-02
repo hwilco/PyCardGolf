@@ -27,7 +27,12 @@ class Game:
                 f"--- Starting Round {self.current_round_num} ---",
             )
             game_round = Round(self.players)
-            game_round.play()
+            round_scores = game_round.play()
+
+            # Update total scores
+            for player, score in round_scores.items():
+                player.score += score
+
             self.display_scores()
 
         self.declare_winner()

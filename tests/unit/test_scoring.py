@@ -1,18 +1,20 @@
 import pytest
 
-from pycardgolf.core.scoring import calculate_score
+from pycardgolf.core.hand import Hand
+from pycardgolf.core.scoring import calculate_score, calculate_visible_score
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank, Suit
 
 
-def _make_hand(ranks, color="blue"):
+def _make_hand(card_values, color="blue"):
     """Create a hand from a list of tuples (rank, suit)."""
-    return [Card(rank, suit, color) for rank, suit in ranks]
+    cards = [Card(rank, suit, color, face_up=True) for rank, suit in card_values]
+    return Hand(cards)
 
 
 @pytest.mark.parametrize(
-    ("ranks", "expected_score"),
+    ("card_values", "expected_score"),
     [
         pytest.param(
             [
@@ -100,10 +102,16 @@ def _make_hand(ranks, color="blue"):
         ),
     ],
 )
-def test_calculate_score_valid_hands(ranks, expected_score):
+def test_calculate_score_valid_hands(card_values, expected_score):
     """Test various valid 6-card hands."""
-    hand = _make_hand(ranks)
+    hand = _make_hand(card_values)
     assert calculate_score(hand) == expected_score
+
+
+def test_calculate_score_none_hand():
+    """Test that a None hand raises ValueError."""
+    with pytest.raises(ValueError, match="Hand must not be None"):
+        calculate_score(None)
 
 
 @pytest.mark.parametrize(
@@ -116,6 +124,59 @@ def test_calculate_score_valid_hands(ranks, expected_score):
 )
 def test_calculate_score_invalid_hand_size(hand_size):
     """Test that non-<HAND_SIZE>-card hands raise ValueError."""
-    hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
+    hand = Hand(cards)
     with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
         calculate_score(hand)
+
+
+def test_calculate_score_face_down_cards():
+    """Test that a hand with any face-down cards raises ValueError."""
+    hand = _make_hand([(Rank.ACE, Suit.CLUBS)] * HAND_SIZE)
+    hand[0].face_up = False
+    with pytest.raises(
+        ValueError, match="All cards must be face up to calculate score"
+    ):
+        calculate_score(hand)
+
+
+@pytest.mark.parametrize(
+    ("face_up_indices", "expected_score"),
+    [
+        pytest.param([], 0, id="all_face_down"),
+        pytest.param([0, 4], 2, id="two_aces_no_cancel"),
+        pytest.param([0, 3], 0, id="pair_cancels_col_0"),
+        pytest.param([1], 1, id="one_card_of_pair_visible"),
+        pytest.param([1, 2], 2, id="one_card_of_pair_visible_plus_other"),
+        pytest.param([0, 3, 1, 4], 0, id="two_pairs_cancel"),
+    ],
+)
+def test_calculate_visible_score_valid_hands(face_up_indices, expected_score):
+    """Test calculating score of only face-up cards."""
+    # Hand setup:
+    # Col 0: Ace (0), Ace (3)
+    # Col 1: Ace (1), Ace (4)
+    # Col 2: Ace (2), Ace (5)
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    hand = Hand(cards)
+
+    for idx in face_up_indices:
+        hand[idx].face_up = True
+
+    assert calculate_visible_score(hand) == expected_score
+
+
+@pytest.mark.parametrize(
+    "hand_size",
+    [
+        pytest.param(0, id="empty_hand"),
+        pytest.param(5, id="five_cards"),
+        pytest.param(7, id="seven_cards"),
+    ],
+)
+def test_calculate_visible_score_invalid_hand_size(hand_size):
+    """Test that non-<HAND_SIZE>-card hands raise ValueError."""
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
+    hand = Hand(cards)
+    with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
+        calculate_visible_score(hand)

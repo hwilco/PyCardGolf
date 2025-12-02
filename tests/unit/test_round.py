@@ -1,3 +1,6 @@
+import pytest
+
+from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.utils.card import Card
@@ -30,7 +33,8 @@ def test_check_round_end_condition():
     p1 = MockPlayer("P1")
     game_round = Round([p1])
     # Give p1 a hand
-    p1.hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    p1.hand = Hand(cards)
 
     # All face down
     for c in p1.hand:
@@ -43,17 +47,43 @@ def test_check_round_end_condition():
     assert game_round.check_round_end_condition(p1)
 
 
-def test_calculate_scores_flips_all():
+def test_get_scores_requires_face_up():
     p1 = MockPlayer("P1")
     game_round = Round([p1])
-    p1.hand = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    p1.hand = Hand(cards)
     for c in p1.hand:
         c.face_up = False
 
-    game_round.calculate_scores()
+    # Should raise ValueError because cards are not face up
+    with pytest.raises(ValueError, match="All cards must be face up"):
+        game_round.get_scores()
 
+
+def test_reveal_hands():
+    p1 = MockPlayer("P1")
+    game_round = Round([p1])
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    p1.hand = Hand(cards)
+    for c in p1.hand:
+        c.face_up = False
+
+    game_round.reveal_hands()
     assert all(c.face_up for c in p1.hand)
+
+
+def test_get_scores_returns_correct_scores():
+    p1 = MockPlayer("P1")
+    game_round = Round([p1])
+    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    p1.hand = Hand(cards)
+    game_round.reveal_hands()
+
+    scores = game_round.get_scores()
+
     # Score for 6 Aces (3 pairs) = 0
+    assert scores[p1] == 0
+    # Player score should NOT be updated by Round
     assert p1.score == 0
 
 

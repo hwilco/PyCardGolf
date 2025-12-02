@@ -1,11 +1,12 @@
 """Module containing scoring logic."""
 
+from pycardgolf.core.hand import Hand
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank
 
 
-def calculate_score(hand: list[Card]) -> int:
+def calculate_score(hand: Hand) -> int:
     """Calculate the score for a hand of cards in Golf.
 
     Scoring rules:
@@ -16,25 +17,63 @@ def calculate_score(hand: list[Card]) -> int:
     - Jack, Queen: 10
     - King: 0
     """
-    score = 0
-    # Assuming hand is a 1D list representing a 2xHAND_SIZE//2 grid:
-    # 0 1 2
-    # 3 4 5
-
-    if len(hand) != HAND_SIZE:
-        msg = f"Hand must be a list of {HAND_SIZE} cards"
+    # Validate hand
+    if hand is None:
+        msg = "Hand must not be None"
         raise ValueError(msg)
 
+    if hand is None or len(hand) != HAND_SIZE:
+        msg = f"Hand must be a list of {HAND_SIZE} cards. Received: {hand}"
+        raise ValueError(msg)
+
+    if not hand.all_face_up():
+        face_up_indices = [i for i, card in enumerate(hand) if not card.face_up]
+        msg = f"All cards must be face up to calculate score. Cards in indices \
+        {face_up_indices} are face down"
+        raise ValueError(msg)
+
+    score = 0
+
     # Check columns
-    for col in range(HAND_SIZE // 2):
-        top_card = hand[col]
-        bottom_card = hand[col + HAND_SIZE // 2]
+    for col in range(hand.cols):
+        top_card, bottom_card = hand.get_column(col)
 
         if top_card.rank == bottom_card.rank:
             continue  # Pair cancels out
 
         score += _card_value(top_card)
         score += _card_value(bottom_card)
+
+    return score
+
+
+def calculate_visible_score(hand: Hand) -> int:
+    """Calculate the score for a hand based ONLY on face-up cards.
+
+    Pairs only cancel out if both cards in the column are face up.
+    """
+    if len(hand) != HAND_SIZE:
+        msg = f"Hand must be a list of {HAND_SIZE} cards"
+        raise ValueError(msg)
+
+    score = 0
+
+    # Check columns
+    for col in range(hand.cols):
+        top_card, bottom_card = hand.get_column(col)
+
+        # Check for visible pair
+        if (
+            top_card.face_up
+            and bottom_card.face_up
+            and top_card.rank == bottom_card.rank
+        ):
+            continue  # Pair cancels out
+
+        if top_card.face_up:
+            score += _card_value(top_card)
+        if bottom_card.face_up:
+            score += _card_value(bottom_card)
 
     return score
 

@@ -1,5 +1,6 @@
 """Module containing the Round class."""
 
+from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.utils.constants import HAND_SIZE
@@ -24,23 +25,27 @@ class Round:
 
         # Deal cards to each player
         for player in self.players:
-            player.hand = []  # Clear hand before dealing
-            for _ in range(HAND_SIZE):
-                player.hand.append(self.deck.draw())
+            cards = [self.deck.draw() for _ in range(HAND_SIZE)]
+            player.hand = Hand(cards)
 
-        # Flip 2 random cards for each player
-        for player in self.players:
+            # Flip 2 cards for each player
             # Simple approach: flip first two for now (can be random)
             # TODO: allow player to choose
-            player.hand[0].face_up = True
-            player.hand[1].face_up = True
+            player.hand.flip_card(0)
+            player.hand.flip_card(1)
 
         # Start discard pile
         self.discard_pile.add_card(self.deck.draw())
         self.discard_pile.peek().face_up = True
 
-    def play(self) -> None:  # pragma: no cover
-        """Execute the game loop for the round."""
+    def play(self) -> dict[Player, int]:  # pragma: no cover
+        """Execute the game loop for the round.
+
+        Returns:
+            dict[Player, int]: A dictionary mapping players to their scores for this
+            round.
+
+        """
         self.setup()
 
         while not self.round_over:
@@ -56,7 +61,8 @@ class Round:
 
             self.advance_turn()
 
-        self.calculate_scores()
+        self.reveal_hands()
+        return self.get_scores()
 
     def advance_turn(self) -> None:
         """Advance the turn to the next player."""
@@ -72,13 +78,23 @@ class Round:
 
     def check_round_end_condition(self, player: Player) -> bool:
         """Check if the round should end (player has all cards face up)."""
-        # Round ends when a player has all cards face up
-        return all(card.face_up for card in player.hand)
+        return player.hand.all_face_up()
 
-    def calculate_scores(self) -> None:
-        """Calculate and update scores for all players."""
+    def reveal_hands(self) -> None:
+        """Reveal all cards for all players."""
         for player in self.players:
-            # Flip all cards face up for scoring
-            for card in player.hand:
-                card.face_up = True
-            player.score += calculate_score(player.hand)
+            if player.hand:
+                player.hand.reveal_all()
+
+    def get_scores(self) -> dict[Player, int]:
+        """Calculate scores for all players.
+
+        Returns:
+            dict[Player, int]: A dictionary mapping players to their scores for this
+            round.
+
+        Raises:
+            ValueError: If a player has no hand.
+
+        """
+        return {player: calculate_score(player.hand) for player in self.players}

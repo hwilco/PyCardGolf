@@ -33,6 +33,7 @@ def test_game_start(mock_player, mock_interface, mocker):
 
     mock_round_instance = mocker.MagicMock()
     mock_round_cls.return_value = mock_round_instance
+    mock_round_instance.play.return_value = {mock_player: 10}
 
     game.start()
 
@@ -48,6 +49,27 @@ def test_game_start(mock_player, mock_interface, mocker):
         mocker.call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
     )
     assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
+
+
+def test_score_accumulation(mock_player, mock_interface, mocker):
+    """Test that player scores accumulate correctly across rounds."""
+    game = Game([mock_player], mock_interface, num_rounds=3)
+
+    mock_round_cls = mocker.patch("pycardgolf.core.game.Round")
+    mock_round_instance = mocker.MagicMock()
+    mock_round_cls.return_value = mock_round_instance
+
+    # Return different scores for each round
+    mock_round_instance.play.side_effect = [
+        {mock_player: 5},
+        {mock_player: 10},
+        {mock_player: -3},
+    ]
+
+    game.start()
+
+    # Player should have accumulated score of 5 + 10 - 3 = 12
+    assert mock_player.score == 12
 
 
 def test_display_scores(mock_interface, mocker):
