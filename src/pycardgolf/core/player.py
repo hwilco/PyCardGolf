@@ -5,8 +5,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from pycardgolf.core.hand import Hand
+
 if TYPE_CHECKING:
-    from pycardgolf.core.hand import Hand
     from pycardgolf.core.round import Round
 
 
@@ -16,7 +17,7 @@ class Player(ABC):
     def __init__(self, name: str) -> None:
         """Initialize a player with a name."""
         self.name: str = name
-        self.hand: Hand | None = None
+        self.hand: Hand = Hand([])
         self.score: int = 0
 
     @abstractmethod

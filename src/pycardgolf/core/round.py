@@ -1,5 +1,8 @@
 """Module containing the Round class."""
 
+import random
+import sys
+
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
@@ -10,11 +13,12 @@ from pycardgolf.utils.deck import Deck, DiscardStack
 class Round:
     """Class representing a single round of Golf."""
 
-    def __init__(self, players: list[Player]) -> None:
+    def __init__(self, players: list[Player], seed: int | None = None) -> None:
         """Initialize a round with players."""
         self.players: list[Player] = players
-        self.deck: Deck = Deck(color="blue")  # Default color
-        self.discard_pile: DiscardStack = DiscardStack()
+        self.seed: int = random.randrange(sys.maxsize) if seed is None else seed
+        self.deck: Deck = Deck(color="blue", seed=self.seed)  # Default color
+        self.discard_pile: DiscardStack = DiscardStack(seed=self.seed)
         self.current_player_idx: int = 0
         self.round_over: bool = False
         self.last_turn_player_idx: int | None = None
@@ -83,8 +87,7 @@ class Round:
     def reveal_hands(self) -> None:
         """Reveal all cards for all players."""
         for player in self.players:
-            if player.hand:
-                player.hand.reveal_all()
+            player.hand.reveal_all()
 
     def get_scores(self) -> dict[Player, int]:
         """Calculate scores for all players.

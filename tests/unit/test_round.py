@@ -62,29 +62,43 @@ def test_get_scores_requires_face_up():
 
 def test_reveal_hands():
     p1 = MockPlayer("P1")
-    game_round = Round([p1])
+    p2 = MockPlayer("P2")
+    game_round = Round([p1, p2])
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
+    p2.hand = Hand(cards)
     for c in p1.hand:
+        c.face_up = False
+    for c in p2.hand:
         c.face_up = False
 
     game_round.reveal_hands()
     assert all(c.face_up for c in p1.hand)
+    assert all(c.face_up for c in p2.hand)
 
 
 def test_get_scores_returns_correct_scores():
     p1 = MockPlayer("P1")
-    game_round = Round([p1])
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
+    p2 = MockPlayer("P2")
+    game_round = Round([p1, p2])
+    cards_p1 = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
+    cards_p2 = [Card(Rank.THREE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
+    cards_p2.extend(
+        [Card(Rank.KING, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
+    )
+    p1.hand = Hand(cards_p1)
+    p2.hand = Hand(cards_p2)
     game_round.reveal_hands()
 
     scores = game_round.get_scores()
 
     # Score for 6 Aces (3 pairs) = 0
     assert scores[p1] == 0
+    # Score for half 3s and half Kings = 3 * HAND_SIZE // 2 (6 for 6 cards)
+    assert scores[p2] == (HAND_SIZE // 2) * 3
     # Player score should NOT be updated by Round
     assert p1.score == 0
+    assert p2.score == 0
 
 
 def test_advance_turn():
