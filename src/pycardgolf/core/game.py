@@ -14,10 +14,10 @@ class Game:
         interface: GameInterface,
         num_rounds: int = 9,
     ) -> None:
-        self.players = players
-        self.interface = interface
-        self.num_rounds = num_rounds
-        self.current_round_num = 0
+        self.players: list[Player] = players
+        self.interface: GameInterface = interface
+        self.num_rounds: int = num_rounds
+        self.current_round_num: int = 0
 
     def start(self) -> None:
         """Start the game loop."""
