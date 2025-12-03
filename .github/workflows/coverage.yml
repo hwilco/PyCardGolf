@@ -1,0 +1,76 @@
+name: Coverage Workflow
+
+on:
+  pull_request:
+    branches: 
+      - '*'
+  push:
+    branches: 
+      - 'main'
+
+permissions:
+  contents: write
+  checks: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 2.2.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction
+    
+    - name: Run unit tests with coverage
+      shell: bash
+      run: |
+        set -o pipefail
+        poetry run pytest tests/unit --cov=pycardgolf --cov-report=term-missing --cov-branch --cov-report=xml:coverage.xml
+    
+    - name: Add pytest coverage comments to PR
+      id: coverage-comment
+      uses: MishaKav/pytest-coverage-comment@v1
+      with:
+        pytest-xml-coverage-path: ./coverage.xml
+        junitxml-path: ./pytest.xml
+
+    - name: Update README with coverage badge
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        sed -i '/<!-- Pytest Coverage Comment:Begin -->/,/<!-- Pytest Coverage Comment:End -->/c\<!-- Pytest Coverage Comment:Begin -->\n${{ steps.coverage-comment.outputs.coverageHtml }}\n<!-- Pytest Coverage Comment:End -->' ./README.md
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: pytest.xml
+
+    - name: Commit README coverage changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: 'docs: update coverage badge'
+        file_pattern: README.md
