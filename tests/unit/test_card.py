@@ -115,42 +115,69 @@ def test_str_face_down():
     assert str(Card(Rank.ACE, Suit.HEARTS, "red", False)) == "??"
 
 
-def test_repr():
-    assert (
-        repr(Card(Rank.ACE, Suit.SPADES, "red"))
-        == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
-    )
-    # Test a different suit
-    assert (
-        repr(Card(Rank.ACE, Suit.HEARTS, "red"))
-        == "Card(<Rank.ACE: (1, 'A')>, <Suit.HEARTS: (2, 'H')>, 'red', False)"
-    )
-    # Test a different rank
-    assert (
-        repr(Card(Rank.TWO, Suit.SPADES, "red"))
-        == "Card(<Rank.TWO: (2, '2')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
-    )
-    # Test a different color
-    assert (
-        repr(Card(Rank.ACE, Suit.SPADES, "blue"))
-        == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'blue', False)"
-    )
-
-    # Color will be converted to lowercase
-    assert (
-        repr(Card(Rank.ACE, Suit.SPADES, "Red"))
-        == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
-    )
-    assert (
-        repr(Card(Rank.ACE, Suit.SPADES, "RED"))
-        == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)"
-    )
-
-    # Test setting face_up to True
-    assert (
-        repr(Card(Rank.ACE, Suit.SPADES, "red", True))
-        == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)"
-    )
+@pytest.mark.parametrize(
+    ("rank", "suit", "color", "face_up", "expected"),
+    [
+        pytest.param(
+            Rank.ACE,
+            Suit.SPADES,
+            "red",
+            False,
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            id="basic-ace-spades",
+        ),
+        pytest.param(
+            Rank.ACE,
+            Suit.HEARTS,
+            "red",
+            False,
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.HEARTS: (2, 'H')>, 'red', False)",
+            id="different-suit-hearts",
+        ),
+        pytest.param(
+            Rank.TWO,
+            Suit.SPADES,
+            "red",
+            False,
+            "Card(<Rank.TWO: (2, '2')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            id="different-rank-two",
+        ),
+        pytest.param(
+            Rank.ACE,
+            Suit.SPADES,
+            "blue",
+            False,
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'blue', False)",
+            id="different-color-blue",
+        ),
+        pytest.param(
+            Rank.ACE,
+            Suit.SPADES,
+            "Red",
+            False,
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            id="color-lowercase-Red",
+        ),
+        pytest.param(
+            Rank.ACE,
+            Suit.SPADES,
+            "RED",
+            False,
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            id="color-lowercase-RED",
+        ),
+        pytest.param(
+            Rank.ACE,
+            Suit.SPADES,
+            "red",
+            True,
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)",
+            id="face-up-true",
+        ),
+    ],
+)
+def test_repr(rank, suit, color, face_up, expected):
+    assert repr(Card(rank, suit, color, face_up)) == expected
 
 
 def test_property_getters():
