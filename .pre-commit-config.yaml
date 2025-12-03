@@ -42,4 +42,3 @@ repos:
       - id: pyrefly-check
         name: Pyrefly (type checking)
         pass_filenames: false  # Does a full repo check instead of just changed files
-        language: system  # Use system-installed pyrefly

@@ -1,11 +1,16 @@
 """Entry point for the PyCardGolf application."""
 
 import argparse
+from typing import TYPE_CHECKING
 
 from pycardgolf.core.game import Game
+from pycardgolf.core.player import Player
 from pycardgolf.interfaces.cli import CLIInterface
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
+
+if TYPE_CHECKING:
+    from pycardgolf.core.player import Player
 
 
 def main() -> None:
@@ -33,7 +38,7 @@ def main() -> None:
     args = parser.parse_args()
 
     interface = CLIInterface()
-    players = []
+    players: list[Player] = []
 
     for i in range(args.humans):
         name = interface.get_input(f"Enter name for Human {i + 1}: ")

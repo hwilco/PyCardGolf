@@ -1,6 +1,7 @@
 """Module containing the Hand class."""
 
 from collections.abc import Iterator
+from typing import overload
 
 from pycardgolf.utils.card import Card
 
@@ -46,7 +47,15 @@ class Hand:
         for card in self._cards:
             card.face_up = True
 
-    def __getitem__(self, index: int) -> Card:
+    # --- Type Checker Signatures ---
+    @overload
+    def __getitem__(self, index: int) -> Card: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Card]: ...
+
+    # --- Implementation ---
+    def __getitem__(self, index: int | slice) -> Card | list[Card]:
         """Get card at index."""
         return self._cards[index]
 
