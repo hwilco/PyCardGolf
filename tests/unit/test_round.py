@@ -3,6 +3,7 @@ import pytest
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
+from pycardgolf.exceptions import GameConfigError
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank, Suit
@@ -27,6 +28,33 @@ def test_round_setup():
 
     assert game_round.discard_pile.num_cards == 1
     assert game_round.discard_pile.peek().face_up
+
+
+@pytest.mark.parametrize(
+    ("num_players", "hand_size", "deck_cards"),
+    [
+        # 3 players * 6 cards = 18 needed, 18 available - not enough (no discard)
+        pytest.param(3, 6, 18, id="exact_no_discard"),
+        # 4 players * 6 cards = 24 needed, 18 available - way not enough
+        pytest.param(4, 6, 18, id="six_cards_short"),
+    ],
+)
+def test_round_init_too_many_players(num_players, hand_size, deck_cards, mocker):
+    """Test that GameConfigError is raised when not enough cards for players."""
+    # Mock HAND_SIZE constant
+    mocker.patch("pycardgolf.core.round.HAND_SIZE", hand_size)
+
+    # Create players
+    players = [MockPlayer(f"P{i}") for i in range(num_players)]
+
+    # Mock the Deck class to have the specified number of cards
+    mock_deck = mocker.MagicMock()
+    mock_deck.num_cards = deck_cards
+    mocker.patch("pycardgolf.core.round.Deck", return_value=mock_deck)
+
+    # Creating Round should raise GameConfigError
+    with pytest.raises(GameConfigError, match="Not enough cards for players"):
+        Round(players)
 
 
 def test_check_round_end_condition():

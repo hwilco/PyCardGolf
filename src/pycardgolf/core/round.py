@@ -6,6 +6,7 @@ import sys
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
+from pycardgolf.exceptions import GameConfigError
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import Deck, DiscardStack
 
@@ -22,6 +23,17 @@ class Round:
         self.current_player_idx: int = 0
         self.round_over: bool = False
         self.last_turn_player_idx: int | None = None
+
+        cards_needed_for_hands = len(self.players) * HAND_SIZE
+        if (
+            cards_needed_for_hands >= self.deck.num_cards
+        ):  # >= instead of > because we need one extra card for the discard pile
+            msg = (
+                f"Not enough cards for players. "
+                f"{len(self.players)} players need {cards_needed_for_hands + 1} cards, "
+                f"but deck only has {self.deck.num_cards} cards."
+            )
+            raise GameConfigError(msg)
 
     def setup(self) -> None:
         """Set up the round: shuffle, deal, and flip initial cards."""
