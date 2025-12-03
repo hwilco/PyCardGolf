@@ -1,3 +1,4 @@
+exclude: ^\.agent/
 repos:
   # 1. Core Cleanup Hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -11,6 +12,7 @@ repos:
     rev: 7.0.0
     hooks:
       - id: isort
+
 
   # 3. Code Formatting Hook
   - repo: https://github.com/astral-sh/ruff-pre-commit
