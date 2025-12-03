@@ -44,7 +44,7 @@ poetry run pytest
 Run tests with coverage:
 
 ```bash
-poetry run pytest --cov=pycardgolf --cov-report=term-missing
+poetry run pytest --cov=pycardgolf --cov-report=term-missing --cov-branch
 ```
 
 Run only unit tests:

@@ -49,10 +49,10 @@ class Hand:
 
     # --- Type Checker Signatures ---
     @overload
-    def __getitem__(self, index: int) -> Card: ...
+    def __getitem__(self, index: int) -> Card: ...  # pragma: no cover
 
     @overload
-    def __getitem__(self, index: slice) -> list[Card]: ...
+    def __getitem__(self, index: slice) -> list[Card]: ...  # pragma: no cover
 
     # --- Implementation ---
     def __getitem__(self, index: int | slice) -> Card | list[Card]:

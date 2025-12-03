@@ -104,6 +104,24 @@ def test_getitem(standard_hand):
     assert standard_hand[5].rank == Rank.SIX
 
 
+def test_getitem_slice(standard_hand):
+    """Test accessing cards by slice."""
+    # Test slicing returns a list of cards
+    first_three = standard_hand[0:3]
+    assert isinstance(first_three, list)
+    assert len(first_three) == 3
+    assert first_three[0].rank == Rank.ACE
+    assert first_three[1].rank == Rank.TWO
+    assert first_three[2].rank == Rank.THREE
+
+    # Test slicing with step
+    every_other = standard_hand[::2]
+    assert len(every_other) == 3
+    assert every_other[0].rank == Rank.ACE
+    assert every_other[1].rank == Rank.THREE
+    assert every_other[2].rank == Rank.FIVE
+
+
 def test_iter(standard_hand):
     """Test iterating over the hand."""
     cards = list(standard_hand)
