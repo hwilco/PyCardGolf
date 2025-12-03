@@ -90,6 +90,9 @@ Pipfile.lock
 # poetry
 poetry.lock
 
+# ruff
+.ruff_cache/
+
 # pdm
 .pdm.toml
 .pdm-python
