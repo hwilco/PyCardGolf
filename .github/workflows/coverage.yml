@@ -10,8 +10,6 @@ on:
 
 permissions:
   contents: read
-  checks: write
-  issues: read
 
 jobs:
   ## 1. Test Job
@@ -78,9 +76,10 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      pull-requests: write
-      checks: write
-      statuses: write
+      contents: read       # Required to read commits/files
+      pull-requests: write # Required to post comments
+      checks: write        # Required to publish test results
+      statuses: write      # Required for commit status updates
 
     steps:
     - name: Download coverage report artifact
