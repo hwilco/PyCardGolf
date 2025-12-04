@@ -8,18 +8,26 @@ packages = [{include = "pycardgolf", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.13"
-pytest-cov = "^7.0.0"
 
 [tool.pyrefly]
 project-includes = [
     "**/*.py*",
     "**/*.ipynb",
 ]
+project-excludes = [
+    "tests/**",
+    "**/__pycache__/**",
+    "scripts/*",
+]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-pyrefly = "^0.43.1"
+pre-commit = "^4.0.1"
+ruff = "^0.14.7"
+isort = "^7.0.0"
+pytest = "^9.0.1"
+pytest-cov = "^7.0.0"
 pytest-mock = "^3.15.1"
+pyrefly = "^0.43.1"
 
 [build-system]
 requires = ["poetry-core"]
@@ -31,6 +39,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
+[tool.pytest.ini_options.markers]
+slow = "mark test as slow (excluded from pre-commit testing)"
+
 [tool.coverage.run]
 source = ["src"]
 omit = [
@@ -38,6 +49,7 @@ omit = [
     "*/tests/*",
     "*/__pycache__/*",
     "*/site-packages/*",
+    "scripts/*",
 ]
 
 [tool.coverage.report]
@@ -51,3 +63,38 @@ exclude_lines = [
     "@abstractmethod",
 ]
 
+[tool.ruff]
+target-version = "py313"
+exclude = ["scripts"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", # Missing trailing comma (can cause unexpected behavior with formatter)
+    "D105",   # Missing docstring in magic method
+    "D107",   # Missing docstring in __init__
+    "D203",   # 1 blank line required before class docstring (incompatible with D211)
+    "D213",   # Multi-line docstring summary at second line (incompatible with D212)
+    "S311",   # Allow standard pseudo-random generators for game logic
+    "TD",     # TODOs
+    "FIX",    # Fixmes
+    "FBT",    # Boolean trap
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/pycardgolf/interfaces/cli.py" = [
+    "T201",  # Allow print statements in CLI
+]
+"src/pycardgolf/utils/deck.py" = [
+    "SLF001", # Allow private member access for deck operations
+]
+"src/pycardgolf/interfaces/base.py" = [
+    "ANN401", # Allow Any type in base interface methods if necessary
+]
+"tests/*" = [
+    "S101",    # Allow assert statements in tests
+    "PLR2004", # Allow magic values in tests
+    "ANN",     # Allow missing type annotations in tests
+    "D",       # Allow missing docstrings in tests
+    "SLF001",  # Allow private member access in tests
+]

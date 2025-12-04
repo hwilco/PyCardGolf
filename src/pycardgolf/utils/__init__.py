@@ -1,1 +1,1 @@
-"""Utility modules for PyCardGolf."""
+"""Utility classes and functions package."""
