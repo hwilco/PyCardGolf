@@ -99,6 +99,7 @@ jobs:
       if: always()
       with:
         files: pytest.xml
+        comment_mode: off
 
     - name: Add pytest coverage comments to PR
       uses: MishaKav/pytest-coverage-comment@v1
