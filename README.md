@@ -6,6 +6,40 @@
 
 A Python implementation of a card golf game.
 
+## Playing the Game
+
+### Prerequisites
+
+- [Poetry](https://python-poetry.org/docs/) (>=2.2.1)
+- [Python](https://www.python.org/downloads/) (>=3.13)
+
+### Installation
+
+Install the game without development dependencies:
+
+```bash
+poetry install --without dev
+```
+
+### Running the Game
+
+Run a quick game with 1 human player, 1 bot, and 1 round:
+
+```bash
+poetry run pycardgolf --humans 1 --bots 1 --rounds 1
+```
+
+You can customize the game with the following options:
+- `--humans N`: Number of human players (default: 1)
+- `--bots N`: Number of bot players (default: 1)
+- `--rounds N`: Number of rounds to play (default: 9)
+
+Example with 2 humans and 3 rounds:
+
+```bash
+poetry run pycardgolf --humans 2 --bots 0 --rounds 3
+```
+
 ## Development Setup
 
 ### Prerequisites

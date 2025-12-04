@@ -6,6 +6,9 @@ authors = ["Harrison Wilco <hwilco@gmail.com>"]
 readme = "README.md"
 packages = [{include = "pycardgolf", from = "src"}]
 
+[tool.poetry.scripts]
+pycardgolf = "pycardgolf.main:main"
+
 [tool.poetry.dependencies]
 python = "^3.13"
 
