@@ -1,0 +1,155 @@
+name: Coverage Workflow
+
+on:
+  pull_request:
+    branches:
+      - '*'
+  push:
+    branches:
+      - 'main'
+
+permissions:
+  contents: read
+
+jobs:
+  ## 1. Test Job
+  # Runs on PRs and pushes to 'main' to generate the coverage report and test results.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 2.2.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction
+
+    - name: Run unit tests with coverage
+      shell: bash
+      run: |
+        set -o pipefail
+        # Generate coverage reports: terminal output, XML for coverage, and JUnit XML for test results
+        poetry run pytest tests/unit --cov=pycardgolf --cov-report=term-missing:skip-covered --cov-branch --cov-report=xml:coverage.xml --junitxml=pytest.xml | tee pytest-coverage.txt
+
+    - name: Upload coverage report artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: |
+          coverage.xml
+          pytest-coverage.txt
+        retention-days: 1
+
+    - name: Upload test results artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: pytest.xml
+        retention-days: 1
+
+  ## 2. PR Comment Job
+  # Only runs on PRs, depends on the 'test' job.
+  pr_comment:
+    needs: test
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read       # Required to read commits/files
+      pull-requests: write # Required to post comments
+      checks: write        # Required to publish test results
+      statuses: write      # Required for commit status updates
+
+    steps:
+    - name: Download coverage report artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-report
+        path: .
+
+    - name: Download test results artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: test-results
+        path: .
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: pytest.xml
+
+    - name: Add pytest coverage comments to PR
+      uses: MishaKav/pytest-coverage-comment@v1
+      with:
+        pytest-xml-coverage-path: ./coverage.xml
+        junitxml-path: ./pytest.xml
+
+  ## 3. Update Badge Job
+  # Only runs on successful push to 'main'
+  # Reuses the coverage artifact from the test job to update the README badge.
+  update_badge:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    # **REQUIRES** 'contents: write' to commit the updated README
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: true
+        fetch-depth: 0
+
+    - name: Download coverage report artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-report
+        path: .
+
+    - name: Download test results artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: test-results
+        path: .
+
+    - name: Generate Coverage Badge
+      id: coverage
+      uses: MishaKav/pytest-coverage-comment@v1
+      with:
+        pytest-xml-coverage-path: ./coverage.xml
+        junitxml-path: ./pytest.xml
+        hide-comment: true
+
+    - name: Update README with coverage badge
+      run: |
+        sed -i '/<!-- Pytest Coverage Comment:Begin -->/,/<!-- Pytest Coverage Comment:End -->/c\<!-- Pytest Coverage Comment:Begin -->\n${{ steps.coverage.outputs.coverageHtml }}\n<!-- Pytest Coverage Comment:End -->' ./README.md
+
+    - name: Commit README coverage changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: 'docs: update coverage badge'
+        file_pattern: README.md
