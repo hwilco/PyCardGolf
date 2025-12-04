@@ -53,6 +53,7 @@ jobs:
         poetry run pytest tests/unit --cov=pycardgolf --cov-report=term-missing:skip-covered --cov-branch --cov-report=xml:coverage.xml --junitxml=pytest.xml | tee pytest-coverage.txt
 
     - name: Upload coverage report artifact
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
@@ -62,6 +63,7 @@ jobs:
         retention-days: 1
 
     - name: Upload test results artifact
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-results
@@ -72,7 +74,7 @@ jobs:
   # Only runs on PRs, depends on the 'test' job.
   pr_comment:
     needs: test
-    if: github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     
     permissions:
