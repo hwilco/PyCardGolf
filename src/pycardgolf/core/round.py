@@ -7,6 +7,7 @@ from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError
+from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import Deck, DiscardStack
 
@@ -14,9 +15,15 @@ from pycardgolf.utils.deck import Deck, DiscardStack
 class Round:
     """Class representing a single round of Golf."""
 
-    def __init__(self, players: list[Player], seed: int | None = None) -> None:
+    def __init__(
+        self,
+        players: list[Player],
+        interface: GameInterface,
+        seed: int | None = None,
+    ) -> None:
         """Initialize a round with players."""
         self.players: list[Player] = players
+        self.interface: GameInterface = interface
         self.seed: int = random.randrange(sys.maxsize) if seed is None else seed
         self.deck: Deck = Deck(color="blue", seed=self.seed)  # Default color
         self.discard_pile: DiscardStack = DiscardStack(seed=self.seed)
@@ -73,7 +80,10 @@ class Round:
                 and self.last_turn_player_idx is None
             ):
                 self.last_turn_player_idx = self.current_player_idx
-                # Notify players?
+                self.interface.notify(
+                    f"\n{current_player.name} has revealed all their cards! "
+                    "Everyone gets one final turn.",
+                )
 
             self.advance_turn()
 

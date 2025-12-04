@@ -48,7 +48,8 @@ class HumanPlayer(Player):
                 old_card.face_up = True
                 game_round.discard_pile.add_card(old_card)
                 self.interface.notify(
-                    f"Replaced card at {idx} with {drawn_card}. Discarded {old_card}.",
+                    f"Replaced card at position {idx + 1} with {drawn_card}. "
+                    f"Discarded {old_card}.",
                 )
             else:
                 game_round.discard_pile.add_card(drawn_card)
@@ -67,43 +68,53 @@ class HumanPlayer(Player):
 
         else:  # action == 'p'
             drawn_card = game_round.discard_pile.draw()
-            self.interface.notify(f"You took from pile: {drawn_card}")
+            self.interface.notify(
+                f"You drew {drawn_card} from the discard pile. "
+                "You must replace one of your cards with it.",
+            )
             idx = self._choose_index_to_replace()
             old_card = self.hand.replace(idx, drawn_card)
             old_card.face_up = True
             game_round.discard_pile.add_card(old_card)
             self.interface.notify(
-                f"Replaced card at {idx} with {drawn_card}. Discarded {old_card}.",
+                f"Replaced card at position {idx + 1} with {drawn_card}. "
+                f"Discarded {old_card}.",
             )
 
     def _choose_index_to_replace(self) -> int:
+        """Prompt user to choose a card position to replace.
+
+        Returns 0-indexed position for internal use.
+        """
         while True:
             try:
                 idx = int(
-                    self.interface.get_input("Which card to replace (0-5)? "),
+                    self.interface.get_input("Which card to replace (1-6)? "),
                 )
-                if 0 <= idx < HAND_SIZE:
-                    break
-                self.interface.notify("Invalid index. Please enter 0-5.")
+                if 1 <= idx <= HAND_SIZE:
+                    return idx - 1  # Convert to 0-indexed
+                self.interface.notify("Invalid index. Please enter 1-6.")
             except ValueError:
                 self.interface.notify("Invalid input. Please enter a number.")
-        return idx
 
     def _flip_card(self) -> None:
+        """Prompt user to choose a card to flip."""
         while True:
             try:
                 idx = int(
-                    self.interface.get_input("Which card to flip (0-5)? "),
+                    self.interface.get_input("Which card to flip (1-6)? "),
                 )
-                if 0 <= idx < HAND_SIZE:
-                    if not self.hand[idx].face_up:
-                        self.hand.flip_card(idx)
+                if 1 <= idx <= HAND_SIZE:
+                    idx_internal = idx - 1  # Convert to 0-indexed
+                    if not self.hand[idx_internal].face_up:
+                        self.hand.flip_card(idx_internal)
                         self.interface.notify(
-                            f"Flipped card at {idx}: {self.hand[idx]}",
+                            f"Flipped card at position {idx}: "
+                            f"{self.hand[idx_internal]}",
                         )
                         break
                     self.interface.notify("Card is already face up.")
                 else:
-                    self.interface.notify("Invalid index. Please enter 0-5.")
+                    self.interface.notify("Invalid index. Please enter 1-6.")
             except ValueError:
                 self.interface.notify("Invalid input. Please enter a number.")

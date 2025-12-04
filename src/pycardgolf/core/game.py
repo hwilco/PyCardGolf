@@ -26,7 +26,7 @@ class Game:
             self.interface.notify(
                 f"--- Starting Round {self.current_round_num} ---",
             )
-            game_round = Round(self.players)
+            game_round = Round(self.players, self.interface)
             round_scores = game_round.play()
 
             # Update total scores

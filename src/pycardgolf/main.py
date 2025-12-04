@@ -1,7 +1,12 @@
 """Entry point for the PyCardGolf application."""
 
 import argparse
+import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from rich.console import Console
+from rich.markdown import Markdown
 
 from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
@@ -13,9 +18,22 @@ if TYPE_CHECKING:
     from pycardgolf.core.player import Player
 
 
+def _display_rules() -> None:
+    """Display the game rules."""
+    rules_path = Path(__file__).parent / "RULES.md"
+    console = Console()
+    markdown = Markdown(rules_path.read_text(encoding="utf-8"))
+    console.print(markdown)
+
+
 def main() -> None:
     """Run the main game loop."""
     parser = argparse.ArgumentParser(description="Play Card Golf")
+    parser.add_argument(
+        "--rules",
+        action="store_true",
+        help="Display the game rules and exit",
+    )
     parser.add_argument(
         "--humans",
         type=int,
@@ -36,6 +54,11 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Display rules and exit if --rules flag is provided
+    if args.rules:
+        _display_rules()
+        sys.exit(0)
 
     interface = CLIInterface()
     players: list[Player] = []

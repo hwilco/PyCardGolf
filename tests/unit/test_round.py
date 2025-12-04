@@ -4,9 +4,21 @@ from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.exceptions import GameConfigError
+from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank, Suit
+
+
+class MockInterface(GameInterface):
+    def display_state(self, game_round: Round) -> None:
+        pass
+
+    def get_input(self, prompt: str) -> str:  # noqa: ARG002
+        return ""
+
+    def notify(self, message: str) -> None:
+        pass
 
 
 class MockPlayer(Player):
@@ -17,7 +29,7 @@ class MockPlayer(Player):
 def test_round_setup():
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
+    game_round = Round([p1, p2], MockInterface())
     game_round.setup()
 
     assert len(p1.hand) == HAND_SIZE
@@ -54,12 +66,12 @@ def test_round_init_too_many_players(num_players, hand_size, deck_cards, mocker)
 
     # Creating Round should raise GameConfigError
     with pytest.raises(GameConfigError, match="Not enough cards for players"):
-        Round(players)
+        Round(players, MockInterface())
 
 
 def test_check_round_end_condition():
     p1 = MockPlayer("P1")
-    game_round = Round([p1])
+    game_round = Round([p1], MockInterface())
     # Give p1 a hand
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
@@ -77,7 +89,7 @@ def test_check_round_end_condition():
 
 def test_get_scores_requires_face_up():
     p1 = MockPlayer("P1")
-    game_round = Round([p1])
+    game_round = Round([p1], MockInterface())
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
     for c in p1.hand:
@@ -91,7 +103,7 @@ def test_get_scores_requires_face_up():
 def test_reveal_hands():
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
+    game_round = Round([p1, p2], MockInterface())
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
     p2.hand = Hand(cards)
@@ -108,7 +120,7 @@ def test_reveal_hands():
 def test_get_scores_returns_correct_scores():
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
+    game_round = Round([p1, p2], MockInterface())
     cards_p1 = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     cards_p2 = [Card(Rank.THREE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
     cards_p2.extend(
@@ -134,7 +146,7 @@ def test_advance_turn():
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
     p3 = MockPlayer("P3")
-    game_round = Round([p1, p2, p3])
+    game_round = Round([p1, p2, p3], MockInterface())
 
     assert game_round.current_player_idx == 0
     game_round.advance_turn()
@@ -147,7 +159,7 @@ def test_advance_turn_wraps_around():
     # Test that turn wraps to 0 after last player
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
+    game_round = Round([p1, p2], MockInterface())
 
     game_round.current_player_idx = 1
     game_round.advance_turn()
@@ -160,7 +172,7 @@ def test_advance_turn_ends_round():
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
     p3 = MockPlayer("P3")
-    game_round = Round([p1, p2, p3])
+    game_round = Round([p1, p2, p3], MockInterface())
 
     # Set player 1 as the one who ended the round
     game_round.last_turn_player_idx = 1

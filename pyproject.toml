@@ -11,6 +11,7 @@ pycardgolf = "pycardgolf.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.13"
+rich = "^13.7.0"
 
 [tool.pyrefly]
 project-includes = [
@@ -25,7 +26,7 @@ project-excludes = [
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.0.1"
-ruff = "^0.14.7"
+ruff = "^0.14.8"
 isort = "^7.0.0"
 pytest = "^9.0.1"
 pytest-cov = "^7.0.0"
@@ -85,6 +86,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"src/pycardgolf/main.py" = [
+    "T201",  # Allow print statements in main entry point
+]
 "src/pycardgolf/interfaces/cli.py" = [
     "T201",  # Allow print statements in CLI
 ]

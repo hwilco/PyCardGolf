@@ -6,6 +6,13 @@
 
 A Python implementation of a card golf game.
 
+## How to Play
+
+> [TIP]
+> For a formatted version of these rules in your terminal, run: `poetry run pycardgolf --rules`
+>
+> The rules are maintained in [`src/pycardgolf/RULES.md`](src/pycardgolf/RULES.md).
+
 ## Playing the Game
 
 ### Prerequisites
