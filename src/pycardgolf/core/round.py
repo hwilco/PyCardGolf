@@ -1,15 +1,21 @@
 """Module containing the Round class."""
 
+from __future__ import annotations
+
 import random
 import sys
+from typing import TYPE_CHECKING
 
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.player import Player
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError
-from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import Deck, DiscardStack
+
+if TYPE_CHECKING:
+    from pycardgolf.core.game import Game
+    from pycardgolf.core.player import Player
+    from pycardgolf.interfaces.base import GameInterface
 
 
 class Round:
@@ -17,11 +23,13 @@ class Round:
 
     def __init__(
         self,
+        game: Game,
         players: list[Player],
         interface: GameInterface,
         seed: int = random.randrange(sys.maxsize),
     ) -> None:
         """Initialize a round with players."""
+        self.game: Game = game
         self.players: list[Player] = players
         self.interface: GameInterface = interface
         self.seed: int = seed
@@ -77,7 +85,7 @@ class Round:
 
         while not self.round_over:
             current_player = self.players[self.current_player_idx]
-            current_player.take_turn(self)
+            current_player.take_turn(self.game)
 
             if (
                 self.check_round_end_condition(current_player)
@@ -92,6 +100,7 @@ class Round:
             self.advance_turn()
 
         self.reveal_hands()
+        self.interface.display_round_end(self.game)
         return self.get_scores()
 
     def advance_turn(self) -> None:

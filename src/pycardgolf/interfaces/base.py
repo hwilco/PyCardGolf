@@ -1,17 +1,25 @@
 """Module containing the abstract GameInterface class."""
 
-from abc import ABC, abstractmethod
-from typing import Any
+from __future__ import annotations
 
-from pycardgolf.utils.card import Card
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pycardgolf.core.game import Game
+    from pycardgolf.utils.card import Card
 
 
 class GameInterface(ABC):
     """Abstract base class for game interfaces."""
 
     @abstractmethod
-    def display_state(self, game_round: Any) -> None:
-        """Display the current state of the game round."""
+    def display_state(self, game: Game) -> None:
+        """Display the current state of the game (cards, scores, etc.)."""
+
+    @abstractmethod
+    def display_round_end(self, game: Game) -> None:
+        """Display the state of the game at the end of a round."""
 
     @abstractmethod
     def get_input(self, prompt: str) -> str:

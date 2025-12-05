@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from pycardgolf.core.hand import Hand
 
 if TYPE_CHECKING:
-    from pycardgolf.core.round import Round
+    from pycardgolf.core.game import Game
 
 
 class Player(ABC):
@@ -21,5 +21,5 @@ class Player(ABC):
         self.score: int = 0
 
     @abstractmethod
-    def take_turn(self, game_round: Round) -> None:
+    def take_turn(self, game: Game) -> None:
         """Execute the player's turn."""

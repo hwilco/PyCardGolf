@@ -81,7 +81,6 @@ def test_display_scores(mock_interface, mocker):
     game = Game([p1, p2], mock_interface)
     game.display_scores()
 
-    assert mocker.call("\nCurrent Scores:") in mock_interface.notify.call_args_list
     assert mocker.call("P1: 10") in mock_interface.notify.call_args_list
     assert mocker.call("P2: 5") in mock_interface.notify.call_args_list
 

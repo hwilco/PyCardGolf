@@ -8,9 +8,10 @@ from rich.color import Color, ColorParseError
 from rich.console import Console
 from rich.text import Style, Text
 
+from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
-from pycardgolf.core.scoring import calculate_visible_score
+from pycardgolf.core.scoring import calculate_score, calculate_visible_score
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.card import Card
@@ -57,8 +58,12 @@ class CLIInterface(GameInterface):
             msg = f"Invalid color 'color': {e}"
             raise GameConfigError(msg) from e
 
-    def display_state(self, game_round: Round) -> None:
+    def display_state(self, game: Game) -> None:
         """Display the current state of the game round."""
+        if game.current_round is None:
+            msg = "Game round is None."
+            raise GameConfigError(msg)
+        game_round = game.current_round
         top_card_text = self._get_card_string(game_round.deck.peek())
         self.console.print(
             (
@@ -78,8 +83,27 @@ class CLIInterface(GameInterface):
             self.console.print(
                 f"{marker} Player: {player.name} (Visible Score: {visible_score})"
             )
-            if i - game_round.current_player_idx <= self.MAX_OPPONENT_HANDS_TO_DISPLAY:
+            if (i - game_round.current_player_idx) % len(
+                game.players
+            ) <= self.MAX_OPPONENT_HANDS_TO_DISPLAY:
                 self._display_hand(player, display_indices=is_current_turn_player)
+
+    def display_round_end(self, game: Game) -> None:
+        """Display the state of the game at the end of a round."""
+        if game.current_round is None:
+            msg = "Game round is None."
+            raise GameConfigError(msg)
+        game_round = game.current_round
+
+        self.console.print(
+            f"\n--- Round {game.current_round_num} End ---", style="bold"
+        )
+        self._display_discard_pile(game_round)
+
+        for player in game.players:
+            round_score = calculate_score(player.hand)
+            self.console.print(f"Player: {player.name} (Round Score: {round_score})")
+            self._display_hand(player, display_indices=False)
 
     def _display_discard_pile(self, game_round: Round) -> None:
         """Display the discard pile."""

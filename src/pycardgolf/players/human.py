@@ -1,8 +1,14 @@
 """Module containing the HumanPlayer class."""
 
+from typing import TYPE_CHECKING
+
+from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
-from pycardgolf.core.round import Round
+from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameInterface
+
+if TYPE_CHECKING:
+    from pycardgolf.core.round import Round
 
 
 class HumanPlayer(Player):
@@ -13,13 +19,17 @@ class HumanPlayer(Player):
         super().__init__(name)
         self.interface: GameInterface = interface
 
-    def take_turn(self, game_round: Round) -> None:
+    def take_turn(self, game: Game) -> None:
         """Execute the human player's turn."""
-        self.interface.display_state(game_round)
+        if game.current_round is None:
+            msg = "Game round is None."
+            raise GameConfigError(msg)
+        game_round: Round = game.current_round
+        self.interface.display_state(game)
         self.interface.notify(f"It's {self.name}'s turn.")
 
-        deck_card = game_round.deck.peek()
-        discard_card = game_round.discard_pile.peek()
+        deck_card = game.current_round.deck.peek()
+        discard_card = game.current_round.discard_pile.peek()
         action = self.interface.get_draw_choice(deck_card, discard_card)
 
         if action == "d":

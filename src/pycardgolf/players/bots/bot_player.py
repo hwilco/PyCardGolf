@@ -2,8 +2,10 @@
 
 from abc import ABC, abstractmethod
 
+from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
+from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.utils.card import Card
 
@@ -20,8 +22,13 @@ class BotPlayer(Player, ABC):
         if self.interface:
             self.interface.notify(message)
 
-    def take_turn(self, game_round: Round) -> None:
+    def take_turn(self, game: Game) -> None:
         """Execute the bot's turn using the template method pattern."""
+        if game.current_round is None:
+            msg = "Game round is None."
+            raise GameConfigError(msg)
+        game_round: Round = game.current_round
+
         self._notify(f"It's {self.name}'s turn.")
 
         # 1. Decide where to draw from

@@ -19,7 +19,8 @@ def test_round_setup(mocker):
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
     mock_interface = mocker.MagicMock(spec=GameInterface)
-    game_round = Round([p1, p2], mock_interface)
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1, p2], mock_interface)
     game_round.setup()
 
     assert len(p1.hand) == HAND_SIZE
@@ -37,8 +38,9 @@ def test_round_validates_deck_color(mocker):
     """Test that Round validates the deck color using the interface."""
     players = [MockPlayer("Player 1")]
     mock_interface = mocker.MagicMock(spec=GameInterface)
+    mock_game = mocker.Mock()
 
-    Round(players, mock_interface)
+    Round(mock_game, players, mock_interface)
 
     mock_interface.validate_color.assert_called_once_with("blue")
 
@@ -65,14 +67,17 @@ def test_round_init_too_many_players(num_players, hand_size, deck_cards, mocker)
     mock_deck.num_cards = deck_cards
     mocker.patch("pycardgolf.core.round.Deck", return_value=mock_deck)
 
+    mock_game = mocker.Mock()
+
     # Creating Round should raise GameConfigError
     with pytest.raises(GameConfigError, match="Not enough cards for players"):
-        Round(players, mocker.MagicMock(spec=GameInterface))
+        Round(mock_game, players, mocker.MagicMock(spec=GameInterface))
 
 
 def test_check_round_end_condition(mocker):
     p1 = MockPlayer("P1")
-    game_round = Round([p1], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1], mocker.MagicMock(spec=GameInterface))
     # Give p1 a hand
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
@@ -90,7 +95,8 @@ def test_check_round_end_condition(mocker):
 
 def test_get_scores_requires_face_up(mocker):
     p1 = MockPlayer("P1")
-    game_round = Round([p1], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1], mocker.MagicMock(spec=GameInterface))
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
     for c in p1.hand:
@@ -104,7 +110,8 @@ def test_get_scores_requires_face_up(mocker):
 def test_reveal_hands(mocker):
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1, p2], mocker.MagicMock(spec=GameInterface))
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
     p2.hand = Hand(cards)
@@ -121,7 +128,8 @@ def test_reveal_hands(mocker):
 def test_get_scores_returns_correct_scores(mocker):
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1, p2], mocker.MagicMock(spec=GameInterface))
     cards_p1 = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     cards_p2 = [Card(Rank.THREE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
     cards_p2.extend(
@@ -147,7 +155,8 @@ def test_advance_turn(mocker):
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
     p3 = MockPlayer("P3")
-    game_round = Round([p1, p2, p3], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1, p2, p3], mocker.MagicMock(spec=GameInterface))
 
     assert game_round.current_player_idx == 0
     game_round.advance_turn()
@@ -160,7 +169,8 @@ def test_advance_turn_wraps_around(mocker):
     # Test that turn wraps to 0 after last player
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
-    game_round = Round([p1, p2], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1, p2], mocker.MagicMock(spec=GameInterface))
 
     game_round.current_player_idx = 1
     game_round.advance_turn()
@@ -174,7 +184,8 @@ def test_advance_turn_ends_round(mocker):
     p1 = MockPlayer("P1")
     p2 = MockPlayer("P2")
     p3 = MockPlayer("P3")
-    game_round = Round([p1, p2, p3], mocker.MagicMock(spec=GameInterface))
+    mock_game = mocker.Mock()
+    game_round = Round(mock_game, [p1, p2, p3], mocker.MagicMock(spec=GameInterface))
 
     # Set player 1 as the one who ended the round
     game_round.last_turn_player_idx = 1

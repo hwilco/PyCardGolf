@@ -65,8 +65,12 @@ def test_take_turn_draw_from_deck_keep(bot, game_round, mock_interface):
     bot.should_keep_drawn_card = MagicMock(return_value=True)
     bot.choose_card_to_replace = MagicMock(return_value=0)
 
+    # Mock Game
+    mock_game = MagicMock()
+    mock_game.current_round = game_round
+
     # Execute
-    bot.take_turn(game_round)
+    bot.take_turn(mock_game)
 
     # Verify
     game_round.deck.draw.assert_called_once()
@@ -85,8 +89,12 @@ def test_take_turn_draw_from_deck_discard(bot, game_round, mock_interface):
     bot.should_keep_drawn_card = MagicMock(return_value=False)
     bot.choose_card_to_flip = MagicMock(return_value=None)
 
+    # Mock Game
+    mock_game = MagicMock()
+    mock_game.current_round = game_round
+
     # Execute
-    bot.take_turn(game_round)
+    bot.take_turn(mock_game)
 
     # Verify
     game_round.deck.draw.assert_called_once()
@@ -105,8 +113,12 @@ def test_take_turn_draw_from_pile(bot, game_round, mock_interface):
     bot.choose_draw_source = MagicMock(return_value="p")
     bot.choose_card_to_replace = MagicMock(return_value=0)
 
+    # Mock Game
+    mock_game = MagicMock()
+    mock_game.current_round = game_round
+
     # Execute
-    bot.take_turn(game_round)
+    bot.take_turn(mock_game)
 
     # Verify
     game_round.discard_pile.draw.assert_called_once()

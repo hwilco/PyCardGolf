@@ -332,7 +332,11 @@ class TestDisplay:
     def test_display_state(self, captured_cli, mock_round):
         """Test display_state method covers the game state display."""
         cli, output = captured_cli
-        cli.display_state(mock_round)
+        mock_game = Mock()
+        mock_game.current_round = mock_round
+        mock_game.players = mock_round.players
+
+        cli.display_state(mock_game)
 
         result = output.getvalue()
         assert "5" in result  # Turn count

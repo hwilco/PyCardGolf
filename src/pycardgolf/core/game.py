@@ -18,6 +18,7 @@ class Game:
         self.interface: GameInterface = interface
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
+        self.current_round: Round | None = None
 
     def start(self) -> None:
         """Start the game loop."""
@@ -26,20 +27,20 @@ class Game:
             self.interface.notify(
                 f"--- Starting Round {self.current_round_num} ---",
             )
-            game_round = Round(self.players, self.interface)
-            round_scores = game_round.play()
+            self.current_round = Round(self, self.players, self.interface)
+            round_scores = self.current_round.play()
 
             # Update total scores
             for player, score in round_scores.items():
                 player.score += score
 
+            self.interface.notify("\nCurrent Scores:")
             self.display_scores()
 
         self.declare_winner()
 
     def display_scores(self) -> None:
         """Display current scores for all players."""
-        self.interface.notify("\nCurrent Scores:")
         for player in self.players:
             self.interface.notify(f"{player.name}: {player.score}")
 
