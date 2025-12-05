@@ -42,8 +42,9 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
   - Files: `src/pycardgolf/players/bots/random_bot.py`
   - **COMPLETED**: Added bot action logging to CLI interface
 
-- [ ] **11. No final hand display after each round**: Players don't know what their final hand looks like after each round.
+- [x] **11. No final hand display after each round**: Players don't know what their final hand looks like after each round.
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/core/round.py`
+  - **COMPLETED**: Added final hand display after each round
 
 ## Input & Interaction Issues
 
