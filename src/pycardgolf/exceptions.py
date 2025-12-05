@@ -10,3 +10,7 @@ class PyCardGolfError(Exception):
 
 class GameConfigError(PyCardGolfError):
     """Raised when game configuration is invalid."""
+
+
+class CardStateError(PyCardGolfError):
+    """Raised when a card is in an invalid state for the operation."""

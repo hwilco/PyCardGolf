@@ -37,8 +37,8 @@ def test_init(standard_hand):
 def test_get_column_valid(standard_hand, col_index, expected_ranks):
     """Test getting a valid column."""
     top, bottom = standard_hand.get_column(col_index)
-    assert top.rank == expected_ranks[0]
-    assert bottom.rank == expected_ranks[1]
+    assert top._Card__rank == expected_ranks[0]
+    assert bottom._Card__rank == expected_ranks[1]
 
 
 @pytest.mark.parametrize("col_index", [-1, 3, 10])
@@ -62,8 +62,8 @@ def test_replace_valid(standard_hand):
     new_card = Card(Rank.KING, Suit.HEARTS, "red")
     old_card = standard_hand.replace(0, new_card)
 
-    assert old_card.rank == Rank.ACE
-    assert standard_hand[0].rank == Rank.KING
+    assert old_card._Card__rank == Rank.ACE
+    assert standard_hand[0]._Card__rank == Rank.KING
     assert standard_hand[0] == new_card
 
 
@@ -100,8 +100,8 @@ def test_reveal_all(standard_hand):
 
 def test_getitem(standard_hand):
     """Test accessing cards by index."""
-    assert standard_hand[0].rank == Rank.ACE
-    assert standard_hand[5].rank == Rank.SIX
+    assert standard_hand[0]._Card__rank == Rank.ACE
+    assert standard_hand[5]._Card__rank == Rank.SIX
 
 
 def test_getitem_slice(standard_hand):
@@ -110,21 +110,21 @@ def test_getitem_slice(standard_hand):
     first_three = standard_hand[0:3]
     assert isinstance(first_three, list)
     assert len(first_three) == 3
-    assert first_three[0].rank == Rank.ACE
-    assert first_three[1].rank == Rank.TWO
-    assert first_three[2].rank == Rank.THREE
+    assert first_three[0]._Card__rank == Rank.ACE
+    assert first_three[1]._Card__rank == Rank.TWO
+    assert first_three[2]._Card__rank == Rank.THREE
 
     # Test slicing with step
     every_other = standard_hand[::2]
     assert len(every_other) == 3
-    assert every_other[0].rank == Rank.ACE
-    assert every_other[1].rank == Rank.THREE
-    assert every_other[2].rank == Rank.FIVE
+    assert every_other[0]._Card__rank == Rank.ACE
+    assert every_other[1]._Card__rank == Rank.THREE
+    assert every_other[2]._Card__rank == Rank.FIVE
 
 
 def test_iter(standard_hand):
     """Test iterating over the hand."""
     cards = list(standard_hand)
     assert len(cards) == 6
-    assert cards[0].rank == Rank.ACE
-    assert cards[5].rank == Rank.SIX
+    assert cards[0]._Card__rank == Rank.ACE
+    assert cards[5]._Card__rank == Rank.SIX

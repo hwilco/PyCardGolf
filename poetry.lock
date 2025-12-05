@@ -13,6 +13,21 @@ files = [
 ]
 
 [[package]]
+name = "color-contrast"
+version = "0.1.1"
+description = "Python library to calculate and modulate color contrasts according to WCAG2.1"
+optional = false
+python-versions = "<4.0,>=3.10"
+groups = ["main"]
+files = [
+    {file = "color_contrast-0.1.1-py3-none-any.whl", hash = "sha256:9a8f379e29a813ebcca0196bb8a90ce46fec63615ce68a534b2d6719afb4099d"},
+    {file = "color_contrast-0.1.1.tar.gz", hash = "sha256:168d823434293a3e625a239ae03cfbc7371de695c873979d85df24e776c204cf"},
+]
+
+[package.dependencies]
+colour = ">=0.1.5,<0.2.0"
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -24,6 +39,21 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
+
+[[package]]
+name = "colour"
+version = "0.1.5"
+description = "converts and manipulates various color representation (HSL, RVB, web, X11, ...)"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "colour-0.1.5-py2.py3-none-any.whl", hash = "sha256:33f6db9d564fadc16e59921a56999b79571160ce09916303d35346dddc17978c"},
+    {file = "colour-0.1.5.tar.gz", hash = "sha256:af20120fefd2afede8b001fbef2ea9da70ad7d49fafdb6489025dae8745c3aee"},
+]
+
+[package.extras]
+test = ["nose"]
 
 [[package]]
 name = "coverage"
@@ -558,4 +588,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "f35379035f212840fb20078a760998cc94190010765f43f30123fba9458e401a"
+content-hash = "7db679b5aaed0fa04c175827fc9dc25bb90d8b6afb1972f03dc485e408d26511"

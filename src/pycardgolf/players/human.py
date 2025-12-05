@@ -3,7 +3,6 @@
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameInterface
-from pycardgolf.utils.constants import HAND_SIZE
 
 
 class HumanPlayer(Player):
@@ -19,103 +18,56 @@ class HumanPlayer(Player):
         self.interface.display_state(game_round)
         self.interface.notify(f"It's {self.name}'s turn.")
 
-        while True:
-            discard_card = game_round.discard_pile.peek()
-            action = self.interface.get_input(
-                f"Draw from (d)eck or (p)ile [{discard_card}]? (d/p) ",
-            ).lower()
-            if action in ["d", "p"]:
-                break
-            self.interface.notify("Invalid input. Please enter 'd' or 'p'.")
+        deck_card = game_round.deck.peek()
+        discard_card = game_round.discard_pile.peek()
+        action = self.interface.get_draw_choice(deck_card, discard_card)
 
         if action == "d":
             drawn_card = game_round.deck.draw()
             drawn_card.face_up = True
-            self.interface.notify(f"You drew: {drawn_card}")
+            self.interface.display_drawn_card(self.name, drawn_card)
 
-            while True:
-                choice = self.interface.get_input(
-                    "Action: (k)eep or (d)iscard? (k/d) ",
-                ).lower()
-                if choice in ["k", "d"]:
-                    break
-                self.interface.notify(
-                    "Invalid input. Please enter 'k' or 'd'.",
-                )
+            choice = self.interface.get_keep_or_discard_choice()
 
             if choice == "k":
                 idx = self._choose_index_to_replace()
                 old_card = self.hand.replace(idx, drawn_card)
                 old_card.face_up = True
                 game_round.discard_pile.add_card(old_card)
-                self.interface.notify(
-                    f"Replaced card at position {idx + 1} with {drawn_card}. "
-                    f"Discarded {old_card}.",
+                self.interface.display_replace_action(
+                    self.name, idx, drawn_card, old_card
                 )
             else:
                 game_round.discard_pile.add_card(drawn_card)
                 # If discarded, you can optionally flip a card.
-                while True:
-                    flip_choice = self.interface.get_input(
-                        "Flip a card? (y/n) ",
-                    ).lower()
-                    if flip_choice in ["y", "n"]:
-                        break
-                    self.interface.notify(
-                        "Invalid input. Please enter 'y' or 'n'.",
-                    )
+                flip_choice = self.interface.get_flip_choice()
                 if flip_choice == "y":
                     self._flip_card()
 
         else:  # action == 'p'
             drawn_card = game_round.discard_pile.draw()
-            self.interface.notify(
-                f"You drew {drawn_card} from the discard pile. "
-                "You must replace one of your cards with it.",
-            )
+            self.interface.display_discard_draw(self.name, drawn_card)
             idx = self._choose_index_to_replace()
             old_card = self.hand.replace(idx, drawn_card)
             old_card.face_up = True
             game_round.discard_pile.add_card(old_card)
-            self.interface.notify(
-                f"Replaced card at position {idx + 1} with {drawn_card}. "
-                f"Discarded {old_card}.",
-            )
+            self.interface.display_replace_action(self.name, idx, drawn_card, old_card)
 
     def _choose_index_to_replace(self) -> int:
         """Prompt user to choose a card position to replace.
 
         Returns 0-indexed position for internal use.
         """
-        while True:
-            try:
-                idx = int(
-                    self.interface.get_input("Which card to replace (1-6)? "),
-                )
-                if 1 <= idx <= HAND_SIZE:
-                    return idx - 1  # Convert to 0-indexed
-                self.interface.notify("Invalid index. Please enter 1-6.")
-            except ValueError:
-                self.interface.notify("Invalid input. Please enter a number.")
+        return self.interface.get_index_to_replace()
 
     def _flip_card(self) -> None:
         """Prompt user to choose a card to flip."""
         while True:
-            try:
-                idx = int(
-                    self.interface.get_input("Which card to flip (1-6)? "),
+            idx_internal = self.interface.get_index_to_flip()
+            if not self.hand[idx_internal].face_up:
+                self.hand.flip_card(idx_internal)
+                self.interface.display_flip_action(
+                    self.name, idx_internal, self.hand[idx_internal]
                 )
-                if 1 <= idx <= HAND_SIZE:
-                    idx_internal = idx - 1  # Convert to 0-indexed
-                    if not self.hand[idx_internal].face_up:
-                        self.hand.flip_card(idx_internal)
-                        self.interface.notify(
-                            f"Flipped card at position {idx}: "
-                            f"{self.hand[idx_internal]}",
-                        )
-                        break
-                    self.interface.notify("Card is already face up.")
-                else:
-                    self.interface.notify("Invalid index. Please enter 1-6.")
-            except ValueError:
-                self.interface.notify("Invalid input. Please enter a number.")
+                break
+            self.interface.notify("Card is already face up.")

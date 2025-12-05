@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import sys
+from typing import ClassVar
 
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
@@ -15,7 +16,7 @@ class CardStack:
     def __init__(
         self,
         cards: list[Card] | None = None,
-        seed: int | None = None,
+        seed: int = random.randrange(sys.maxsize),
     ) -> None:
         """Construct a CardStack object.
 
@@ -25,7 +26,7 @@ class CardStack:
 
         """
         self._cards: list[Card] = [] if cards is None else cards
-        self.seed: int = random.randrange(sys.maxsize) if seed is None else seed
+        self.seed: int = seed
         self.rand: random.Random = random.Random(self.seed)
 
     @property
@@ -57,20 +58,20 @@ class CardStack:
         if shuffle:
             self.shuffle()
 
-    def peek_color(self) -> str:
-        """Find the color of the top card on the pile.
+    def peek(self) -> Card:
+        """Peek at the top card of the card stack without removing it.
 
         Returns:
-            The color of the top card on the pile.
+            The top card of the card stack.
 
         Raises:
             IndexError: If the card stack is empty.
 
         """
         if len(self._cards) == 0:
-            msg = "No cards left in stack"
+            msg = "No cards in card stack"
             raise IndexError(msg)
-        return self._cards[-1].color
+        return self._cards[-1]
 
     def draw(self) -> Card:
         """Draw the top card from the card stack.
@@ -118,16 +119,34 @@ class CardStack:
 class Deck(CardStack):
     """A class to represent a deck of cards."""
 
-    def __init__(self, color: str, seed: int | None = None) -> None:
+    _DEFAULT_SUIT_COLORS: ClassVar[dict[Suit, str]] = {
+        Suit.CLUBS: "black",
+        Suit.DIAMONDS: "red",
+        Suit.HEARTS: "red",
+        Suit.SPADES: "black",
+    }
+
+    def __init__(
+        self,
+        back_color: str,
+        suit_colors: dict[Suit, str] | None = None,
+        seed: int = random.randrange(sys.maxsize),
+    ) -> None:
         """Construct a Deck object of 52 ordered cards.
 
         Args:
-            color: Color of cards in this deck. Converted to lowercase.
+            back_color: Color of the back of cards in this deck. Converted to lowercase.
+            suit_colors (optional): Dictionary of suit colors. Defaults to
+                Deck._DEFAULT_SUIT_COLORS. Any Suits not provided will use the default
+                color.
             seed (optional): Seed for the random number generator.
 
         """
         super().__init__(seed=seed)
-        self.color: str = color.lower()
+        self.back_color: str = back_color.lower()
+        self.suit_colors: dict[Suit, str] = self._DEFAULT_SUIT_COLORS.copy()
+        if suit_colors:
+            self.suit_colors.update(suit_colors)
         self.reset()
 
     def add_card_stack(
@@ -154,8 +173,11 @@ class Deck(CardStack):
                 deck's color or already exist in the deck.
 
         """
-        if any(c.color != self.color for c in other._cards):
-            msg = f"Card to be added does not match the deck's color ({self.color})"
+        if any(c.back_color != self.back_color for c in other._cards):
+            msg = (
+                "Card to be added does not match the deck's back color"
+                f" ({self.back_color})"
+            )
             raise ValueError(msg)
         if any(c in self._cards for c in other._cards):
             msg = "Card to be added is a duplicate of a card in the deck"
@@ -164,19 +186,39 @@ class Deck(CardStack):
 
     def reset(self) -> None:
         """Reset the deck to the full 52 card state."""
-        self._cards = [Card(rank, suit, self.color) for rank in Rank for suit in Suit]
+        self._cards = [
+            Card(rank, suit, self.back_color, self.suit_colors[suit])
+            for rank in Rank
+            for suit in Suit
+        ]
 
     def __repr__(self) -> str:
         """Return string representation of the Deck."""
-        return f"Deck <color={self.color}, seed={self.seed}, _cards={self._cards}>"
+        return (
+            f"Deck <back_color={self.back_color}, seed={self.seed}, "
+            f"_cards={self._cards}, suit_colors={self.suit_colors}>"
+        )
 
     def __str__(self) -> str:
         """Return human-readable string representation."""
         return "Deck of {} {} card{}".format(
             self.num_cards,
-            self.color,
+            self.back_color,
             "" if self.num_cards == 1 else "s",
         )
+
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another Deck."""
+        if not isinstance(other, Deck):
+            return NotImplemented
+        return (
+            self.back_color == other.back_color
+            and self.seed == other.seed
+            and self._cards == other._cards
+            and self.suit_colors == other.suit_colors
+        )
+
+    __hash__ = None
 
 
 class DiscardStack(CardStack):
@@ -195,21 +237,6 @@ class DiscardStack(CardStack):
 
         """
         self._cards.append(new_card)
-
-    def peek(self) -> Card:
-        """Peek at the top card of the discard stack without removing it.
-
-        Returns:
-            The top card of the discard stack.
-
-        Raises:
-            IndexError: If the discard stack is empty.
-
-        """
-        if len(self._cards) == 0:
-            msg = "No cards in discard stack"
-            raise IndexError(msg)
-        return self._cards[-1]
 
     def __repr__(self) -> str:
         """Return string representation of the DiscardStack."""

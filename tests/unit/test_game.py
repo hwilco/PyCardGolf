@@ -96,8 +96,11 @@ def test_declare_winner(mock_interface, mocker):
     game.declare_winner()
 
     assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
+    assert mocker.call("Final Standings:") in mock_interface.notify.call_args_list
+    assert mocker.call("1. P2: 5") in mock_interface.notify.call_args_list
+    assert mocker.call("2. P1: 10") in mock_interface.notify.call_args_list
     assert (
-        mocker.call("Winner: P2 with score 5") in mock_interface.notify.call_args_list
+        mocker.call("\nWinner: P2 with score 5") in mock_interface.notify.call_args_list
     )
 
 

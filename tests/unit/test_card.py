@@ -1,5 +1,6 @@
 import pytest
 
+from pycardgolf.exceptions import CardStateError
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
 
@@ -11,7 +12,7 @@ def test_rank_outside_range(rank):
 
 
 def test_rank_enum_members():
-    c = Card(Rank.ACE, Suit.HEARTS, "blue")
+    c = Card(Rank.ACE, Suit.HEARTS, "blue", face_up=True)
     assert c.rank == Rank.ACE
 
 
@@ -22,9 +23,10 @@ def test_invalid_suit():
 
 def test_card_creation():
     c = Card(Rank.ACE, Suit.SPADES, "Red")
-    assert c.rank == Rank.ACE
-    assert c.suit == Suit.SPADES
-    assert c.color == "red"
+    assert c._Card__rank == Rank.ACE
+    assert c._Card__suit == Suit.SPADES
+    assert c.back_color == "red"
+    assert c.face_color == "black"  # Default
     assert not c.face_up
 
 
@@ -35,7 +37,10 @@ def test_card_str():
 
 def test_card_repr():
     c = Card(Rank.ACE, Suit.SPADES, "Red", face_up=True)
-    assert repr(c) == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)"
+    assert (
+        repr(c)
+        == "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', 'black', True)"
+    )
 
 
 def test_card_equality():
@@ -68,7 +73,7 @@ def test_flip():
     ],
 )
 def test_rank_str_property(rank, expected_rank):
-    c = Card(rank, Suit.SPADES, "red")
+    c = Card(rank, Suit.SPADES, "red", face_up=True)
     # Accessing private property for testing via name mangling
     assert c._Card__rank_str == expected_rank
 
@@ -83,7 +88,7 @@ def test_rank_str_property(rank, expected_rank):
     ],
 )
 def test_suit_str_property_outline(suit, expected_symbol):
-    c = Card(Rank.ACE, suit, "red")
+    c = Card(Rank.ACE, suit, "red", face_up=True)
     # Accessing private property for testing via name mangling
     assert c._Card__suit_str == expected_symbol
 
@@ -112,7 +117,7 @@ def test_str_no_outline(suit, expected_symbol):
 
 
 def test_str_face_down():
-    assert str(Card(Rank.ACE, Suit.HEARTS, "red", False)) == "??"
+    assert str(Card(Rank.ACE, Suit.HEARTS, "red", face_up=False)) == "??"
 
 
 @pytest.mark.parametrize(
@@ -123,7 +128,8 @@ def test_str_face_down():
             Suit.SPADES,
             "red",
             False,
-            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, "
+            "'red', 'black', False)",
             id="basic-ace-spades",
         ),
         pytest.param(
@@ -131,7 +137,8 @@ def test_str_face_down():
             Suit.HEARTS,
             "red",
             False,
-            "Card(<Rank.ACE: (1, 'A')>, <Suit.HEARTS: (2, 'H')>, 'red', False)",
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.HEARTS: (2, 'H')>, "
+            "'red', 'black', False)",
             id="different-suit-hearts",
         ),
         pytest.param(
@@ -139,7 +146,8 @@ def test_str_face_down():
             Suit.SPADES,
             "red",
             False,
-            "Card(<Rank.TWO: (2, '2')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            "Card(<Rank.TWO: (2, '2')>, <Suit.SPADES: (3, 'S')>, "
+            "'red', 'black', False)",
             id="different-rank-two",
         ),
         pytest.param(
@@ -147,7 +155,8 @@ def test_str_face_down():
             Suit.SPADES,
             "blue",
             False,
-            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'blue', False)",
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, "
+            "'blue', 'black', False)",
             id="different-color-blue",
         ),
         pytest.param(
@@ -155,7 +164,8 @@ def test_str_face_down():
             Suit.SPADES,
             "Red",
             False,
-            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, "
+            "'red', 'black', False)",
             id="color-lowercase-Red",
         ),
         pytest.param(
@@ -163,7 +173,8 @@ def test_str_face_down():
             Suit.SPADES,
             "RED",
             False,
-            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', False)",
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, "
+            "'red', 'black', False)",
             id="color-lowercase-RED",
         ),
         pytest.param(
@@ -171,13 +182,13 @@ def test_str_face_down():
             Suit.SPADES,
             "red",
             True,
-            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', True)",
+            "Card(<Rank.ACE: (1, 'A')>, <Suit.SPADES: (3, 'S')>, 'red', 'black', True)",
             id="face-up-true",
         ),
     ],
 )
 def test_repr(rank, suit, color, face_up, expected):
-    assert repr(Card(rank, suit, color, face_up)) == expected
+    assert repr(Card(rank, suit, color, face_up=face_up)) == expected
 
 
 def test_property_getters():
@@ -185,13 +196,15 @@ def test_property_getters():
     card = Card(Rank.JACK, Suit.DIAMONDS, "Blue", face_up=True)
     assert card.rank == Rank.JACK
     assert card.suit == Suit.DIAMONDS
-    assert card.color == "blue"  # Should be lowercase
+    assert card.back_color == "blue"  # Should be lowercase
     assert card.face_up is True
 
     card2 = Card(Rank.ACE, Suit.SPADES, "RED", face_up=False)
-    assert card2.rank == Rank.ACE
-    assert card2.suit == Suit.SPADES
-    assert card2.color == "red"  # Should be lowercase
+    with pytest.raises(CardStateError, match="face down"):
+        _ = card2.rank
+    with pytest.raises(CardStateError, match="face down"):
+        _ = card2.suit
+    assert card2.back_color == "red"  # Should be lowercase
     assert card2.face_up is False
 
 
@@ -218,6 +231,7 @@ def test_face_up_setter():
     ],
 )
 def test_eq_with_non_card(other):
-    # Compare with non-Card objects
+    # Test that __eq__ returns NotImplemented for non-Card objects
+    # This allows Python to try reverse comparison or fall back to identity comparison
     card = Card(Rank.THREE, Suit.HEARTS, "red")
-    assert card != other
+    assert card.__eq__(other) is NotImplemented

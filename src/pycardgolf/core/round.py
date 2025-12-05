@@ -19,17 +19,21 @@ class Round:
         self,
         players: list[Player],
         interface: GameInterface,
-        seed: int | None = None,
+        seed: int = random.randrange(sys.maxsize),
     ) -> None:
         """Initialize a round with players."""
         self.players: list[Player] = players
         self.interface: GameInterface = interface
-        self.seed: int = random.randrange(sys.maxsize) if seed is None else seed
-        self.deck: Deck = Deck(color="blue", seed=self.seed)  # Default color
+        self.seed: int = seed
+
+        deck_color = "blue"
+        self.interface.validate_color(deck_color)
+        self.deck: Deck = Deck(back_color=deck_color, seed=self.seed)
         self.discard_pile: DiscardStack = DiscardStack(seed=self.seed)
         self.current_player_idx: int = 0
         self.round_over: bool = False
         self.last_turn_player_idx: int | None = None
+        self.turn_count: int = 1
 
         cards_needed_for_hands = len(self.players) * HAND_SIZE
         if (
@@ -66,7 +70,7 @@ class Round:
 
         Returns:
             dict[Player, int]: A dictionary mapping players to their scores for this
-            round.
+                round.
 
         """
         self.setup()
@@ -95,6 +99,8 @@ class Round:
         self.current_player_idx = (self.current_player_idx + 1) % len(
             self.players,
         )
+        if self.current_player_idx == 0:
+            self.turn_count += 1
 
         if (
             self.last_turn_player_idx is not None

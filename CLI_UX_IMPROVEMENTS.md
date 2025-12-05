@@ -16,11 +16,13 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
   - Files: `src/pycardgolf/interfaces/cli.py`
   - **COMPLETED**: Updated hand display to use a boxed layout with indices aligned above the first row and below the second row.
 
-- [ ] **4. No turn counter**: Players don't know how many turns have passed.
+- [x] **4. No turn counter**: Players don't know how many turns have passed.
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/core/round.py`
+  - **COMPLETED**: Added turn counter to CLI interface
 
-- [ ] **5. Unclear face down cards**: Face down cards show as "??" - should include color to indicate which deck they came from.
+- [x] **5. Unclear face down cards**: Face down cards show as "??" - should include color to indicate which deck they came from.
   - Files: `src/pycardgolf/utils/card.py`
+  - **COMPLETED**: Added color to face down cards
 
 ## Information & Feedback Gaps
 
@@ -28,15 +30,17 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
   - Files: `src/pycardgolf/main.py`, `src/pycardgolf/interfaces/cli.py`
   - **COMPLETED**: Added "How to Play" section to README and `--rules` CLI flag
 
-- [ ] **7. Missing deck cards remaining**: Players can't see how many cards are left in the deck, which is strategic information.
+- [x] **7. Missing deck cards remaining**: Players can't see how many cards are left in the deck, which is strategic information.
   - Files: `src/pycardgolf/interfaces/cli.py`
+  - **COMPLETED**: Added deck cards remaining display to CLI interface
 
 - [x] **8. No notification when someone triggers end game**: When a player gets all cards face up (triggering the final round), other players aren't not ified that this is everyone's last turn.
   - Files: `src/pycardgolf/core/round.py` (lines 72-76)
   - **COMPLETED**: Added notification when end game condition is triggered
 
-- [ ] **10. Bot actions are invisible**: When the bot takes its turn, there's no indication of what action it took, making the game feel empty and less engaging.
+- [x] **10. Bot actions are invisible**: When the bot takes its turn, there's no indication of what action it took, making the game feel empty and less engaging.
   - Files: `src/pycardgolf/players/bots/random_bot.py`
+  - **COMPLETED**: Added bot action logging to CLI interface
 
 - [ ] **11. No final hand display after each round**: Players don't know what their final hand looks like after each round.
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/core/round.py`
@@ -51,14 +55,16 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
 
 ## Polish & Quality of Life
 
-- [ ] **15. No color coding**: Even though cards have suit symbols, there's no color differentiation for red/black suits which is traditional.
+- [x] **15. No color coding**: Even though cards have suit symbols, there's no color differentiation for red/black suits which is traditional.
   - Files: `src/pycardgolf/utils/card.py`
+  - **COMPLETED**: Added color coding for all card displays (face up and face down)
 
 - [ ] **16. No animation or delays**: Everything happens instantly, making it hard to follow bot actions or state changes.
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/players/bots/random_bot.py`
 
-- [ ] **17. Winner announcement could be more informative**: Just says "Winner: X with score Y" - should show final standings for all players.
+- [x] **17. Winner announcement could be more informative**: Just says "Winner: X with score Y" - should show final standings for all players.
   - Files: `src/pycardgolf/core/game.py` (lines 54-60)
+  - **COMPLETED**: Added final standings to winner announcement
 
 - [ ] **18. No game statistics**: At the end, no summary of best round, worst round, average score per round, etc.
   - Files: `src/pycardgolf/core/game.py`

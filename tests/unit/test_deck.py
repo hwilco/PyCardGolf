@@ -60,10 +60,10 @@ def test_peek_color():
         Card(Rank.THREE, Suit.CLUBS, "blue"),
     ]
     card_stack = CardStack(cards=cards.copy())
-    assert card_stack.peek_color() == cards[-1].color
+    assert card_stack.peek().back_color == cards[-1].back_color
     assert card_stack._cards[-1] == cards[-1]
     card_stack.draw()
-    assert card_stack.peek_color() == cards[-2].color
+    assert card_stack.peek().back_color == cards[-2].back_color
     assert card_stack._cards[-1] == cards[-2]
 
 
@@ -152,12 +152,15 @@ def test_repr_stack(cards_5):
 
 @pytest.fixture
 def red_deck():
-    return Deck(color="red", seed=1)
+    return Deck(back_color="red", seed=1)
 
 
 def test_cards(red_deck):
     assert all(
-        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
+        Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
+        in red_deck._cards
+        for rank in Rank
+        for suit in Suit
     )
 
 
@@ -166,7 +169,10 @@ def test_reset(red_deck):
     red_deck.reset()
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
+        Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
+        in red_deck._cards
+        for rank in Rank
+        for suit in Suit
     )
 
 
@@ -177,7 +183,10 @@ def test_add_card_stack_valid(red_deck):
     red_deck.add_card_stack(other_card_stack)
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
+        Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
+        in red_deck._cards
+        for rank in Rank
+        for suit in Suit
     )
     assert other_card_stack.num_cards == 0
 
@@ -200,7 +209,7 @@ def test_add_card_stack_wrong_color(red_deck):
     )
     with pytest.raises(
         ValueError,
-        match="Card to be added does not match the deck's color",
+        match="Card to be added does not match the deck's back color",
     ):
         red_deck.add_card_stack(other_card_stack)
     assert other_card_stack.num_cards == 1
@@ -213,7 +222,10 @@ def test_add_card_stack_no_clear_deck(red_deck):
     red_deck.add_card_stack(other_card_stack, clear_other=False)
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
+        Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
+        in red_deck._cards
+        for rank in Rank
+        for suit in Suit
     )
     assert other_card_stack._cards == other_cards
 
@@ -227,22 +239,29 @@ def test_add_card_stack_shuffle_deck(red_deck, mocker):
     red_deck.rand.shuffle.assert_called_once()
     # Re-run test_cards logic
     assert all(
-        Card(rank, suit, "red") in red_deck._cards for rank in Rank for suit in Suit
+        Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
+        in red_deck._cards
+        for rank in Rank
+        for suit in Suit
     )
     assert other_card_stack.num_cards == 0
 
 
 def test_eq_deck():
-    deck_a = Deck("blue", 1)
-    deck_b = Deck("blue", 1)
+    deck_a = Deck("blue", seed=1)
+    deck_b = Deck("blue", seed=1)
     assert deck_a == deck_b
 
     deck_a.shuffle()
     assert deck_a != deck_b
 
-    deck_c = Deck("blue", 1)
-    deck_d = Deck("red", 1)
+    deck_c = Deck("blue", seed=1)
+    deck_d = Deck("red", seed=1)
     assert deck_c != deck_d
+
+    # Test that comparing a Deck with a CardStack returns NotImplemented
+    stack_a = CardStack(seed=1)
+    assert deck_a.__eq__(stack_a) is NotImplemented
 
 
 def test_str_deck(red_deck):
@@ -255,14 +274,18 @@ def test_str_deck(red_deck):
 
 def test_repr_deck(red_deck):
     red_deck.clear()
-    assert repr(red_deck) == "Deck <color=red, seed=1, _cards=[]>"
+    assert (
+        repr(red_deck) == "Deck <back_color=red, seed=1, _cards=[], suit_colors={"
+        "<Suit.CLUBS: (0, 'C')>: 'black', <Suit.DIAMONDS: (1, 'D')>: 'red', "
+        "<Suit.HEARTS: (2, 'H')>: 'red', <Suit.SPADES: (3, 'S')>: 'black'}>"
+    )
 
 
 def test_peek_color_empty():
     # Test that peek_color raises IndexError on empty stack
     card_stack = CardStack()
-    with pytest.raises(IndexError, match="No cards left in stack"):
-        card_stack.peek_color()
+    with pytest.raises(IndexError, match="No cards in card stack"):
+        card_stack.peek()
 
 
 @pytest.mark.parametrize(
@@ -278,8 +301,9 @@ def test_peek_color_empty():
 )
 def test_eq_stack_with_non_cardstack(other):
     # Test that __eq__ returns NotImplemented for non-CardStack objects
+    # This allows Python to try reverse comparison or fall back to identity comparison
     card_stack = CardStack(seed=1)
-    assert card_stack != other
+    assert card_stack.__eq__(other) is NotImplemented
 
 
 @pytest.mark.parametrize(
@@ -294,19 +318,43 @@ def test_eq_stack_with_non_cardstack(other):
 def test_deck_color_case_conversion(input_color, expected_color):
     # Test that deck color is converted to lowercase
     deck = Deck(input_color, seed=1)
-    assert deck.color == expected_color
+    assert deck.back_color == expected_color
 
 
 def test_deck_initialization():
     # Test that a new deck has exactly 52 cards in expected order
-    deck = Deck("test", seed=1)
+    deck = Deck("red", seed=1)
     assert deck.num_cards == 52
 
     # Verify all 52 unique cards are present
-    expected_cards = [Card(rank, suit, "test") for suit in Suit for rank in Rank]
+    expected_cards = [
+        Card(rank, suit, "red", deck.suit_colors[suit])
+        for suit in Suit
+        for rank in Rank
+    ]
     assert len(deck._cards) == len(expected_cards)
     for card in expected_cards:
         assert card in deck._cards
+
+
+def test_deck_initialization_with_suit_colors():
+    suit_colors = {
+        Suit.CLUBS: "black",
+        Suit.DIAMONDS: "green",
+        Suit.HEARTS: "red",
+        Suit.SPADES: "blue",
+    }
+
+    deck = Deck("red", suit_colors=suit_colors)
+    assert deck.suit_colors == suit_colors
+
+    deck = Deck("red", suit_colors={Suit.CLUBS: "purple"})
+    assert deck.suit_colors == {
+        Suit.CLUBS: "purple",
+        Suit.DIAMONDS: "red",
+        Suit.HEARTS: "red",
+        Suit.SPADES: "black",
+    }
 
 
 # DiscardStack Tests
@@ -358,7 +406,7 @@ def test_discard_peek():
 def test_discard_peek_empty():
     # Test that peek raises IndexError on empty discard stack
     discard = DiscardStack()
-    with pytest.raises(IndexError, match="No cards in discard stack"):
+    with pytest.raises(IndexError, match="No cards in card stack"):
         discard.peek()
 
 

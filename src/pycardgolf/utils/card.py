@@ -1,10 +1,31 @@
 """Module containing the Card class."""
 
-from __future__ import annotations
+import functools
+from collections.abc import Callable
+from typing import ClassVar, Concatenate
 
-from typing import ClassVar
-
+from pycardgolf.exceptions import CardStateError
 from pycardgolf.utils.enums import Rank, Suit
+
+
+def requires_face_up[**P, R](
+    func: Callable[Concatenate["Card", P], R],
+) -> Callable[Concatenate["Card", P], R]:
+    """Check if the Card instance is face_up before executing the method.
+
+    Raises:
+        CardStateError: If the card is face down.
+
+    """
+
+    @functools.wraps(func)
+    def wrapper(self: "Card", *args: P.args, **kwargs: P.kwargs) -> R:
+        if not self.face_up:
+            msg = f"Cannot call '{func.__name__}' on a card that is face down."
+            raise CardStateError(msg)
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Card:
@@ -28,7 +49,8 @@ class Card:
         self,
         rank: Rank,
         suit: Suit,
-        color: str,
+        back_color: str,
+        face_color: str = "black",
         face_up: bool = False,
     ) -> None:
         """Construct a Card object.
@@ -37,9 +59,11 @@ class Card:
             rank: The rank of the card. Must be a member of the Rank enum.
             suit: The suit of the card. Must be a member of the Suit enum.
                 (Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES)
-            color: A string representing the color of the card. Used to
+            back_color: A string representing the color of the card. Used to
                 differentiate cards from different decks. Converted to lower
                 case.
+            face_color (optional): Color of the card face (rank/suit). Converted to
+                lower case. Defaults to black.
             face_up (optional): True if the card is face up (showing its rank
                 and suit), False if it is face down. Defaults to False.
 
@@ -59,23 +83,31 @@ class Card:
                 f"suit: {suit}"
             )
             raise ValueError(msg)
-        self.__color: str = color.lower()
+        self.__back_color: str = back_color.lower()
+        self.__face_color: str = face_color.lower()
         self.__face_up: bool = face_up
 
     @property
+    @requires_face_up
     def rank(self) -> Rank:
         """The rank of the card as a Rank enum."""
         return self.__rank
 
     @property
+    @requires_face_up
     def suit(self) -> Suit:
         """The suit of the card."""
         return self.__suit
 
     @property
-    def color(self) -> str:
-        """A string representing the color of the card."""
-        return self.__color
+    def back_color(self) -> str:
+        """A string representing the color of the back of the card."""
+        return self.__back_color
+
+    @property
+    def face_color(self) -> str:
+        """A string representing the color of the face of the card."""
+        return self.__face_color
 
     @property
     def face_up(self) -> bool:
@@ -96,11 +128,14 @@ class Card:
         """Human-readable representation of the suit of the card."""
         # TODO: handle configuration of suit display (outline or filled)
         if self._outline_suits:
-            return Card.__SUIT_OUTLINE_STR[self.suit]
-        return Card.__SUIT_STR[self.suit]
+            return Card.__SUIT_OUTLINE_STR[self.__suit]
+        return Card.__SUIT_STR[self.__suit]
 
     def __repr__(self) -> str:
-        return f"Card({self.rank!r}, {self.suit!r}, '{self.color}', {self.face_up})"
+        return (
+            f"Card({self.__rank!r}, {self.__suit!r}, '{self.__back_color}', "
+            f"'{self.__face_color}', {self.__face_up})"
+        )
 
     def __str__(self) -> str:
         """Return string representation of the card."""
@@ -113,10 +148,11 @@ class Card:
         if not isinstance(other, Card):
             return NotImplemented
         return (
-            self.rank == other.rank
-            and self.suit == other.suit
-            and self.color == other.color
-            and self.face_up == other.face_up
+            self.__rank == other.__rank
+            and self.__suit == other.__suit
+            and self.__back_color == other.__back_color
+            and self.__face_color == other.__face_color
+            and self.__face_up == other.__face_up
         )
 
     __hash__ = None

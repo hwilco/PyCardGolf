@@ -12,6 +12,7 @@ pycardgolf = "pycardgolf.main:main"
 [tool.poetry.dependencies]
 python = "^3.13"
 rich = "^13.7.0"
+color-contrast = "^0.1.1"
 
 [tool.pyrefly]
 project-includes = [

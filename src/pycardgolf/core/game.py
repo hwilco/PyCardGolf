@@ -52,9 +52,14 @@ class Game:
         return self.get_standings()[0]
 
     def declare_winner(self) -> None:
-        """Notify the interface of the game winner."""
+        """Notify the interface of the game winner and final standings."""
         self.interface.notify("\n--- Game Over ---")
-        winner = self.get_winner()
+        self.interface.notify("Final Standings:")
+        standings = self.get_standings()
+        for i, player in enumerate(standings):
+            self.interface.notify(f"{i + 1}. {player.name}: {player.score}")
+
+        winner = standings[0]
         self.interface.notify(
-            f"Winner: {winner.name} with score {winner.score}",
+            f"\nWinner: {winner.name} with score {winner.score}",
         )
