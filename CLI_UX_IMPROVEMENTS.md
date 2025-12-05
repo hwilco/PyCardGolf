@@ -12,8 +12,9 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/core/game.py`
   - **COMPLETED**: Added visible score display for each player
 
-- [ ] **3. Improve hand display**: The hand display shows cards in 2 rows with indices beneath each row. This could be improved to show the cards in a more compact and intuitive way while still maintaining the 1-indexed position indicators. Perhaps indicators on top of the first row and below the second row, with a deliniation around the actual hand?
+- [x] **3. Improve hand display**: The hand display shows cards in 2 rows with indices beneath each row. This could be improved to show the cards in a more compact and intuitive way while still maintaining the 1-indexed position indicators. Perhaps indicators on top of the first row and below the second row, with a deliniation around the actual hand?
   - Files: `src/pycardgolf/interfaces/cli.py`
+  - **COMPLETED**: Updated hand display to use a boxed layout with indices aligned above the first row and below the second row.
 
 - [ ] **4. No turn counter**: Players don't know how many turns have passed.
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/core/round.py`

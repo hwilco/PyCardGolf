@@ -20,8 +20,9 @@ class HumanPlayer(Player):
         self.interface.notify(f"It's {self.name}'s turn.")
 
         while True:
+            discard_card = game_round.discard_pile.peek()
             action = self.interface.get_input(
-                "Draw from (d)eck or (p)ile? ",
+                f"Draw from (d)eck or (p)ile [{discard_card}]? (d/p) ",
             ).lower()
             if action in ["d", "p"]:
                 break
@@ -34,7 +35,7 @@ class HumanPlayer(Player):
 
             while True:
                 choice = self.interface.get_input(
-                    "Action: (k)eep or (d)iscard? ",
+                    "Action: (k)eep or (d)iscard? (k/d) ",
                 ).lower()
                 if choice in ["k", "d"]:
                     break
