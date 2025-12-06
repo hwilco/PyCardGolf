@@ -70,8 +70,9 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
 - [ ] **18. No game statistics**: At the end, no summary of best round, worst round, average score per round, etc.
   - Files: `src/pycardgolf/core/game.py`
 
-- [ ] **19. Initial card flip is automatic**: Players don't get to choose which 2 cards to flip at the start (comment in code says "TODO: allow player to choose").
+- [x] **19. Initial card flip is automatic**: Players don't get to choose which 2 cards to flip at the start (comment in code says "TODO: allow player to choose").
   - Files: `src/pycardgolf/core/round.py` (lines 47-51)
+  - **COMPLETED**: Added option to choose initial cards to flip
 
 ## Critical Usability Issues
 

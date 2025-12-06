@@ -3,17 +3,40 @@ import pytest
 from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
-from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.interfaces.base import DrawSource, GameInterface
+from pycardgolf.utils.card import Card
 
 
 class MockPlayer(Player):
     def take_turn(self, game_round: Round) -> None:
-        pass
+        _ = game_round
+
+    def choose_initial_card_to_flip(self, game_round: Round) -> int:
+        _ = game_round
+        return 0
+
+    def _choose_draw_source(self, game_round: Round) -> DrawSource:
+        _ = game_round
+        return DrawSource.DECK
+
+    def _should_keep_drawn_card(self, card: Card, game_round: Round) -> bool:
+        _ = card
+        _ = game_round
+        return True
+
+    def _choose_card_to_replace(self, new_card: Card, game_round: Round) -> int:
+        _ = new_card
+        _ = game_round
+        return 0
+
+    def _choose_card_to_flip_after_discard(self, game_round: Round) -> int | None:
+        _ = game_round
+        return None
 
 
 @pytest.fixture
-def mock_player():
-    return MockPlayer("P1")
+def mock_player(mock_interface):
+    return MockPlayer("P1", mock_interface)
 
 
 @pytest.fixture
@@ -42,13 +65,9 @@ def test_game_start(mock_player, mock_interface, mocker):
     assert game.current_round_num == 2
 
     # Check notify calls for round start
-    assert (
-        mocker.call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
-    )
-    assert (
-        mocker.call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
-    )
-    assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
+    mock_interface.display_round_start.assert_any_call(1)
+    mock_interface.display_round_start.assert_any_call(2)
+    mock_interface.display_game_over.assert_called_once()
 
 
 def test_score_accumulation(mock_player, mock_interface, mocker):
@@ -69,63 +88,59 @@ def test_score_accumulation(mock_player, mock_interface, mocker):
     game.start()
 
     # Player should have accumulated score of 5 + 10 - 3 = 12
-    assert mock_player.score == 12
+    assert game.scores[mock_player] == 12
 
 
-def test_display_scores(mock_interface, mocker):
-    p1 = MockPlayer("P1")
-    p1.score = 10
-    p2 = MockPlayer("P2")
-    p2.score = 5
+def test_display_scores(mock_interface):
+    p1 = MockPlayer("P1", mock_interface)
+    p2 = MockPlayer("P2", mock_interface)
 
     game = Game([p1, p2], mock_interface)
+    game.scores[p1] = 10
+    game.scores[p2] = 5
+
     game.display_scores()
 
-    assert mocker.call("P1: 10") in mock_interface.notify.call_args_list
-    assert mocker.call("P2: 5") in mock_interface.notify.call_args_list
+    mock_interface.display_scores.assert_called_once_with({p1: 10, p2: 5})
 
 
-def test_declare_winner(mock_interface, mocker):
-    p1 = MockPlayer("P1")
-    p1.score = 10
-    p2 = MockPlayer("P2")
-    p2.score = 5  # Winner (lowest score)
+def test_declare_winner(mock_interface):
+    p1 = MockPlayer("P1", mock_interface)
+    p2 = MockPlayer("P2", mock_interface)
 
     game = Game([p1, p2], mock_interface)
+    game.scores[p1] = 10
+    game.scores[p2] = 5  # Winner (lowest score)
+
     game.declare_winner()
 
-    assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
-    assert mocker.call("Final Standings:") in mock_interface.notify.call_args_list
-    assert mocker.call("1. P2: 5") in mock_interface.notify.call_args_list
-    assert mocker.call("2. P1: 10") in mock_interface.notify.call_args_list
-    assert (
-        mocker.call("\nWinner: P2 with score 5") in mock_interface.notify.call_args_list
-    )
+    mock_interface.display_game_over.assert_called_once()
+    mock_interface.display_standings.assert_called_once_with([(p2, 5), (p1, 10)])
+    mock_interface.display_winner.assert_called_once_with(p2, 5)
 
 
-def test_get_standings(game):
+def test_get_standings(game, mock_interface):
     p1 = game.players[0]
-    p1.score = 10
-
-    p2 = MockPlayer("P2")
-    p2.score = 5
-
-    p3 = MockPlayer("P3")
-    p3.score = 15
+    p2 = MockPlayer("P2", mock_interface)
+    p3 = MockPlayer("P3", mock_interface)
 
     game.players = [p1, p2, p3]
+    # Initialize scores for new players
+    game.scores[p1] = 10
+    game.scores[p2] = 5
+    game.scores[p3] = 15
 
     standings = game.get_standings()
     assert standings == [p2, p1, p3]
 
 
-def test_get_winner(game):
+def test_get_winner(game, mock_interface):
     p1 = game.players[0]
-    p1.score = 10
-
-    p2 = MockPlayer("P2")
-    p2.score = 5
+    p2 = MockPlayer("P2", mock_interface)
 
     game.players = [p1, p2]
+    # Initialize scores for new players
+    game.scores[p1] = 10
+    game.scores[p2] = 5
 
     assert game.get_winner() == p2

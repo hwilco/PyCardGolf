@@ -1,83 +1,76 @@
 """Module containing the HumanPlayer class."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
-from pycardgolf.exceptions import GameConfigError
-from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.interfaces.base import (
+    ActionChoice,
+    DrawSource,
+    FlipChoice,
+    GameInterface,
+)
 
 if TYPE_CHECKING:
+    from pycardgolf.core.game import Game
     from pycardgolf.core.round import Round
+    from pycardgolf.utils.card import Card
 
 
 class HumanPlayer(Player):
-    """A human player that interacts via the game interface."""
+    """A human player that interacts via the game interface.
+
+    All notifications and prompts should be delegated to the interface. Only
+    the player's internal logic should be implemented here.
+    """
 
     def __init__(self, name: str, interface: GameInterface) -> None:
         """Initialize the human player with a name and interface."""
-        super().__init__(name)
-        self.interface: GameInterface = interface
+        super().__init__(name, interface)
 
     def take_turn(self, game: Game) -> None:
         """Execute the human player's turn."""
-        if game.current_round is None:
-            msg = "Game round is None."
-            raise GameConfigError(msg)
-        game_round: Round = game.current_round
         self.interface.display_state(game)
-        self.interface.notify(f"It's {self.name}'s turn.")
+        super().take_turn(game)
 
-        deck_card = game.current_round.deck.peek()
-        discard_card = game.current_round.discard_pile.peek()
-        action = self.interface.get_draw_choice(deck_card, discard_card)
+    def _choose_draw_source(self, game_round: Round) -> DrawSource:
+        """Decide whether to draw from deck or discard pile."""
+        deck_card = game_round.deck.peek()
+        discard_card = game_round.discard_pile.peek()
+        return self.interface.get_draw_choice(deck_card, discard_card)
 
-        if action == "d":
-            drawn_card = game_round.deck.draw()
-            drawn_card.face_up = True
-            self.interface.display_drawn_card(self.name, drawn_card)
+    def _should_keep_drawn_card(self, card: Card, game_round: Round) -> bool:
+        """Decide whether to keep a card drawn from the deck."""
+        _ = card
+        _ = game_round
+        choice = self.interface.get_keep_or_discard_choice()
+        return choice == ActionChoice.KEEP
 
-            choice = self.interface.get_keep_or_discard_choice()
-
-            if choice == "k":
-                idx = self._choose_index_to_replace()
-                old_card = self.hand.replace(idx, drawn_card)
-                old_card.face_up = True
-                game_round.discard_pile.add_card(old_card)
-                self.interface.display_replace_action(
-                    self.name, idx, drawn_card, old_card
-                )
-            else:
-                game_round.discard_pile.add_card(drawn_card)
-                # If discarded, you can optionally flip a card.
-                flip_choice = self.interface.get_flip_choice()
-                if flip_choice == "y":
-                    self._flip_card()
-
-        else:  # action == 'p'
-            drawn_card = game_round.discard_pile.draw()
-            self.interface.display_discard_draw(self.name, drawn_card)
-            idx = self._choose_index_to_replace()
-            old_card = self.hand.replace(idx, drawn_card)
-            old_card.face_up = True
-            game_round.discard_pile.add_card(old_card)
-            self.interface.display_replace_action(self.name, idx, drawn_card, old_card)
-
-    def _choose_index_to_replace(self) -> int:
-        """Prompt user to choose a card position to replace.
-
-        Returns 0-indexed position for internal use.
-        """
+    def _choose_card_to_replace(self, new_card: Card, game_round: Round) -> int:
+        """Choose which card index (0-based) to replace with the new card."""
+        _ = new_card
+        _ = game_round
         return self.interface.get_index_to_replace()
 
-    def _flip_card(self) -> None:
-        """Prompt user to choose a card to flip."""
+    def _choose_card_to_flip_after_discard(self, game_round: Round) -> int | None:
+        """Choose card index (0-based) to flip after discarding, or None."""
+        _ = game_round
+        choice = self.interface.get_flip_choice()
+        if choice == FlipChoice.YES:
+            return self.interface.get_valid_flip_index(self.hand)
+        return None
+
+    def choose_initial_card_to_flip(self, game_round: Round) -> int:
+        """Select one card to flip at the start of the round."""
+        _ = game_round
+        self.interface.display_hand(self, display_indices=True)
+
         while True:
-            idx_internal = self.interface.get_index_to_flip()
-            if not self.hand[idx_internal].face_up:
-                self.hand.flip_card(idx_internal)
-                self.interface.display_flip_action(
-                    self.name, idx_internal, self.hand[idx_internal]
-                )
-                break
-            self.interface.notify("Card is already face up.")
+            # Note: Round (Engine) handles the overall loop. We just pick one.
+            idx = self.interface.get_index_to_flip()
+
+            if self.hand[idx].face_up:
+                self.interface.display_initial_flip_error_already_selected()
+            else:
+                return idx

@@ -34,6 +34,20 @@ class CardStack:
         """Returns the number of cards in the CardStack."""
         return len(self._cards)
 
+    @property
+    def cards(self) -> list[Card]:
+        """Returns a copy of the cards list to prevent external mutation."""
+        return self._cards.copy()
+
+    def add_card(self, new_card: Card) -> None:
+        """Add a card to the top of the stack.
+
+        Args:
+            new_card: Card to add to the top of the stack.
+
+        """
+        self._cards.append(new_card)
+
     def add_card_stack(
         self,
         other: CardStack,
@@ -149,6 +163,29 @@ class Deck(CardStack):
             self.suit_colors.update(suit_colors)
         self.reset()
 
+    def add_card(self, new_card: Card) -> None:
+        """Add a card to the deck with validation.
+
+        The card must match the deck's color and not already exist in the deck.
+
+        Args:
+            new_card: Card to add.
+
+        Raises:
+            ValueError: If the card does not match the deck's color or is a duplicate.
+
+        """
+        if new_card.back_color != self.back_color:
+            msg = (
+                "Card to be added does not match the deck's back color "
+                f"({self.back_color})"
+            )
+            raise ValueError(msg)
+        if new_card in self._cards:
+            msg = "Card to be added is a duplicate of a card in the deck"
+            raise ValueError(msg)
+        super().add_card(new_card)
+
     def add_card_stack(
         self,
         other: CardStack,
@@ -173,13 +210,13 @@ class Deck(CardStack):
                 deck's color or already exist in the deck.
 
         """
-        if any(c.back_color != self.back_color for c in other._cards):
+        if any(c.back_color != self.back_color for c in other.cards):
             msg = (
                 "Card to be added does not match the deck's back color"
                 f" ({self.back_color})"
             )
             raise ValueError(msg)
-        if any(c in self._cards for c in other._cards):
+        if any(c in self._cards for c in other.cards):
             msg = "Card to be added is a duplicate of a card in the deck"
             raise ValueError(msg)
         super().add_card_stack(other, clear_other, shuffle)
@@ -219,33 +256,3 @@ class Deck(CardStack):
         )
 
     __hash__ = None
-
-
-class DiscardStack(CardStack):
-    """A class to represent a discard pile of cards."""
-
-    @property
-    def cards(self) -> list[Card]:
-        """Returns a copy of the cards list to prevent external mutation."""
-        return self._cards.copy()
-
-    def add_card(self, new_card: Card) -> None:
-        """Add a card to the top of the discard stack.
-
-        Args:
-            new_card: Card to add to the top of the stack.
-
-        """
-        self._cards.append(new_card)
-
-    def __repr__(self) -> str:
-        """Return string representation of the DiscardStack."""
-        return f"DiscardStack(cards={self._cards})"
-
-    def __str__(self) -> str:
-        """Return human-readable string representation."""
-        return "Discard stack of {} card{}{}".format(
-            self.num_cards,
-            "" if self.num_cards == 1 else "s",
-            "" if self.num_cards == 0 else ". Top card: " + str(self.peek()),
-        )

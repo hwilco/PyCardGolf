@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError
-from pycardgolf.utils.constants import HAND_SIZE
-from pycardgolf.utils.deck import Deck, DiscardStack
+from pycardgolf.utils.constants import HAND_SIZE, INITIAL_CARDS_TO_FLIP
+from pycardgolf.utils.deck import CardStack, Deck
 
 if TYPE_CHECKING:
     from pycardgolf.core.game import Game
@@ -37,7 +37,7 @@ class Round:
         deck_color = "blue"
         self.interface.validate_color(deck_color)
         self.deck: Deck = Deck(back_color=deck_color, seed=self.seed)
-        self.discard_pile: DiscardStack = DiscardStack(seed=self.seed)
+        self.discard_pile: CardStack = CardStack(seed=self.seed)
         self.current_player_idx: int = 0
         self.round_over: bool = False
         self.last_turn_player_idx: int | None = None
@@ -62,16 +62,22 @@ class Round:
         for player in self.players:
             cards = [self.deck.draw() for _ in range(HAND_SIZE)]
             player.hand = Hand(cards)
+            # Flip initial cards
+            self.interface.display_initial_flip_prompt(player, INITIAL_CARDS_TO_FLIP)
+            for _ in range(INITIAL_CARDS_TO_FLIP):
+                # 1. Ask Player for choice (Decision)
+                idx = player.choose_initial_card_to_flip(self)
 
-            # Flip 2 cards for each player
-            # Simple approach: flip first two for now (can be random)
-            # TODO: allow player to choose
-            player.hand.flip_card(0)
-            player.hand.flip_card(1)
+                # 2. Round updates State (Mechanics)
+                player.hand[idx].face_up = True
+
+                # 3. Interface updates (Feedback)
+                self.interface.display_flip_action(player, idx, player.hand[idx])
 
         # Start discard pile
-        self.discard_pile.add_card(self.deck.draw())
-        self.discard_pile.peek().face_up = True
+        card = self.deck.draw()
+        card.face_up = True
+        self.discard_pile.add_card(card)
 
     def play(self) -> dict[Player, int]:  # pragma: no cover
         """Execute the game loop for the round.
@@ -92,10 +98,7 @@ class Round:
                 and self.last_turn_player_idx is None
             ):
                 self.last_turn_player_idx = self.current_player_idx
-                self.interface.notify(
-                    f"\n{current_player.name} has revealed all their cards! "
-                    "Everyone gets one final turn.",
-                )
+                self.interface.display_final_turn_notification(current_player)
 
             self.advance_turn()
 
@@ -138,3 +141,6 @@ class Round:
 
         """
         return {player: calculate_score(player.hand) for player in self.players}
+
+    def __repr__(self) -> str:
+        return f"Round(players={self.players}, interface={self.interface})"

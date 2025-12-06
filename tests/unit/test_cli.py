@@ -12,10 +12,10 @@ from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.exceptions import GameConfigError
+from pycardgolf.interfaces.base import ActionChoice, DrawSource, FlipChoice
 from pycardgolf.interfaces.cli import CLIInterface
-from pycardgolf.utils.card import Card
-from pycardgolf.utils.deck import Deck, DiscardStack
-from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.card import Card, Rank, Suit
+from pycardgolf.utils.deck import CardStack, Deck
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ def mock_round(mock_player):
     game_round.deck = deck
 
     # Mock discard pile
-    discard = Mock(spec=DiscardStack)
+    discard = Mock(spec=CardStack)
     discard_card = Card(Rank.FIVE, Suit.CLUBS, "red", face_up=True)
     discard.peek.return_value = discard_card
     game_round.discard_pile = discard
@@ -107,12 +107,6 @@ class TestCardDisplay:
         card_text = cli._get_card_string(sample_face_down_card)
         assert isinstance(card_text, Text)
         assert "??" in str(card_text)
-
-    def test_get_card_string_validates_colors(self, cli):
-        """Test that invalid colors raise GameConfigError."""
-        # Rich is very permissive with colors, making it difficult to trigger
-        # ColorParseError. This is a placeholder for future edge case testing.
-        # Most color strings are automatically handled by Rich's parser.
 
 
 class TestInputValidation:
@@ -196,7 +190,7 @@ class TestGameChoices:
         discard_card = Card(Rank.FIVE, Suit.HEARTS, "red", face_up=True)
 
         result = cli.get_draw_choice(deck_card, discard_card)
-        assert result == "d"
+        assert result == DrawSource.DECK
 
     def test_get_draw_choice_pile(self, cli, mocker):
         """Test choosing to draw from discard pile."""
@@ -205,31 +199,31 @@ class TestGameChoices:
         discard_card = Card(Rank.FIVE, Suit.HEARTS, "red", face_up=True)
 
         result = cli.get_draw_choice(deck_card, discard_card)
-        assert result == "p"
+        assert result == DrawSource.DISCARD
 
     def test_get_keep_or_discard_choice_keep(self, cli, mocker):
         """Test choosing to keep a card."""
         mocker.patch.object(cli.console, "input", return_value="k")
         result = cli.get_keep_or_discard_choice()
-        assert result == "k"
+        assert result == ActionChoice.KEEP
 
     def test_get_keep_or_discard_choice_discard(self, cli, mocker):
         """Test choosing to discard a card."""
         mocker.patch.object(cli.console, "input", return_value="d")
         result = cli.get_keep_or_discard_choice()
-        assert result == "d"
+        assert result == ActionChoice.DISCARD
 
     def test_get_flip_choice_yes(self, cli, mocker):
         """Test choosing to flip a card."""
         mocker.patch.object(cli.console, "input", return_value="y")
         result = cli.get_flip_choice()
-        assert result == "y"
+        assert result == FlipChoice.YES
 
     def test_get_flip_choice_no(self, cli, mocker):
         """Test choosing not to flip a card."""
         mocker.patch.object(cli.console, "input", return_value="n")
         result = cli.get_flip_choice()
-        assert result == "n"
+        assert result == FlipChoice.NO
 
     @pytest.mark.parametrize(
         ("input_value", "expected_index"),
@@ -265,52 +259,52 @@ class TestGameChoices:
 class TestDisplay:
     """Tests for display methods using captured output."""
 
-    def test_display_drawn_card(self, captured_cli, sample_card):
+    def test_display_drawn_card(self, captured_cli, sample_card, mock_player):
         """Test displaying a drawn card."""
         cli, output = captured_cli
-        cli.display_drawn_card("TestPlayer", sample_card)
+        cli.display_drawn_card(mock_player, sample_card)
         assert "TestPlayer drew:" in output.getvalue()
         assert "A♤" in output.getvalue()
 
-    def test_display_discard_draw(self, captured_cli, sample_card):
+    def test_display_discard_draw(self, captured_cli, sample_card, mock_player):
         """Test displaying a discard pile draw."""
         cli, output = captured_cli
-        cli.display_discard_draw("TestPlayer", sample_card)
+        cli.display_discard_draw(mock_player, sample_card)
         assert "TestPlayer drew" in output.getvalue()
         assert "A♤" in output.getvalue()
 
-    def test_display_replace_action(self, captured_cli):
+    def test_display_replace_action(self, captured_cli, mock_player):
         """Test displaying a replace action."""
         cli, output = captured_cli
         new_card = Card(Rank.ACE, Suit.SPADES, "red", face_up=True)
         old_card = Card(Rank.TWO, Suit.HEARTS, "red", face_up=True)
 
-        cli.display_replace_action("TestPlayer", 2, new_card, old_card)
+        cli.display_replace_action(mock_player, 2, new_card, old_card)
 
         result = output.getvalue()
         assert "TestPlayer replaced card" in result
         assert "A♤" in result
         assert "2♡" in result
 
-    def test_display_flip_action(self, captured_cli, sample_card):
+    def test_display_flip_action(self, captured_cli, sample_card, mock_player):
         """Test displaying a flip action."""
         cli, output = captured_cli
-        cli.display_flip_action("TestPlayer", 1, sample_card)
+        cli.display_flip_action(mock_player, 1, sample_card)
 
         result = output.getvalue()
         assert "TestPlayer flipped card" in result
         assert "A♤" in result
 
-    def test_notify(self, captured_cli):
-        """Test notify method."""
+    def test_display_message(self, captured_cli):
+        """Test display_message method."""
         cli, output = captured_cli
-        cli.notify("Test message")
+        cli.display_message("Test message")
         assert "Test message" in output.getvalue()
 
     def test_display_hand_output(self, captured_cli, mock_player):
-        """Test that _display_hand produces output with borders."""
+        """Test that display_hand produces output with borders."""
         cli, output = captured_cli
-        cli._display_hand(mock_player, display_indices=True)
+        cli.display_hand(mock_player, display_indices=True)
 
         result = output.getvalue()
         assert "+" in result
@@ -319,9 +313,9 @@ class TestDisplay:
         assert "1" in result
 
     def test_display_hand_without_indices(self, captured_cli, mock_player):
-        """Test _display_hand without indices."""
+        """Test display_hand without indices."""
         cli, output = captured_cli
-        cli._display_hand(mock_player, display_indices=False)
+        cli.display_hand(mock_player, display_indices=False)
 
         result = output.getvalue()
         assert "+" in result
@@ -349,7 +343,7 @@ class TestDisplay:
 
         # Create mock Round object with discard pile
         game_round = Mock(spec=Round)
-        discard = Mock(spec=DiscardStack)
+        discard = Mock(spec=CardStack)
         discard_card = Card(Rank.QUEEN, Suit.DIAMONDS, "red", face_up=True)
         discard.peek.return_value = discard_card
         game_round.discard_pile = discard

@@ -1,7 +1,7 @@
 import pytest
 
 from pycardgolf.utils.card import Card
-from pycardgolf.utils.deck import CardStack, Deck, DiscardStack
+from pycardgolf.utils.deck import CardStack, Deck
 from pycardgolf.utils.enums import Rank, Suit
 
 
@@ -357,99 +357,35 @@ def test_deck_initialization_with_suit_colors():
     }
 
 
-# DiscardStack Tests
+# Validating add_card on CardStack
 
 
-def test_discard_stack_init(cards_3):
-    # Test empty initialization
-    discard = DiscardStack()
-    assert discard.num_cards == 0
-
-    # Test initialization with cards
-    discard_with_cards = DiscardStack(cards=cards_3.copy())
-    assert discard_with_cards.num_cards == 3
-
-
-def test_discard_add_card():
-    discard = DiscardStack()
+def test_card_stack_add_card():
+    stack = CardStack()
     card1 = Card(Rank.FIVE, Suit.HEARTS, "red")
     card2 = Card(Rank.TEN, Suit.CLUBS, "blue")
 
-    discard.add_card(card1)
-    assert discard.num_cards == 1
+    stack.add_card(card1)
+    assert stack.num_cards == 1
 
-    discard.add_card(card2)
-    assert discard.num_cards == 2
+    stack.add_card(card2)
+    assert stack.num_cards == 2
 
     # Verify cards are added to the top (end of list)
-    assert discard._cards[-1] == card2
-    assert discard._cards[-2] == card1
+    assert stack._cards[-1] == card2
+    assert stack._cards[-2] == card1
 
 
-def test_discard_peek():
-    cards = [
-        Card(Rank.ACE, Suit.SPADES, "red"),
-        Card(Rank.TWO, Suit.HEARTS, "blue"),
-        Card(Rank.THREE, Suit.CLUBS, "green"),
-    ]
-    discard = DiscardStack(cards=cards.copy())
-
-    # Peek should return top card without removing it
-    top_card = discard.peek()
-    assert top_card == cards[-1]
-    assert discard.num_cards == 3  # Card should still be there
-
-    # Peek again should return same card
-    assert discard.peek() == cards[-1]
-
-
-def test_discard_peek_empty():
-    # Test that peek raises IndexError on empty discard stack
-    discard = DiscardStack()
-    with pytest.raises(IndexError, match="No cards in card stack"):
-        discard.peek()
-
-
-def test_discard_cards_property(cards_5):
-    discard = DiscardStack(cards=cards_5.copy())
+def test_card_stack_cards_property(cards_5):
+    stack = CardStack(cards=cards_5.copy())
 
     # Get cards via property
-    cards_copy = discard.cards
+    cards_copy = stack.cards
 
     # Verify it's a copy (not the same object)
     assert cards_copy == cards_5
-    assert cards_copy is not discard._cards
+    assert cards_copy is not stack._cards
 
     # Modifying the returned list shouldn't affect the discard stack
     cards_copy.append(Card(Rank.KING, Suit.SPADES, "red"))
-    assert discard.num_cards == 5  # Should still be 5
-
-
-def test_discard_str():
-    # Test string representation with empty stack
-    discard = DiscardStack()
-    assert str(discard) == "Discard stack of 0 cards"
-
-    # Test with one card
-    card1 = Card(Rank.SEVEN, Suit.DIAMONDS, "red", face_up=True)
-    discard.add_card(card1)
-    assert str(discard) == "Discard stack of 1 card. Top card: 7♢"
-
-    # Test with multiple cards
-    card2 = Card(Rank.KING, Suit.SPADES, "blue", face_up=True)
-    discard.add_card(card2)
-    assert str(discard) == "Discard stack of 2 cards. Top card: K♤"
-
-
-def test_discard_repr():
-    # Test repr with empty stack
-    discard = DiscardStack()
-    assert repr(discard) == "DiscardStack(cards=[])"
-
-    # Test repr with cards
-    cards = [
-        Card(Rank.ACE, Suit.HEARTS, "red"),
-        Card(Rank.FIVE, Suit.CLUBS, "blue"),
-    ]
-    discard_with_cards = DiscardStack(cards=cards.copy())
-    assert repr(discard_with_cards) == f"DiscardStack(cards={cards})"
+    assert stack.num_cards == 5  # Should still be 5

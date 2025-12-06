@@ -47,6 +47,9 @@ class Hand:
         for card in self._cards:
             card.face_up = True
 
+    def __repr__(self) -> str:
+        return f"Hand(cards={self._cards})"
+
     # --- Type Checker Signatures ---
     @overload
     def __getitem__(self, index: int) -> Card: ...  # pragma: no cover
