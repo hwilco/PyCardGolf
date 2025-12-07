@@ -14,8 +14,8 @@ from pycardgolf.utils.deck import CardStack, Deck
 
 if TYPE_CHECKING:
     from pycardgolf.core.game import Game
-    from pycardgolf.core.player import Player
     from pycardgolf.interfaces.base import GameInterface
+    from pycardgolf.players.player import Player
 
 
 class Round:

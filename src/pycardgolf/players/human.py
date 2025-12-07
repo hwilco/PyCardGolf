@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.player import Player
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
     FlipChoice,
     GameInterface,
 )
+from pycardgolf.players.player import Player
 
 if TYPE_CHECKING:
     from pycardgolf.core.game import Game

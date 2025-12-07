@@ -3,10 +3,10 @@
 import random
 import sys
 
-from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import DrawSource, GameInterface
 from pycardgolf.interfaces.null import NullGameInterface
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 

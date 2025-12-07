@@ -3,11 +3,11 @@
 import random
 import sys
 
-from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.players.player import Player
 
 
 class Game:

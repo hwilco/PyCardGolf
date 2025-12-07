@@ -3,11 +3,11 @@
 import pytest
 from rich.console import Console
 
-from pycardgolf.core.player import Player
 from pycardgolf.interfaces.base import ActionChoice, DrawSource, FlipChoice
 from pycardgolf.interfaces.cli import CLIInterface
 from pycardgolf.interfaces.cli_input import CLIInputHandler
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card, Rank, Suit
 
 

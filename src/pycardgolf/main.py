@@ -9,13 +9,13 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 from pycardgolf.core.game import Game
-from pycardgolf.core.player import Player
 from pycardgolf.interfaces.cli import CLIInterface
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
+from pycardgolf.players.player import Player
 
 if TYPE_CHECKING:
-    from pycardgolf.core.player import Player
+    from pycardgolf.players.player import Player
 
 
 def _display_rules() -> None:

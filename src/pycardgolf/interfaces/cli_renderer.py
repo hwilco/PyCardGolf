@@ -10,11 +10,11 @@ from rich.panel import Panel
 from rich.text import Style, Text
 
 from pycardgolf.core.game import Game
-from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.core.scoring import calculate_score, calculate_visible_score
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 

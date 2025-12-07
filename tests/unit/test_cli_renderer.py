@@ -7,11 +7,11 @@ from rich.console import Console
 from rich.text import Text
 
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.deck import CardStack, Deck
 

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 
 from pycardgolf.core.game import Game
-from pycardgolf.core.player import Player
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.interfaces.base import (
     ActionChoice,
@@ -15,6 +14,7 @@ from pycardgolf.interfaces.base import (
 )
 from pycardgolf.interfaces.cli_input import CLIInputHandler
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 

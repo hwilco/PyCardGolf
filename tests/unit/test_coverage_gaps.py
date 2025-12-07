@@ -6,13 +6,13 @@ import pytest
 
 from pycardgolf.core.game import Game
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import DrawSource, FlipChoice
 from pycardgolf.interfaces.null import NullGameInterface
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.deck import Deck
 

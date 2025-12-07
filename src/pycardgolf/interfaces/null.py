@@ -14,8 +14,8 @@ from pycardgolf.interfaces.base import (
 if TYPE_CHECKING:
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
-    from pycardgolf.core.player import Player
     from pycardgolf.core.stats import PlayerStats
+    from pycardgolf.players.player import Player
     from pycardgolf.utils.card import Card
 
 

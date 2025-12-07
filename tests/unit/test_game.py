@@ -1,10 +1,10 @@
 import pytest
 
 from pycardgolf.core.game import Game
-from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import DrawSource, GameInterface
+from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card
 
 
