@@ -33,11 +33,14 @@ class Round:
         self.players: list[Player] = players
         self.interface: GameInterface = interface
         self.seed: int = seed
+        self._rng: random.Random = random.Random(self.seed)
 
         deck_color = "blue"
         self.interface.validate_color(deck_color)
-        self.deck: Deck = Deck(back_color=deck_color, seed=self.seed)
-        self.discard_pile: CardStack = CardStack(seed=self.seed)
+        deck_seed = self._rng.randrange(sys.maxsize)
+        self.deck: Deck = Deck(back_color=deck_color, seed=deck_seed)
+        discard_seed = self._rng.randrange(sys.maxsize)
+        self.discard_pile: CardStack = CardStack(seed=discard_seed)
         self.current_player_idx: int = 0
         self.round_over: bool = False
         self.last_turn_player_idx: int | None = None

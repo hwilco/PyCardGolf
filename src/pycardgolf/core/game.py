@@ -28,6 +28,7 @@ class Game:
         self.current_round_num: int = 0
         self.current_round: Round | None = None
         self.seed: int = seed
+        self._rng: random.Random = random.Random(self.seed)
 
     def start(self) -> None:
         """Start the game loop."""
@@ -35,8 +36,9 @@ class Game:
             for i in range(self.num_rounds):
                 self.current_round_num = i + 1
                 self.interface.display_round_start(self.current_round_num)
+                round_seed = self._rng.randrange(sys.maxsize)
                 self.current_round = Round(
-                    self, self.players, self.interface, seed=self.seed
+                    self, self.players, self.interface, seed=round_seed
                 )
                 round_scores = self.current_round.play()
 
