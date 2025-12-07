@@ -1,11 +1,10 @@
-"""Unit tests for the RandomBot class."""
-
 from unittest.mock import MagicMock
 
 import pytest
 
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import DrawSource
+from pycardgolf.interfaces.null import NullGameInterface
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.constants import HAND_SIZE
@@ -106,3 +105,25 @@ class TestInitialFlip:
 
         choice = bot.choose_initial_card_to_flip(None)
         assert choice == 5
+
+
+def test_init_default_interface():
+    """Test initialization with default interface."""
+    bot = RandomBot("TestBot")
+    assert isinstance(bot.interface, NullGameInterface)
+
+
+def test_choose_initial_card_to_flip_fallback():
+    """Test fallback when no cards are face down (defensive)."""
+    bot = RandomBot("TestBot")
+    # Manually set a hand with all face-up cards
+    cards = [Card(Rank.ACE, Suit.SPADES, "red", face_up=True) for _ in range(6)]
+    bot.hand = MagicMock()
+    # Need to mock __iter__ to return the cards
+    bot.hand.__iter__.side_effect = lambda: iter(cards)
+
+    # Mock game_round (unused in method but required by signature)
+    mock_round = MagicMock(spec=Round)
+
+    # Should return 0 as fallback
+    assert bot.choose_initial_card_to_flip(mock_round) == 0

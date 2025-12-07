@@ -9,28 +9,21 @@ from pycardgolf.utils.card import Card
 
 class MockPlayer(Player):
     def take_turn(self, game_round: Round) -> None:
-        _ = game_round
+        pass
 
     def choose_initial_card_to_flip(self, game_round: Round) -> int:
-        _ = game_round
         return 0
 
     def _choose_draw_source(self, game_round: Round) -> DrawSource:
-        _ = game_round
         return DrawSource.DECK
 
     def _should_keep_drawn_card(self, card: Card, game_round: Round) -> bool:
-        _ = card
-        _ = game_round
         return True
 
     def _choose_card_to_replace(self, new_card: Card, game_round: Round) -> int:
-        _ = new_card
-        _ = game_round
         return 0
 
     def _choose_card_to_flip_after_discard(self, game_round: Round) -> int | None:
-        _ = game_round
         return None
 
 

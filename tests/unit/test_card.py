@@ -5,7 +5,16 @@ from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
 
 
-@pytest.mark.parametrize("rank", [0, 14, -1, 15, 100])
+@pytest.mark.parametrize(
+    "rank",
+    [
+        pytest.param(0, id="zero_rank"),
+        pytest.param(14, id="fourteen_rank"),
+        pytest.param(-1, id="negative_rank"),
+        pytest.param(15, id="fifteen_rank"),
+        pytest.param(100, id="hundred_rank"),
+    ],
+)
 def test_rank_outside_range(rank):
     with pytest.raises(ValueError, match="Card rank must be a member of Rank enum"):
         Card(rank, Suit.HEARTS, "blue")
@@ -64,12 +73,12 @@ def test_flip():
 @pytest.mark.parametrize(
     ("rank", "expected_rank"),
     [
-        (Rank.ACE, "A"),
-        (Rank.TWO, "2"),
-        (Rank.TEN, "10"),
-        (Rank.JACK, "J"),
-        (Rank.QUEEN, "Q"),
-        (Rank.KING, "K"),
+        pytest.param(Rank.ACE, "A", id="ace"),
+        pytest.param(Rank.TWO, "2", id="two"),
+        pytest.param(Rank.TEN, "10", id="ten"),
+        pytest.param(Rank.JACK, "J", id="jack"),
+        pytest.param(Rank.QUEEN, "Q", id="queen"),
+        pytest.param(Rank.KING, "K", id="king"),
     ],
 )
 def test_rank_str_property(rank, expected_rank):
@@ -81,10 +90,10 @@ def test_rank_str_property(rank, expected_rank):
 @pytest.mark.parametrize(
     ("suit", "expected_symbol"),
     [
-        (Suit.CLUBS, "\u2667"),
-        (Suit.DIAMONDS, "\u2662"),
-        (Suit.HEARTS, "\u2661"),
-        (Suit.SPADES, "\u2664"),
+        pytest.param(Suit.CLUBS, "\u2667", id="clubs"),
+        pytest.param(Suit.DIAMONDS, "\u2662", id="diamonds"),
+        pytest.param(Suit.HEARTS, "\u2661", id="hearts"),
+        pytest.param(Suit.SPADES, "\u2664", id="spades"),
     ],
 )
 def test_suit_str_property_outline(suit, expected_symbol):
@@ -96,10 +105,10 @@ def test_suit_str_property_outline(suit, expected_symbol):
 @pytest.mark.parametrize(
     ("suit", "expected_symbol"),
     [
-        (Suit.CLUBS, "\u2663"),
-        (Suit.DIAMONDS, "\u2666"),
-        (Suit.HEARTS, "\u2665"),
-        (Suit.SPADES, "\u2660"),
+        pytest.param(Suit.CLUBS, "\u2663", id="clubs"),
+        pytest.param(Suit.DIAMONDS, "\u2666", id="diamonds"),
+        pytest.param(Suit.HEARTS, "\u2665", id="hearts"),
+        pytest.param(Suit.SPADES, "\u2660", id="spades"),
     ],
 )
 def test_str_no_outline(suit, expected_symbol):

@@ -11,6 +11,7 @@ from rich.text import Text
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
+from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import ActionChoice, DrawSource, FlipChoice
 from pycardgolf.interfaces.cli import CLIInterface
@@ -183,51 +184,56 @@ class TestGameChoices:
         ("6", 5),
     ]
 
-    def test_get_draw_choice_deck(self, cli, mocker):
-        """Test choosing to draw from deck."""
-        mocker.patch.object(cli.console, "input", return_value="d")
+    @pytest.mark.parametrize(
+        ("input_char", "expected_source"),
+        [
+            pytest.param("d", DrawSource.DECK, id="deck"),
+            pytest.param("p", DrawSource.DISCARD, id="discard"),
+        ],
+    )
+    def test_get_draw_choice(self, cli, mocker, input_char, expected_source):
+        """Test choosing draw source."""
+        mocker.patch.object(cli.console, "input", return_value=input_char)
+        # Card arguments are only for display
+        # their values don't affect the logic being tested here
         deck_card = Card(Rank.TWO, Suit.CLUBS, "red")
         discard_card = Card(Rank.FIVE, Suit.HEARTS, "red", face_up=True)
 
         result = cli.get_draw_choice(deck_card, discard_card)
-        assert result == DrawSource.DECK
+        assert result == expected_source
 
-    def test_get_draw_choice_pile(self, cli, mocker):
-        """Test choosing to draw from discard pile."""
-        mocker.patch.object(cli.console, "input", return_value="p")
-        deck_card = Card(Rank.TWO, Suit.CLUBS, "red")
-        discard_card = Card(Rank.FIVE, Suit.HEARTS, "red", face_up=True)
-
-        result = cli.get_draw_choice(deck_card, discard_card)
-        assert result == DrawSource.DISCARD
-
-    def test_get_keep_or_discard_choice_keep(self, cli, mocker):
-        """Test choosing to keep a card."""
-        mocker.patch.object(cli.console, "input", return_value="k")
+    @pytest.mark.parametrize(
+        ("input_char", "expected_choice"),
+        [
+            pytest.param("k", ActionChoice.KEEP, id="keep"),
+            pytest.param("d", ActionChoice.DISCARD, id="discard"),
+        ],
+    )
+    def test_get_keep_or_discard_choice(self, cli, mocker, input_char, expected_choice):
+        """Test choosing to keep or discard."""
+        mocker.patch.object(cli.console, "input", return_value=input_char)
         result = cli.get_keep_or_discard_choice()
-        assert result == ActionChoice.KEEP
+        assert result == expected_choice
 
-    def test_get_keep_or_discard_choice_discard(self, cli, mocker):
-        """Test choosing to discard a card."""
-        mocker.patch.object(cli.console, "input", return_value="d")
-        result = cli.get_keep_or_discard_choice()
-        assert result == ActionChoice.DISCARD
-
-    def test_get_flip_choice_yes(self, cli, mocker):
-        """Test choosing to flip a card."""
-        mocker.patch.object(cli.console, "input", return_value="y")
+    @pytest.mark.parametrize(
+        ("input_char", "expected_choice"),
+        [
+            pytest.param("y", FlipChoice.YES, id="yes"),
+            pytest.param("n", FlipChoice.NO, id="no"),
+        ],
+    )
+    def test_get_flip_choice(self, cli, mocker, input_char, expected_choice):
+        """Test choosing to flip or not."""
+        mocker.patch.object(cli.console, "input", return_value=input_char)
         result = cli.get_flip_choice()
-        assert result == FlipChoice.YES
-
-    def test_get_flip_choice_no(self, cli, mocker):
-        """Test choosing not to flip a card."""
-        mocker.patch.object(cli.console, "input", return_value="n")
-        result = cli.get_flip_choice()
-        assert result == FlipChoice.NO
+        assert result == expected_choice
 
     @pytest.mark.parametrize(
         ("input_value", "expected_index"),
-        INDEX_INPUT_CASES,
+        [
+            pytest.param(pair[0], pair[1], id=f"input_{pair[0]}")
+            for pair in INDEX_INPUT_CASES
+        ],
     )
     def test_get_index_to_replace(self, cli, mocker, input_value, expected_index):
         """Test getting a valid index to replace."""
@@ -247,7 +253,10 @@ class TestGameChoices:
 
     @pytest.mark.parametrize(
         ("input_value", "expected_index"),
-        INDEX_INPUT_CASES,
+        [
+            pytest.param(pair[0], pair[1], id=f"input_{pair[0]}")
+            for pair in INDEX_INPUT_CASES
+        ],
     )
     def test_get_index_to_flip(self, cli, mocker, input_value, expected_index):
         """Test getting a valid index to flip."""
@@ -353,6 +362,34 @@ class TestDisplay:
         result = output.getvalue()
         assert "Discard Pile Top Card:" in result
         assert "Q♢" in result
+
+    def test_display_game_stats(self, cli, mock_player, mocker):
+        """Test display_game_stats method formatting and iteration."""
+        mock_print = mocker.patch.object(cli.console, "print")
+
+        # Create stats and manually set values to verify display logic, not calculation
+        player_stats = PlayerStats(round_scores=[])
+        player_stats.best_score = 42
+        player_stats.worst_score = 99
+        player_stats.average_score = 12.3456  # Test .2f formatting
+        player_stats.total_score = 1000
+        player_stats.round_scores = [1, 99]  # Test list formatting
+
+        stats = {mock_player: player_stats}
+        cli.display_game_stats(stats)
+
+        # Verify header
+        mock_print.assert_any_call("\n[bold]Game Statistics:[/bold]")
+
+        # Verify calls for stats
+        calls = [args[0] for args, _ in mock_print.call_args_list]
+        combined_output = " ".join([str(arg) for arg in calls])
+
+        assert "Best Score: 42" in combined_output
+        assert "Worst Score: 99" in combined_output
+        assert "Average Score: 12.35" in combined_output  # Verified rounding
+        assert "Total Score: 1000" in combined_output
+        assert "Round Scores: 1, 99" in combined_output
 
 
 class TestColorValidation:

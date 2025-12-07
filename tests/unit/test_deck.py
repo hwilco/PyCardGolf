@@ -291,12 +291,12 @@ def test_peek_color_empty():
 @pytest.mark.parametrize(
     "other",
     [
-        "not a card stack",
-        123,
-        None,
-        Card(Rank.ACE, Suit.SPADES, "red"),
-        [],
-        {},
+        pytest.param("not a card stack", id="string"),
+        pytest.param(123, id="int"),
+        pytest.param(None, id="none"),
+        pytest.param(Card(Rank.ACE, Suit.SPADES, "red"), id="card"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
     ],
 )
 def test_eq_stack_with_non_cardstack(other):
@@ -309,10 +309,10 @@ def test_eq_stack_with_non_cardstack(other):
 @pytest.mark.parametrize(
     ("input_color", "expected_color"),
     [
-        ("RED", "red"),
-        ("BlUe", "blue"),
-        ("green", "green"),
-        ("BLUE", "blue"),
+        pytest.param("RED", "red", id="uppercase_red"),
+        pytest.param("BlUe", "blue", id="mixedcase_blue"),
+        pytest.param("green", "green", id="lowercase_green"),
+        pytest.param("BLUE", "blue", id="uppercase_blue"),
     ],
 )
 def test_deck_color_case_conversion(input_color, expected_color):
@@ -389,3 +389,42 @@ def test_card_stack_cards_property(cards_5):
     # Modifying the returned list shouldn't affect the discard stack
     cards_copy.append(Card(Rank.KING, Suit.SPADES, "red"))
     assert stack.num_cards == 5  # Should still be 5
+
+
+def test_add_card_wrong_color():
+    """Test error when adding card with mismatching back color."""
+    deck = Deck(back_color="red")
+    # Remove a card so we can theoretically add one
+    _ = deck.draw()
+
+    blue_card = Card(Rank.ACE, Suit.SPADES, back_color="blue")
+
+    with pytest.raises(ValueError, match="does not match"):
+        deck.add_card(blue_card)
+
+
+def test_add_card_duplicate():
+    """Test error when adding a duplicate card."""
+    deck = Deck(back_color="red")
+    # Peek top card
+    top_card = deck.peek()
+
+    with pytest.raises(ValueError, match="duplicate"):
+        deck.add_card(top_card)
+
+
+def test_add_card_success():
+    """Test successfully adding a valid card to the deck."""
+    deck = Deck(back_color="red")
+    # Draw a card to make space (and have a valid card to add back)
+    card = deck.draw()
+
+    # Verify card is gone
+    assert card not in deck.cards
+
+    # Add it back
+    deck.add_card(card)
+
+    # Verify it's back
+    assert card in deck.cards
+    assert deck.peek() == card

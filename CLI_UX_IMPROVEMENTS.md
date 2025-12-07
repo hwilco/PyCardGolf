@@ -51,8 +51,9 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
 - [ ] **13. No undo or confirmation**: If you accidentally hit the wrong key, there's no way to undo or confirm risky actions. The undo part is a bit tricky as any move that reveals information (flips a card or draws from the deck) cannot be undone.
   - Files: `src/pycardgolf/players/human.py`
 
-- [ ] **14. No option to quit mid-game**: If a player wants to exit early, they have to Ctrl+C which is jarring. Should be an option to end after each round or see the current standings at any point.
+- [x] **14. No option to quit mid-game**: If a player wants to exit early, they have to Ctrl+C which is jarring. Should be an option to end after each round or see the current standings at any point.
   - Files: `src/pycardgolf/core/game.py`, `src/pycardgolf/players/human.py`
+  - **COMPLETED**: Added option to quit mid-game
 
 ## Polish & Quality of Life
 
@@ -60,15 +61,17 @@ This document tracks potential improvements to the PyCardGolf CLI to enhance use
   - Files: `src/pycardgolf/utils/card.py`
   - **COMPLETED**: Added color coding for all card displays (face up and face down)
 
-- [ ] **16. No animation or delays**: Everything happens instantly, making it hard to follow bot actions or state changes.
+- [x] **16. No animation or delays**: Everything happens instantly, making it hard to follow bot actions or state changes.
   - Files: `src/pycardgolf/interfaces/cli.py`, `src/pycardgolf/players/bots/random_bot.py`
+  - **COMPLETED**: Added delays to CLI interface
 
 - [x] **17. Winner announcement could be more informative**: Just says "Winner: X with score Y" - should show final standings for all players.
   - Files: `src/pycardgolf/core/game.py` (lines 54-60)
   - **COMPLETED**: Added final standings to winner announcement
 
-- [ ] **18. No game statistics**: At the end, no summary of best round, worst round, average score per round, etc.
+- [x] **18. No game statistics**: At the end, no summary of best round, worst round, average score per round, etc.
   - Files: `src/pycardgolf/core/game.py`
+  - **COMPLETED**: Added game statistics to CLI interface
 
 - [x] **19. Initial card flip is automatic**: Players don't get to choose which 2 cards to flip at the start (comment in code says "TODO: allow player to choose").
   - Files: `src/pycardgolf/core/round.py` (lines 47-51)

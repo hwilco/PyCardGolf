@@ -6,6 +6,7 @@ import pytest
 
 from pycardgolf.core.game import Game
 from pycardgolf.core.hand import Hand
+from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
@@ -142,3 +143,20 @@ def test_take_turn_discard_pile_draw(player, mock_interface, mock_game):
     assert player.hand[0].face_up is True
     # Verify display
     mock_interface.display_replace_action.assert_called_once()
+
+
+def test_choose_card_to_flip_after_discard_no():
+    """Test choosing NOT to flip a card after discard."""
+    interface = Mock()
+    player = HumanPlayer("TestHuman", interface)
+
+    # Determine behavior: FlipChoice.NO
+    interface.get_flip_choice.return_value = FlipChoice.NO
+
+    mock_round = Mock(spec=Round)
+
+    result = player._choose_card_to_flip_after_discard(mock_round)
+    assert result is None
+
+    # Verify get_valid_flip_index was NOT called
+    interface.get_valid_flip_index.assert_not_called()

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.player import Player
+    from pycardgolf.core.stats import PlayerStats
     from pycardgolf.utils.card import Card
 
 
@@ -68,6 +69,15 @@ class GameInterface(ABC):
     @abstractmethod
     def display_winner(self, winner: Player, score: int) -> None:
         """Display the winner."""
+
+    @abstractmethod
+    def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
+        """Display game statistics.
+
+        Args:
+            stats: A dictionary mapping players to their statistics.
+
+        """
 
     @abstractmethod
     def display_message(self, message: str) -> None:

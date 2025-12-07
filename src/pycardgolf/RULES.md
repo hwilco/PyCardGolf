@@ -76,6 +76,21 @@ Total: 0 + (-2) + 0 = -2 points
 
 After all rounds are complete, the player with the **lowest total score** wins!
 
+
+## Controls & Options
+
+### In-Game Controls
+- **Quit**: Type `q` or `quit` at any prompt to exit the game immediately.
+
+### Animation Speed
+You can adjust the speed of the game (useful for watching bot turns) using the `--delay` flag:
+```bash
+# Run with 1 second delay between actions
+python -m pycardgolf --delay 1.0
+
+When using the `--delay` flag, any keyboard input will skip the delay for that action.
+```
+
 ---
 
 For more information, visit: https://github.com/hwilco/PyCardGolf

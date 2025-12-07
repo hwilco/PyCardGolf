@@ -52,6 +52,12 @@ def main() -> None:
         default=9,
         help="Number of rounds to play",
     )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.0,
+        help="Delay in seconds between actions (for animations)",
+    )
 
     args = parser.parse_args()
 
@@ -60,7 +66,7 @@ def main() -> None:
         _display_rules()
         sys.exit(0)
 
-    interface = CLIInterface()
+    interface = CLIInterface(delay=args.delay)
     players: list[Player] = []
 
     for i in range(args.humans):

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.player import Player
+    from pycardgolf.core.stats import PlayerStats
     from pycardgolf.utils.card import Card
 
 
@@ -48,6 +49,9 @@ class NullGameInterface(GameInterface):
         """Do nothing."""
 
     def display_winner(self, winner: Player, score: int) -> None:
+        """Do nothing."""
+
+    def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
         """Do nothing."""
 
     def display_message(self, message: str) -> None:

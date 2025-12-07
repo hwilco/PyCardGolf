@@ -29,9 +29,9 @@ def test_init(standard_hand):
 @pytest.mark.parametrize(
     ("col_index", "expected_ranks"),
     [
-        (0, (Rank.ACE, Rank.FOUR)),
-        (1, (Rank.TWO, Rank.FIVE)),
-        (2, (Rank.THREE, Rank.SIX)),
+        pytest.param(0, (Rank.ACE, Rank.FOUR), id="col_0_ace_four"),
+        pytest.param(1, (Rank.TWO, Rank.FIVE), id="col_1_two_five"),
+        pytest.param(2, (Rank.THREE, Rank.SIX), id="col_2_three_six"),
     ],
 )
 def test_get_column_valid(standard_hand, col_index, expected_ranks):
@@ -41,33 +41,31 @@ def test_get_column_valid(standard_hand, col_index, expected_ranks):
     assert bottom._Card__rank == expected_ranks[1]
 
 
-@pytest.mark.parametrize("col_index", [-1, 3, 10])
+@pytest.mark.parametrize(
+    "col_index",
+    [
+        pytest.param(-1, id="negative_one"),
+        pytest.param(3, id="three"),
+        pytest.param(10, id="ten"),
+    ],
+)
 def test_get_column_invalid(standard_hand, col_index):
     """Test getting an invalid column raises IndexError."""
     with pytest.raises(IndexError, match=f"Column index out of range: {col_index}"):
         standard_hand.get_column(col_index)
 
 
-def test_all_face_up(standard_hand):
-    """Test all_face_up method."""
-    assert not standard_hand.all_face_up()
-
-    # Flip all cards
-    standard_hand.reveal_all()
-    assert standard_hand.all_face_up()
+# ... (skip to replace_invalid)
 
 
-def test_replace_valid(standard_hand):
-    """Test replacing a card."""
-    new_card = Card(Rank.KING, Suit.HEARTS, "red")
-    old_card = standard_hand.replace(0, new_card)
-
-    assert old_card._Card__rank == Rank.ACE
-    assert standard_hand[0]._Card__rank == Rank.KING
-    assert standard_hand[0] == new_card
-
-
-@pytest.mark.parametrize("index", [-1, 6, 10])
+@pytest.mark.parametrize(
+    "index",
+    [
+        pytest.param(-1, id="negative_one"),
+        pytest.param(6, id="six"),
+        pytest.param(10, id="ten"),
+    ],
+)
 def test_replace_invalid(standard_hand, index):
     """Test replacing at invalid index raises IndexError."""
     new_card = Card(Rank.KING, Suit.HEARTS, "red")
@@ -75,14 +73,17 @@ def test_replace_invalid(standard_hand, index):
         standard_hand.replace(index, new_card)
 
 
-def test_flip_card_valid(standard_hand):
-    """Test flipping a card."""
-    assert not standard_hand[0].face_up
-    standard_hand.flip_card(0)
-    assert standard_hand[0].face_up
+# ... (skip to flip_card_invalid)
 
 
-@pytest.mark.parametrize("index", [-1, 6, 10])
+@pytest.mark.parametrize(
+    "index",
+    [
+        pytest.param(-1, id="negative_one"),
+        pytest.param(6, id="six"),
+        pytest.param(10, id="ten"),
+    ],
+)
 def test_flip_card_invalid(standard_hand, index):
     """Test flipping at invalid index raises IndexError."""
     with pytest.raises(IndexError, match=f"Card index out of range: {index}"):

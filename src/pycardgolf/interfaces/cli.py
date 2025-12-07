@@ -1,5 +1,8 @@
 """Module containing the CLI (command-line interface) implementation."""
 
+import dataclasses
+import sys
+import time
 from collections.abc import Callable
 from typing import ClassVar, TypeVar, cast
 
@@ -9,12 +12,23 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Style, Text
 
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None  # type: ignore[assignment]
+
+try:
+    import select
+except ImportError:
+    select = None  # type: ignore[assignment]
+
 from pycardgolf.core.game import Game
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
 from pycardgolf.core.scoring import calculate_score, calculate_visible_score
-from pycardgolf.exceptions import GameConfigError
+from pycardgolf.core.stats import PlayerStats
+from pycardgolf.exceptions import GameConfigError, GameExitError
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
@@ -35,8 +49,42 @@ class CLIInterface(GameInterface):
     LUMINANCE_THRESHOLD: ClassVar[float] = 0.179
     MAX_OPPONENT_HANDS_TO_DISPLAY: ClassVar[int] = 1
 
-    def __init__(self) -> None:
+    def __init__(self, delay: float = 0.0) -> None:
         self.console: Console = Console()
+        self.delay: float = delay
+
+    def wait_for_enter(self) -> None:
+        """Wait for the configured delay. Key press skips delay."""
+        if self.delay < 0:
+            msg = f"Delay cannot be negative. Got {self.delay}"
+            raise GameConfigError(msg)
+        if self.delay == 0:
+            return
+
+        end_time = time.time() + self.delay
+
+        if msvcrt:
+            # Windows
+            while time.time() < end_time:
+                if msvcrt.kbhit():
+                    msvcrt.getch()
+                    break
+                time.sleep(0.05)
+
+        elif select:
+            # Unix / Linux / macOS
+            while time.time() < end_time:
+                # Check for input availability (non-blocking)
+                dr, _, _ = select.select([sys.stdin], [], [], 0)
+                if dr:
+                    # Input available, read line to consume (assuming Enter pressed)
+                    sys.stdin.readline()
+                    break
+                time.sleep(0.05)
+
+        else:
+            # Fallback
+            time.sleep(self.delay)
 
     def _get_card_string(self, card: Card) -> Text:
         """Get a rich Text object for a card with appropriate coloring."""
@@ -194,6 +242,9 @@ class CLIInterface(GameInterface):
         while True:
             user_input = self.get_input(prompt)
 
+            if user_input.lower() in ("q", "quit"):
+                raise GameExitError
+
             if valid_options:
                 normalized_input = user_input.lower()
                 if normalized_input in valid_options:
@@ -334,6 +385,7 @@ class CLIInterface(GameInterface):
     def display_drawn_card(self, player: Player, card: Card) -> None:
         """Display the card drawn from the deck."""
         self._print_card_message([f"{player.name} drew: ", card])
+        self.wait_for_enter()
 
     def display_discard_draw(self, player: Player, card: Card) -> None:
         """Display the card drawn from the discard pile."""
@@ -344,6 +396,7 @@ class CLIInterface(GameInterface):
                 " from the discard pile. They must replace one of their cards with it.",
             ]
         )
+        self.wait_for_enter()
 
     def display_replace_action(
         self, player: Player, index: int, new_card: Card, old_card: Card
@@ -358,32 +411,38 @@ class CLIInterface(GameInterface):
                 ".",
             ]
         )
+        self.wait_for_enter()
 
     def display_flip_action(self, player: Player, index: int, card: Card) -> None:
         """Display the action of flipping a card in hand."""
         self._print_card_message(
             [f"{player.name} flipped card at position {index + 1}: ", card]
         )
+        self.wait_for_enter()
 
     def display_turn_start(self, player: Player) -> None:
         """Display the start of a player's turn."""
         self.display_message(f"It's {player.name}'s turn.")
+        self.wait_for_enter()
 
     def display_discard_action(self, player: Player, card: Card) -> None:
         """Display the action of discarding a card."""
         self._print_card_message([f"{player.name} discarded ", card, "."])
+        self.wait_for_enter()
 
     def display_round_start(self, round_num: int) -> None:
         """Display the start of a round."""
         self.console.print(
             Panel(f"[bold cyan]--- Starting Round {round_num} ---[/bold cyan]")
         )
+        self.wait_for_enter()
 
     def display_scores(self, scores: dict[Player, int]) -> None:
         """Display scores. scores is a map of player -> score."""
         self.console.print("\n[bold]Current Scores:[/bold]")
         for player, score in scores.items():
             self.console.print(f"{player.name}: {score}")
+        self.wait_for_enter()
 
     def display_game_over(self) -> None:
         """Display game over message."""
@@ -443,3 +502,25 @@ class CLIInterface(GameInterface):
         except ColorParseError as e:
             msg = f"Invalid color '{color}': {e}"
             raise GameConfigError(msg) from e
+
+    def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
+        """Display game statistics.
+
+        Args:
+            stats: A dictionary mapping players to their statistics.
+
+        """
+        self.console.print("\n[bold]Game Statistics:[/bold]")
+        for player, player_stats in stats.items():
+            self.console.print(Panel(f"[bold]{player.name}[/bold]"))
+            for field in dataclasses.fields(player_stats):
+                name = field.name.replace("_", " ").title()
+                value = getattr(player_stats, field.name)
+                if isinstance(value, float):
+                    self.console.print(f"  {name}: {value:.2f}")
+                elif isinstance(value, list):
+                    # For list of scores, join them nicely
+                    value_str = ", ".join(map(str, value))
+                    self.console.print(f"  {name}: {value_str}")
+                else:
+                    self.console.print(f"  {name}: {value}")

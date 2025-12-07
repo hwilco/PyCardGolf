@@ -108,4 +108,5 @@ ignore = [
     "ANN",     # Allow missing type annotations in tests
     "D",       # Allow missing docstrings in tests
     "SLF001",  # Allow private member access in tests
+    "ARG002",  # Allow unused method arguments in tests
 ]

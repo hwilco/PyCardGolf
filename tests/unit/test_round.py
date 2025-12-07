@@ -18,25 +18,18 @@ class MockPlayer(Player):
         return [0].extend([1] * (_num_to_flip - 1))
 
     def choose_initial_card_to_flip(self, _game_round: Round) -> int:
-        _ = _game_round
         return 0
 
     def _choose_draw_source(self, _game_round: Round) -> DrawSource:
-        _ = _game_round
         return DrawSource.DECK
 
     def _should_keep_drawn_card(self, card: Card, game_round: Round) -> bool:
-        _ = card
-        _ = game_round
         return True
 
     def _choose_card_to_replace(self, new_card: Card, game_round: Round) -> int:
-        _ = new_card
-        _ = game_round
         return 0
 
     def _choose_card_to_flip_after_discard(self, game_round: Round) -> int | None:
-        _ = game_round
         return None
 
 
@@ -106,7 +99,14 @@ def test_round_init_too_many_players(num_players, hand_size, deck_cards, mocker)
         Round(mock_game, players, mocker.MagicMock(spec=GameInterface))
 
 
-def test_check_round_end_condition(mocker):
+@pytest.mark.parametrize(
+    ("all_face_up", "expected"),
+    [
+        pytest.param(False, False, id="not_all_face_up"),
+        pytest.param(True, True, id="all_face_up"),
+    ],
+)
+def test_check_round_end_condition(all_face_up, expected, mocker):
     mock_interface = mocker.MagicMock(spec=GameInterface)
     p1 = MockPlayer("P1", mock_interface)
     mock_game = mocker.Mock()
@@ -115,15 +115,11 @@ def test_check_round_end_condition(mocker):
     cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
     p1.hand = Hand(cards)
 
-    # All face down
+    # Set face up status
     for c in p1.hand:
-        c.face_up = False
-    assert not game_round.check_round_end_condition(p1)
+        c.face_up = all_face_up
 
-    # All face up
-    for c in p1.hand:
-        c.face_up = True
-    assert game_round.check_round_end_condition(p1)
+    assert game_round.check_round_end_condition(p1) == expected
 
 
 def test_get_scores_requires_face_up(mocker):
