@@ -84,6 +84,25 @@ def test_choose_card_to_flip_after_discard(bot, game_round):
             assert 0 <= result < HAND_SIZE
 
 
+def test_choose_card_to_flip_after_discard_none_if_no_face_down(bot, game_round):
+    """Test returns None if configured to flip but no face-down cards exist."""
+    # Setup hand with ALL face up cards
+    bot.hand = MagicMock()
+    c1 = MagicMock(face_up=True)
+    c2 = MagicMock(face_up=True)
+    # Mock iteration
+    bot.hand.__iter__.return_value = [c1, c2]
+
+    # Force the random decision to flip to be True
+    # The method calls choice([True, False]) first.
+    # We mock _random to control this.
+    bot._random = MagicMock()
+    bot._random.choice.return_value = True
+
+    result = bot._choose_card_to_flip_after_discard(game_round)
+    assert result is None
+
+
 class TestInitialFlip:
     def test_choose_initial_card_to_flip(self, bot):
         """Test that a valid face-down card index is chosen."""

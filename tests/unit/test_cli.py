@@ -1,37 +1,44 @@
-"""Tests for the CLI interface."""
-
-import io
-from typing import ClassVar
-from unittest.mock import Mock
+"""Tests for the CLI interface coordination."""
 
 import pytest
 from rich.console import Console
-from rich.text import Text
 
-from pycardgolf.core.hand import Hand
 from pycardgolf.core.player import Player
-from pycardgolf.core.round import Round
-from pycardgolf.core.stats import PlayerStats
-from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import ActionChoice, DrawSource, FlipChoice
 from pycardgolf.interfaces.cli import CLIInterface
+from pycardgolf.interfaces.cli_input import CLIInputHandler
+from pycardgolf.interfaces.cli_renderer import CLIRenderer
 from pycardgolf.utils.card import Card, Rank, Suit
-from pycardgolf.utils.deck import CardStack, Deck
 
 
 @pytest.fixture
-def cli():
-    """Create a CLI interface for testing."""
+def mock_console(mocker):
+    """Create a mock console."""
+    return mocker.Mock(spec=Console)
+
+
+@pytest.fixture
+def mock_renderer(mocker):
+    """Create a mock renderer."""
+    return mocker.Mock(spec=CLIRenderer)
+
+
+@pytest.fixture
+def mock_input_handler(mocker):
+    """Create a mock input handler."""
+    return mocker.Mock(spec=CLIInputHandler)
+
+
+@pytest.fixture
+def cli(mock_console, mock_renderer, mock_input_handler, mocker):
+    """Create a CLI interface with mocked components."""
+    mocker.patch("pycardgolf.interfaces.cli.Console", return_value=mock_console)
+    mocker.patch("pycardgolf.interfaces.cli.CLIRenderer", return_value=mock_renderer)
+    mocker.patch(
+        "pycardgolf.interfaces.cli.CLIInputHandler", return_value=mock_input_handler
+    )
+
     return CLIInterface()
-
-
-@pytest.fixture
-def captured_cli():
-    """Create a CLI interface that captures output to a string buffer."""
-    string_io = io.StringIO()
-    cli = CLIInterface()
-    cli.console = Console(file=string_io, force_terminal=True)
-    return cli, string_io
 
 
 @pytest.fixture
@@ -41,148 +48,68 @@ def sample_card():
 
 
 @pytest.fixture
-def sample_face_down_card():
-    """Create a sample face-down card for testing."""
-    return Card(Rank.KING, Suit.HEARTS, "blue", face_up=False)
-
-
-@pytest.fixture
-def sample_hand_cards():
-    """Create a list of cards for a hand."""
-    return [
-        Card(Rank.ACE, Suit.SPADES, "red", face_up=True),
-        Card(Rank.TWO, Suit.HEARTS, "red", face_up=True),
-        Card(Rank.THREE, Suit.CLUBS, "red", face_up=False),
-        Card(Rank.FOUR, Suit.DIAMONDS, "red", face_up=True),
-        Card(Rank.FIVE, Suit.SPADES, "red", face_up=False),
-        Card(Rank.SIX, Suit.HEARTS, "red", face_up=True),
-    ]
-
-
-@pytest.fixture
-def mock_player(sample_hand_cards):
-    """Create a mock player with a hand."""
-    player = Mock(spec=Player)
+def mock_player(mocker):
+    """Create a mock player."""
+    player = mocker.Mock(spec=Player)
     player.name = "TestPlayer"
-    player.hand = Hand(sample_hand_cards)
     return player
 
 
-@pytest.fixture
-def mock_round(mock_player):
-    """Create a fully populated mock round."""
-    game_round = Mock(spec=Round)
-    game_round.turn_count = 5
+class TestCLIInterfaceCoordination:
+    """Tests that CLIInterface delegates correctly to its components."""
 
-    # Mock deck
-    deck = Mock(spec=Deck)
-    deck.num_cards = 40
-    top_deck_card = Card(Rank.KING, Suit.HEARTS, "red", face_up=False)
-    deck.peek.return_value = top_deck_card
-    game_round.deck = deck
-
-    # Mock discard pile
-    discard = Mock(spec=CardStack)
-    discard_card = Card(Rank.FIVE, Suit.CLUBS, "red", face_up=True)
-    discard.peek.return_value = discard_card
-    game_round.discard_pile = discard
-
-    # Mock players
-    game_round.players = [mock_player]
-    game_round.current_player_idx = 0
-
-    return game_round
-
-
-class TestCardDisplay:
-    """Tests for card display functionality."""
-
-    def test_get_card_string_face_up(self, cli, sample_card):
-        """Test that face-up cards are displayed correctly."""
-        card_text = cli._get_card_string(sample_card)
-        assert isinstance(card_text, Text)
-        assert "A♤" in str(card_text)
-
-    def test_get_card_string_face_down(self, cli, sample_face_down_card):
-        """Test that face-down cards show ?? with back color."""
-        card_text = cli._get_card_string(sample_face_down_card)
-        assert isinstance(card_text, Text)
-        assert "??" in str(card_text)
-
-
-class TestInputValidation:
-    """Tests for user input validation."""
-
-    def test_get_valid_input_with_valid_options(self, cli, mocker):
-        """Test that valid options are accepted."""
-        # Mock console.input to return 'd'
-        mocker.patch.object(cli.console, "input", return_value="d")
-
-        result = cli._get_valid_input(
-            "Choose: ", valid_options=["d", "p"], error_msg="Invalid"
+    def test_init(self, mock_console, mocker):
+        """Test initialization creates components."""
+        mock_cons_cls = mocker.patch(
+            "pycardgolf.interfaces.cli.Console", return_value=mock_console
         )
-        assert result == "d"
+        mock_rend_cls = mocker.patch("pycardgolf.interfaces.cli.CLIRenderer")
+        mock_inp_cls = mocker.patch("pycardgolf.interfaces.cli.CLIInputHandler")
 
-    def test_get_valid_input_retries_on_invalid(self, cli, mocker):
-        """Test that invalid input causes retry."""
-        # First return invalid, then valid
-        mocker.patch.object(cli.console, "input", side_effect=["invalid", "d"])
-        mock_print = mocker.patch.object(cli.console, "print")
+        interface = CLIInterface(delay=1.5)
 
-        result = cli._get_valid_input(
-            "Choose: ", valid_options=["d", "p"], error_msg="Invalid input."
-        )
+        mock_cons_cls.assert_called_once()
+        mock_rend_cls.assert_called_once_with(mock_console)
+        mock_inp_cls.assert_called_once_with(mock_console, 1.5)
+        assert interface.console == mock_console
 
-        assert result == "d"
-        # Check that error message was printed
-        mock_print.assert_any_call("Invalid input.")
+    def test_wait_for_enter(self, cli):
+        """Test wait_for_enter delegation."""
+        cli.wait_for_enter()
+        cli.input_handler.wait_for_enter.assert_called_once()
 
-    def test_get_valid_input_with_validation_func(self, cli, mocker):
-        """Test input validation with custom validation function."""
-        mocker.patch.object(cli.console, "input", return_value="5")
+    def test_display_state(self, cli, mocker):
+        """Test display_state delegation."""
+        game = mocker.Mock()
+        cli.display_state(game)
+        cli.renderer.display_state.assert_called_once_with(game)
 
-        def validate_number(s: str) -> int:
-            num = int(s)
-            if 1 <= num <= 6:
-                return num
-            raise ValueError
+    def test_display_round_end(self, cli, mocker):
+        """Test display_round_end delegation."""
+        game = mocker.Mock()
+        cli.display_round_end(game)
+        cli.renderer.display_round_end.assert_called_once_with(game)
 
-        result = cli._get_valid_input(
-            "Enter number: ",
-            validation_func=validate_number,
-            error_msg="Invalid number",
-        )
-        assert result == 5
+    def test_display_hand(self, cli, mock_player):
+        """Test display_hand delegation."""
+        cli.display_hand(mock_player, display_indices=True)
+        cli.renderer.display_hand.assert_called_once_with(mock_player, True)
 
-    def test_get_valid_input_validation_func_retries(self, cli, mocker):
-        """Test that validation function failures cause retry."""
-        mocker.patch.object(cli.console, "input", side_effect=["99", "5"])
-        mock_print = mocker.patch.object(cli.console, "print")
+    def test_get_input(self, cli):
+        """Test get_input delegation."""
+        cli.input_handler.get_input.return_value = "foo"
+        result = cli.get_input("prompt")
+        assert result == "foo"
+        cli.input_handler.get_input.assert_called_once_with("prompt")
 
-        def validate_number(s: str) -> int:
-            num = int(s)
-            if 1 <= num <= 6:
-                return num
-            raise ValueError
-
-        result = cli._get_valid_input(
-            "Enter number: ",
-            validation_func=validate_number,
-            error_msg="Invalid number",
-        )
-
-        assert result == 5
-        mock_print.assert_any_call("Invalid number")
+    def test_validate_color(self, cli):
+        """Test validate_color delegation."""
+        cli.validate_color("red")
+        cli.renderer.validate_color.assert_called_once_with("red")
 
 
 class TestGameChoices:
-    """Tests for game-specific user choice methods."""
-
-    INDEX_INPUT_CASES: ClassVar[list[tuple[str, int]]] = [
-        ("1", 0),
-        ("3", 2),
-        ("6", 5),
-    ]
+    """Tests for game-specific user choice logic in CLIInterface."""
 
     @pytest.mark.parametrize(
         ("input_char", "expected_source"),
@@ -191,16 +118,20 @@ class TestGameChoices:
             pytest.param("p", DrawSource.DISCARD, id="discard"),
         ],
     )
-    def test_get_draw_choice(self, cli, mocker, input_char, expected_source):
-        """Test choosing draw source."""
-        mocker.patch.object(cli.console, "input", return_value=input_char)
-        # Card arguments are only for display
-        # their values don't affect the logic being tested here
-        deck_card = Card(Rank.TWO, Suit.CLUBS, "red")
-        discard_card = Card(Rank.FIVE, Suit.HEARTS, "red", face_up=True)
+    def test_get_draw_choice(self, cli, sample_card, input_char, expected_source):
+        """Test choosing draw source delegates and returns enum."""
+        # Setup mock to return input_char
+        cli.input_handler.get_valid_input.return_value = input_char
+        deck_card = sample_card
+        discard_card = sample_card  # Reuse for simplicity
 
         result = cli.get_draw_choice(deck_card, discard_card)
+
         assert result == expected_source
+        cli.renderer.create_draw_choice_prompt.assert_called_once_with(
+            deck_card, discard_card
+        )
+        cli.input_handler.get_valid_input.assert_called_once()
 
     @pytest.mark.parametrize(
         ("input_char", "expected_choice"),
@@ -209,11 +140,10 @@ class TestGameChoices:
             pytest.param("d", ActionChoice.DISCARD, id="discard"),
         ],
     )
-    def test_get_keep_or_discard_choice(self, cli, mocker, input_char, expected_choice):
-        """Test choosing to keep or discard."""
-        mocker.patch.object(cli.console, "input", return_value=input_char)
-        result = cli.get_keep_or_discard_choice()
-        assert result == expected_choice
+    def test_get_keep_or_discard_choice(self, cli, input_char, expected_choice):
+        """Test keep/discard choice."""
+        cli.input_handler.get_valid_input.return_value = input_char
+        assert cli.get_keep_or_discard_choice() == expected_choice
 
     @pytest.mark.parametrize(
         ("input_char", "expected_choice"),
@@ -222,195 +152,44 @@ class TestGameChoices:
             pytest.param("n", FlipChoice.NO, id="no"),
         ],
     )
-    def test_get_flip_choice(self, cli, mocker, input_char, expected_choice):
-        """Test choosing to flip or not."""
-        mocker.patch.object(cli.console, "input", return_value=input_char)
-        result = cli.get_flip_choice()
-        assert result == expected_choice
+    def test_get_flip_choice(self, cli, input_char, expected_choice):
+        """Test flip choice."""
+        cli.input_handler.get_valid_input.return_value = input_char
+        assert cli.get_flip_choice() == expected_choice
 
-    @pytest.mark.parametrize(
-        ("input_value", "expected_index"),
-        [
-            pytest.param(pair[0], pair[1], id=f"input_{pair[0]}")
-            for pair in INDEX_INPUT_CASES
-        ],
-    )
-    def test_get_index_to_replace(self, cli, mocker, input_value, expected_index):
-        """Test getting a valid index to replace."""
-        mocker.patch.object(cli.console, "input", return_value=input_value)
+    def test_get_index_to_replace(self, cli):
+        """Test getting index to replace."""
+        cli.input_handler.get_valid_input.return_value = 4
         result = cli.get_index_to_replace()
-        assert result == expected_index
+        assert result == 4
+        cli.input_handler.get_valid_input.assert_called_once()
 
-    def test_get_index_to_replace_invalid_then_valid(self, cli, mocker):
-        """Test that invalid indices are rejected."""
-        mocker.patch.object(cli.console, "input", side_effect=["0", "7", "3"])
-        mock_print = mocker.patch.object(cli.console, "print")
-
-        result = cli.get_index_to_replace()
-        assert result == 2  # 3 - 1
-        # Verify error message was shown twice
-        assert mock_print.call_count >= 2
-
-    @pytest.mark.parametrize(
-        ("input_value", "expected_index"),
-        [
-            pytest.param(pair[0], pair[1], id=f"input_{pair[0]}")
-            for pair in INDEX_INPUT_CASES
-        ],
-    )
-    def test_get_index_to_flip(self, cli, mocker, input_value, expected_index):
-        """Test getting a valid index to flip."""
-        mocker.patch.object(cli.console, "input", return_value=input_value)
+    def test_get_index_to_flip(self, cli):
+        """Test getting index to flip."""
+        cli.input_handler.get_valid_input.return_value = 2
         result = cli.get_index_to_flip()
-        assert result == expected_index
+        assert result == 2
+        cli.input_handler.get_valid_input.assert_called_once()
 
+    def test_get_initial_cards_to_flip(self, cli, mock_player, mocker):
+        """Test initial card flip loop logic."""
+        # Mock get_index_to_flip to return 0, 0, 1
+        # We need to patch the method on the instance
+        cli.get_index_to_flip = mocker.Mock(side_effect=[0, 0, 1])
 
-class TestDisplay:
-    """Tests for display methods using captured output."""
+        # Mock player hand items so we can set face_up
+        card0 = mocker.Mock(face_up=False)
+        card1 = mocker.Mock(face_up=False)
+        mock_player.hand = [card0, card1, mocker.Mock(), mocker.Mock()]
 
-    def test_display_drawn_card(self, captured_cli, sample_card, mock_player):
-        """Test displaying a drawn card."""
-        cli, output = captured_cli
-        cli.display_drawn_card(mock_player, sample_card)
-        assert "TestPlayer drew:" in output.getvalue()
-        assert "A♤" in output.getvalue()
+        result = cli.get_initial_cards_to_flip(mock_player, 2)
 
-    def test_display_discard_draw(self, captured_cli, sample_card, mock_player):
-        """Test displaying a discard pile draw."""
-        cli, output = captured_cli
-        cli.display_discard_draw(mock_player, sample_card)
-        assert "TestPlayer drew" in output.getvalue()
-        assert "A♤" in output.getvalue()
+        assert result == [0, 1]
+        assert card0.face_up is True
+        assert card1.face_up is True
 
-    def test_display_replace_action(self, captured_cli, mock_player):
-        """Test displaying a replace action."""
-        cli, output = captured_cli
-        new_card = Card(Rank.ACE, Suit.SPADES, "red", face_up=True)
-        old_card = Card(Rank.TWO, Suit.HEARTS, "red", face_up=True)
-
-        cli.display_replace_action(mock_player, 2, new_card, old_card)
-
-        result = output.getvalue()
-        assert "TestPlayer replaced card" in result
-        assert "A♤" in result
-        assert "2♡" in result
-
-    def test_display_flip_action(self, captured_cli, sample_card, mock_player):
-        """Test displaying a flip action."""
-        cli, output = captured_cli
-        cli.display_flip_action(mock_player, 1, sample_card)
-
-        result = output.getvalue()
-        assert "TestPlayer flipped card" in result
-        assert "A♤" in result
-
-    def test_display_message(self, captured_cli):
-        """Test display_message method."""
-        cli, output = captured_cli
-        cli.display_message("Test message")
-        assert "Test message" in output.getvalue()
-
-    def test_display_hand_output(self, captured_cli, mock_player):
-        """Test that display_hand produces output with borders."""
-        cli, output = captured_cli
-        cli.display_hand(mock_player, display_indices=True)
-
-        result = output.getvalue()
-        assert "+" in result
-        assert "|" in result
-        # Should contain indices since display_indices=True
-        assert "1" in result
-
-    def test_display_hand_without_indices(self, captured_cli, mock_player):
-        """Test display_hand without indices."""
-        cli, output = captured_cli
-        cli.display_hand(mock_player, display_indices=False)
-
-        result = output.getvalue()
-        assert "+" in result
-        assert "|" in result
-        # Note: We can't easily assert absence of numbers as cards have numbers,
-        # but we can verify the method runs without error and produces output.
-
-    def test_display_state(self, captured_cli, mock_round):
-        """Test display_state method covers the game state display."""
-        cli, output = captured_cli
-        mock_game = Mock()
-        mock_game.current_round = mock_round
-        mock_game.players = mock_round.players
-
-        cli.display_state(mock_game)
-
-        result = output.getvalue()
-        assert "5" in result  # Turn count
-        assert "40" in result  # Deck count
-        assert "Player 1" in result or "Player" in result
-
-    def test_display_discard_pile(self, captured_cli):
-        """Test _display_discard_pile method."""
-        cli, output = captured_cli
-
-        # Create mock Round object with discard pile
-        game_round = Mock(spec=Round)
-        discard = Mock(spec=CardStack)
-        discard_card = Card(Rank.QUEEN, Suit.DIAMONDS, "red", face_up=True)
-        discard.peek.return_value = discard_card
-        game_round.discard_pile = discard
-
-        cli._display_discard_pile(game_round)
-
-        result = output.getvalue()
-        assert "Discard Pile Top Card:" in result
-        assert "Q♢" in result
-
-    def test_display_game_stats(self, cli, mock_player, mocker):
-        """Test display_game_stats method formatting and iteration."""
-        mock_print = mocker.patch.object(cli.console, "print")
-
-        # Create stats and manually set values to verify display logic, not calculation
-        player_stats = PlayerStats(round_scores=[])
-        player_stats.best_score = 42
-        player_stats.worst_score = 99
-        player_stats.average_score = 12.3456  # Test .2f formatting
-        player_stats.total_score = 1000
-        player_stats.round_scores = [1, 99]  # Test list formatting
-
-        stats = {mock_player: player_stats}
-        cli.display_game_stats(stats)
-
-        # Verify header
-        mock_print.assert_any_call("\n[bold]Game Statistics:[/bold]")
-
-        # Verify calls for stats
-        calls = [args[0] for args, _ in mock_print.call_args_list]
-        combined_output = " ".join([str(arg) for arg in calls])
-
-        assert "Best Score: 42" in combined_output
-        assert "Worst Score: 99" in combined_output
-        assert "Average Score: 12.35" in combined_output  # Verified rounding
-        assert "Total Score: 1000" in combined_output
-        assert "Round Scores: 1, 99" in combined_output
-
-
-class TestColorValidation:
-    """Tests for color validation."""
-
-    @pytest.mark.parametrize(
-        "valid_color",
-        [
-            "red",
-            "blue",
-            "green",
-            "#FF0000",
-            "rgb(255,0,0)",
-        ],
-    )
-    def test_validate_color_valid(self, cli, valid_color):
-        """Test that valid colors pass validation."""
-        # Should not raise an exception
-        cli.validate_color(valid_color)
-
-    def test_validate_color_invalid(self, cli):
-        """Test that invalid colors raise GameConfigError."""
-        with pytest.raises(GameConfigError, match="Invalid color"):
-            cli.validate_color("notacolorstring")
+        # Verify calls
+        cli.renderer.display_initial_flip_prompt.assert_called_once()
+        cli.renderer.display_initial_flip_error_already_selected.assert_called_once()
+        # display_hand called initially + once per successful flip (2) = 3 times
+        assert cli.renderer.display_hand.call_count == 3

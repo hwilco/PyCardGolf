@@ -3,6 +3,7 @@ import pytest
 from pycardgolf.core.game import Game
 from pycardgolf.core.player import Player
 from pycardgolf.core.round import Round
+from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import DrawSource, GameInterface
 from pycardgolf.utils.card import Card
 
@@ -137,3 +138,19 @@ def test_get_winner(game, mock_interface):
     game.scores[p2] = 5
 
     assert game.get_winner() == p2
+
+
+def test_game_exit_handling(mock_player, mock_interface, mocker):
+    """Test that the game handles GameExitError gracefully."""
+    game = Game([mock_player], mock_interface, num_rounds=1)
+
+    mock_round_cls = mocker.patch("pycardgolf.core.game.Round")
+    mock_round_instance = mocker.MagicMock()
+    mock_round_cls.return_value = mock_round_instance
+
+    # Simulate user quitting during the round
+    mock_round_instance.play.side_effect = GameExitError
+
+    game.start()
+
+    mock_interface.display_message.assert_called_once_with("\nGame exited by user.")
