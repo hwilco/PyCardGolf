@@ -30,20 +30,21 @@ class CLIRenderer:
     def __init__(self, console: Console) -> None:
         self.console = console
 
-    def get_card_string(self, card: Card) -> Text:
+    def get_card_string(self, card: Card | None) -> Text:
         """Get a rich Text object for a card with appropriate coloring."""
         text: str
         text_color: str
         background_color: str
 
-        if card.face_up:
+        if card and card.face_up:
             text = str(card).center(self.CARD_DISPLAY_WIDTH)
             text_color = card.face_color
             background_color = self.FACE_BACKGROUND_COLOR
         else:
             text = "??".center(self.CARD_DISPLAY_WIDTH)
             text_color = "black"
-            background_color = card.back_color
+            # Default back color if card is None (unseen deck card)
+            background_color = card.back_color if card else "blue"
             text_color, background_color = (
                 str(color)
                 for color in modulate(

@@ -1,230 +1,152 @@
 import pytest
 
+from pycardgolf.core.actions import (
+    ActionDiscardDrawn,
+    ActionDrawDeck,
+    ActionDrawDiscard,
+    ActionFlipCard,
+    ActionPass,
+    ActionSwapCard,
+)
+from pycardgolf.core.events import (
+    CardDiscardedEvent,
+    CardDrawnDeckEvent,
+    CardDrawnDiscardEvent,
+    CardFlippedEvent,
+    CardSwappedEvent,
+    RoundEndEvent,
+    TurnStartEvent,
+)
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.round import Round
-from pycardgolf.exceptions import GameConfigError
-from pycardgolf.interfaces.base import DrawSource, GameInterface
+from pycardgolf.core.state import Observation, RoundPhase
+from pycardgolf.exceptions import IllegalActionError
 from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card
-from pycardgolf.utils.constants import HAND_SIZE
+from pycardgolf.utils.constants import HAND_SIZE, INITIAL_CARDS_TO_FLIP
 from pycardgolf.utils.enums import Rank, Suit
 
 
-class MockPlayer(Player):
-    def take_turn(self, game_round: Round) -> None:
-        pass
+class MockAgent(Player):
+    """A minimal concrete player for testing."""
 
-    def select_initial_cards(self, _num_to_flip: int) -> list[int]:
-        return [0].extend([1] * (_num_to_flip - 1))
-
-    def choose_initial_card_to_flip(self, _game_round: Round) -> int:
-        return 0
-
-    def _choose_draw_source(self, _game_round: Round) -> DrawSource:
-        return DrawSource.DECK
-
-    def _should_keep_drawn_card(self, card: Card, game_round: Round) -> bool:
-        return True
-
-    def _choose_card_to_replace(self, new_card: Card, game_round: Round) -> int:
-        return 0
-
-    def _choose_card_to_flip_after_discard(self, game_round: Round) -> int | None:
-        return None
+    def get_action(self, observation: Observation):
+        return ActionPass()
 
 
-def test_round_setup(mocker):
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
-    p2 = MockPlayer("P2", mock_interface)
+def test_round_initialization(mocker):
     mock_game = mocker.Mock()
-    p1.choose_initial_card_to_flip = mocker.Mock(side_effect=[0, 1])
-    p2.choose_initial_card_to_flip = mocker.Mock(side_effect=[2, 3])
+    p1 = MockAgent("P1", mocker.Mock())
+    p2 = MockAgent("P2", mocker.Mock())
 
-    game_round = Round(mock_game, [p1, p2], mock_interface)
-    game_round.setup()
+    round_instance = Round(mock_game, [p1, p2])
 
+    assert round_instance.phase == RoundPhase.SETUP
     assert len(p1.hand) == HAND_SIZE
     assert len(p2.hand) == HAND_SIZE
-    # Check 2 cards are face up
-    assert sum(1 for c in p1.hand if c.face_up) == 2
-    assert sum(1 for c in p2.hand if c.face_up) == 2
-
-    assert p1.choose_initial_card_to_flip.call_count == 2
-    assert p2.choose_initial_card_to_flip.call_count == 2
-
-    assert game_round.discard_pile.num_cards == 1
-    assert game_round.discard_pile.peek().face_up
-    assert game_round.turn_count == 1
+    # Discard pile should have 1 card
+    assert round_instance.discard_pile.num_cards == 1
+    assert round_instance.discard_pile.peek().face_up
 
 
-def test_round_validates_deck_color(mocker):
-    """Test that Round validates the deck color using the interface."""
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    players = [MockPlayer("Player 1", mock_interface)]
+def test_round_step_setup_phase(mocker):
     mock_game = mocker.Mock()
+    p1 = MockAgent("P1", mocker.Mock())
+    round_instance = Round(mock_game, [p1])
 
-    Round(mock_game, players, mock_interface)
+    # Needs to flip 2 cards to finish setup
+    assert round_instance.phase == RoundPhase.SETUP
+    assert round_instance.get_current_player() == p1
 
-    mock_interface.validate_color.assert_called_once_with("blue")
+    # Action 1: Flip index 0
+    events = round_instance.step(ActionFlipCard(hand_index=0))
+    assert len(events) == 1
+    assert isinstance(events[0], CardFlippedEvent)
+    assert p1.hand[0].face_up
+    assert round_instance.phase == RoundPhase.SETUP  # Still setup
+
+    # Action 2: Flip index 1
+    events = round_instance.step(ActionFlipCard(hand_index=1))
+    # Should transition to DRAW phase
+    assert p1.hand[1].face_up
+    assert round_instance.phase == RoundPhase.DRAW
+    # Should yield CardFlippedEvent AND TurnStartEvent
+    assert isinstance(events[0], CardFlippedEvent)
+    assert isinstance(events[-1], TurnStartEvent)
 
 
-@pytest.mark.parametrize(
-    ("num_players", "hand_size", "deck_cards"),
-    [
-        # 3 players * 6 cards = 18 needed, 18 available - not enough (no discard)
-        pytest.param(3, 6, 18, id="exact_no_discard"),
-        # 4 players * 6 cards = 24 needed, 18 available - way not enough
-        pytest.param(4, 6, 18, id="six_cards_short"),
-    ],
-)
-def test_round_init_too_many_players(num_players, hand_size, deck_cards, mocker):
-    """Test that GameConfigError is raised when not enough cards for players."""
-    # Mock HAND_SIZE constant
-    mocker.patch("pycardgolf.core.round.HAND_SIZE", hand_size)
-
-    # Create players
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    players = [MockPlayer(f"P{i}", mock_interface) for i in range(num_players)]
-
-    # Mock the Deck class to have the specified number of cards
-    mock_deck = mocker.MagicMock()
-    mock_deck.num_cards = deck_cards
-    mocker.patch("pycardgolf.core.round.Deck", return_value=mock_deck)
-
+def test_round_step_illegal_setup_action(mocker):
     mock_game = mocker.Mock()
+    p1 = MockAgent("P1", mocker.Mock())
+    round_instance = Round(mock_game, [p1])
 
-    # Creating Round should raise GameConfigError
-    with pytest.raises(GameConfigError, match="Not enough cards for players"):
-        Round(mock_game, players, mocker.MagicMock(spec=GameInterface))
+    with pytest.raises(IllegalActionError):
+        round_instance.step(ActionPass())  # Pass is not valid in SETUP
 
 
-@pytest.mark.parametrize(
-    ("all_face_up", "expected"),
-    [
-        pytest.param(False, False, id="not_all_face_up"),
-        pytest.param(True, True, id="all_face_up"),
-    ],
-)
-def test_check_round_end_condition(all_face_up, expected, mocker):
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
+def test_round_step_draw_phase(mocker):
     mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1], mock_interface)
-    # Give p1 a hand
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
+    p1 = MockAgent("P1", mocker.Mock())
+    round_instance = Round(mock_game, [p1])
 
-    # Set face up status
-    for c in p1.hand:
-        c.face_up = all_face_up
+    # Skip setup
+    round_instance.phase = RoundPhase.DRAW
 
-    assert game_round.check_round_end_condition(p1) == expected
+    # Draw from Deck
+    events = round_instance.step(ActionDrawDeck())
+    assert isinstance(events[0], CardDrawnDeckEvent)
+    assert round_instance.phase == RoundPhase.ACTION
+    assert round_instance.drawn_card is not None
+    assert round_instance.drawn_from_deck is True
 
 
-def test_get_scores_requires_face_up(mocker):
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
+def test_round_step_action_phase_swap(mocker):
     mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1], mock_interface)
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
-    for c in p1.hand:
-        c.face_up = False
+    p1 = MockAgent("P1", mocker.Mock())
+    round_instance = Round(mock_game, [p1])
+    round_instance.phase = RoundPhase.ACTION
+    drawn = Card(Rank.ACE, Suit.SPADES, "blue")
+    round_instance.drawn_card = drawn
 
-    # Should raise ValueError because cards are not face up
-    with pytest.raises(ValueError, match="All cards must be face up"):
-        game_round.get_scores()
+    initial_hand_card = p1.hand[0]
+
+    events = round_instance.step(ActionSwapCard(hand_index=0))
+
+    assert isinstance(events[0], CardSwappedEvent)
+    assert p1.hand[0] == drawn
+    # Replaced card goes to discard
+    assert round_instance.discard_pile.peek() == initial_hand_card
+    # Turn should end (back to DRAW or next player)
+    assert round_instance.phase == RoundPhase.DRAW
+    assert isinstance(events[-1], TurnStartEvent)
 
 
-def test_reveal_hands(mocker):
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
-    p2 = MockPlayer("P2", mock_interface)
+def test_round_step_action_phase_discard_drawn(mocker):
     mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1, p2], mock_interface)
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
-    p2.hand = Hand(cards)
-    for c in p1.hand:
-        c.face_up = False
-    for c in p2.hand:
-        c.face_up = False
+    p1 = MockAgent("P1", mocker.Mock())
+    round_instance = Round(mock_game, [p1])
+    round_instance.phase = RoundPhase.ACTION
+    drawn = Card(Rank.ACE, Suit.SPADES, "blue")
+    round_instance.drawn_card = drawn
+    # Must be from deck to discard
+    round_instance.drawn_from_deck = True
 
-    game_round.reveal_hands()
-    assert all(c.face_up for c in p1.hand)
-    assert all(c.face_up for c in p2.hand)
+    events = round_instance.step(ActionDiscardDrawn())
+
+    assert isinstance(events[0], CardDiscardedEvent)
+    assert round_instance.discard_pile.peek() == drawn
+    assert round_instance.phase == RoundPhase.FLIP
 
 
-def test_get_scores_returns_correct_scores(mocker):
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
-    p2 = MockPlayer("P2", mock_interface)
+def test_round_step_flip_phase(mocker):
     mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1, p2], mock_interface)
-    cards_p1 = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    cards_p2 = [Card(Rank.THREE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
-    cards_p2.extend(
-        [Card(Rank.KING, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
-    )
-    p1.hand = Hand(cards_p1)
-    p2.hand = Hand(cards_p2)
-    game_round.reveal_hands()
+    p1 = MockAgent("P1", mocker.Mock())
+    round_instance = Round(mock_game, [p1])
+    round_instance.phase = RoundPhase.FLIP
 
-    scores = game_round.get_scores()
+    # Flip index 2
+    events = round_instance.step(ActionFlipCard(hand_index=2))
 
-    # Score for 6 Aces (3 pairs) = 0
-    assert scores[p1] == 0
-    # Score for half 3s and half Kings = 3 * HAND_SIZE // 2 (6 for 6 cards)
-    assert scores[p2] == (HAND_SIZE // 2) * 3
-    # Player score should NOT be updated by Round
-
-
-def test_advance_turn(mocker):
-    # Test normal turn advancement
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
-    p2 = MockPlayer("P2", mock_interface)
-    p3 = MockPlayer("P3", mock_interface)
-    mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1, p2, p3], mock_interface)
-
-    assert game_round.current_player_idx == 0
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 1
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 2
-
-
-def test_advance_turn_wraps_around(mocker):
-    # Test that turn wraps to 0 after last player
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
-    p2 = MockPlayer("P2", mock_interface)
-    mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1, p2], mock_interface)
-
-    game_round.current_player_idx = 1
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 0
-    assert not game_round.round_over
-    assert game_round.turn_count == 2
-
-
-def test_advance_turn_ends_round(mocker):
-    # Test that round ends when we return to last_turn_player_idx
-    mock_interface = mocker.MagicMock(spec=GameInterface)
-    p1 = MockPlayer("P1", mock_interface)
-    p2 = MockPlayer("P2", mock_interface)
-    p3 = MockPlayer("P3", mock_interface)
-    mock_game = mocker.Mock()
-    game_round = Round(mock_game, [p1, p2, p3], mock_interface)
-
-    # Set player 1 as the one who ended the round
-    game_round.last_turn_player_idx = 1
-    game_round.current_player_idx = 0
-
-    # Advance from 0 to 1 - should end the round
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 1
-    assert game_round.round_over
+    assert isinstance(events[0], CardFlippedEvent)
+    assert p1.hand[2].face_up
+    assert round_instance.phase == RoundPhase.DRAW
