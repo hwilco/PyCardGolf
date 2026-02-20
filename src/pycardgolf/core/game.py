@@ -21,7 +21,7 @@ from pycardgolf.core.state import RoundPhase
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:
-    from pycardgolf.interfaces.base import GameInterface
+    from pycardgolf.interfaces.base import GameRenderer
     from pycardgolf.players import Player
 
 
@@ -31,14 +31,14 @@ class Game:
     def __init__(
         self,
         players: list[Player],
-        interface: GameInterface,
+        renderer: GameRenderer,
         num_rounds: int = 9,
         seed: int = random.randrange(sys.maxsize),
     ) -> None:
         self.players: list[Player] = players
         self.scores: dict[Player, int] = dict.fromkeys(players, 0)
         self.round_history: dict[Player, list[int]] = {p: [] for p in players}
-        self.interface: GameInterface = interface
+        self.renderer: GameRenderer = renderer
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
         self.current_round: Round | None = None
@@ -49,10 +49,9 @@ class Game:
         """Start the game loop."""
         for i in range(self.num_rounds):
             self.current_round_num = i + 1
-            self.interface.display_round_start(self.current_round_num)
+            self.renderer.display_round_start(self.current_round_num)
             round_seed = self._rng.randrange(sys.maxsize)
 
-            # Update: Initialize Round with num_players and names
             player_names = [p.name for p in self.players]
             self.current_round = Round(
                 player_names=player_names,
@@ -63,13 +62,10 @@ class Game:
             for idx, player in enumerate(self.players):
                 player.hand = self.current_round.hands[idx]
 
-            # New Loop
             self._run_round_loop()
 
-            # Update total scores
+            # Map round scores (by index) back to players
             round_scores_indices = self.current_round.get_scores()
-
-            # Map indices back to players
             round_scores = {
                 self.players[idx]: score for idx, score in round_scores_indices.items()
             }
@@ -89,7 +85,6 @@ class Game:
 
         round_instance = self.current_round
 
-        # Loop
         while (
             not round_instance.round_over
             and round_instance.phase != RoundPhase.FINISHED
@@ -97,51 +92,41 @@ class Game:
             current_player_idx = round_instance.get_current_player_idx()
             current_player = self.players[current_player_idx]
 
-            if hasattr(current_player, "get_action"):
-                # Optional: display state for humans
-                pass
-
             obs = round_instance.get_observation(current_player_idx)
-
-            # Get Action
             action = current_player.get_action(obs)
-
-            # Step
             events = round_instance.step(action)
-
-            # Display Events (Update UI)
             self.display_events(events)
 
     def display_events(self, events: list[GameEvent]) -> None:
-        """Update interface based on events."""
+        """Dispatch each game event to the appropriate renderer method."""
         for event in events:
             match event:
                 case TurnStartEvent(player_idx=pid):
                     next_player = self.players[(pid + 1) % len(self.players)]
-                    self.interface.display_turn_start(self.players[pid], next_player)
+                    self.renderer.display_turn_start(self.players[pid], next_player)
                 case CardDrawnDeckEvent(player_idx=pid, card=card):
-                    self.interface.display_drawn_card(self.players[pid], card)
+                    self.renderer.display_drawn_card(self.players[pid], card)
                 case CardDrawnDiscardEvent(player_idx=pid, card=card):
-                    self.interface.display_discard_draw(self.players[pid], card)
+                    self.renderer.display_discard_draw(self.players[pid], card)
                 case CardDiscardedEvent(player_idx=pid, card=card):
-                    self.interface.display_discard_action(self.players[pid], card)
+                    self.renderer.display_discard_action(self.players[pid], card)
                 case CardSwappedEvent(
                     player_idx=pid, hand_index=idx, new_card=new, old_card=old
                 ):
-                    self.interface.display_replace_action(
+                    self.renderer.display_replace_action(
                         self.players[pid], idx, new, old
                     )
                 case CardFlippedEvent(player_idx=pid, hand_index=idx, card=card):
-                    self.interface.display_flip_action(self.players[pid], idx, card)
+                    self.renderer.display_flip_action(self.players[pid], idx, card)
                 case RoundEndEvent():
-                    self.interface.display_round_end(self)
+                    self.renderer.display_round_end(self)
 
     def display_scores(self) -> None:
         """Display current scores for all players."""
-        self.interface.display_scores(self.scores)
+        self.renderer.display_scores(self.scores)
 
     def get_standings(self) -> list[Player]:
-        """Return players sorted by score (ascending)."""
+        """Return players sorted by score (ascending — lowest score wins)."""
         return sorted(self.players, key=lambda p: self.scores[p])
 
     def get_winner(self) -> Player:
@@ -155,17 +140,17 @@ class Game:
         }
 
     def declare_winner(self) -> None:
-        """Notify the interface of the game winner and final standings."""
-        self.interface.display_game_over()
+        """Notify the renderer of the game winner and final standings."""
+        self.renderer.display_game_over()
 
         standings = self.get_standings()
         standings_tuples = [(p, self.scores[p]) for p in standings]
 
-        self.interface.display_game_stats(self.get_stats())
-        self.interface.display_standings(standings_tuples)
+        self.renderer.display_game_stats(self.get_stats())
+        self.renderer.display_standings(standings_tuples)
 
         winner = standings[0]
-        self.interface.display_winner(winner, self.scores[winner])
+        self.renderer.display_winner(winner, self.scores[winner])
 
     def __repr__(self) -> str:
-        return f"Game(players={self.players}, interface={self.interface})"
+        return f"Game(players={self.players}, renderer={self.renderer})"

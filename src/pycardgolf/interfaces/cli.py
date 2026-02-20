@@ -10,7 +10,8 @@ from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
     FlipChoice,
-    GameInterface,
+    GameInput,
+    GameRenderer,
 )
 from pycardgolf.interfaces.cli_input import CLIInputHandler
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.hand import Hand
 
 
-class CLIInterface(GameInterface):
+class CLIInterface(GameRenderer, GameInput):
     """Command-line interface for the game."""
 
     def __init__(self, delay: float = 0.0) -> None:

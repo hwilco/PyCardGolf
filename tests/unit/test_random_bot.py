@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+"""Tests for the RandomBot player class."""
 
 import pytest
 
@@ -18,12 +18,13 @@ from pycardgolf.utils.constants import HAND_SIZE
 
 @pytest.fixture
 def bot():
-    mock_interface = MagicMock()
-    return RandomBot("Bot", mock_interface, seed=42)
+    """Create a RandomBot with a fixed seed (no interface required)."""
+    return RandomBot("Bot", seed=42)
 
 
 @pytest.fixture
 def empty_obs():
+    """Create a minimal Observation for testing."""
     return Observation(
         my_hand=[Card(Rank.ACE, Suit.SPADES, "blue") for _ in range(HAND_SIZE)],
         other_hands={},
@@ -37,6 +38,7 @@ def empty_obs():
 
 
 def test_get_action_setup_phase(bot, empty_obs):
+    """Setup phase: bot flips a random face-down card."""
     empty_obs.phase = RoundPhase.SETUP
     empty_obs.valid_actions = [ActionFlipCard(hand_index=i) for i in range(HAND_SIZE)]
 
@@ -47,6 +49,7 @@ def test_get_action_setup_phase(bot, empty_obs):
 
 
 def test_get_action_draw_phase(bot, empty_obs):
+    """Draw phase: bot draws from deck or discard pile."""
     empty_obs.phase = RoundPhase.DRAW
     empty_obs.valid_actions = [ActionDrawDeck(), ActionDrawDiscard()]
 
@@ -57,6 +60,7 @@ def test_get_action_draw_phase(bot, empty_obs):
 
 
 def test_get_action_action_phase(bot, empty_obs):
+    """Action phase: bot swaps or discards a drawn card."""
     empty_obs.phase = RoundPhase.ACTION
     empty_obs.drawn_card = Card(Rank.KING, Suit.HEARTS, "blue")
 
@@ -70,22 +74,13 @@ def test_get_action_action_phase(bot, empty_obs):
 
 
 def test_get_action_flip_phase(bot, empty_obs):
+    """Flip phase: bot passes or flips a random face-down card."""
     empty_obs.phase = RoundPhase.FLIP
 
-    # Setup bot hand with some face down cards
     bot.hand = [Card(Rank.ACE, Suit.HEARTS, "blue") for _ in range(HAND_SIZE)]
-    # All handled internally by bot using its own hand reference or observing it?
-    # RandomBot uses 'self.hand', which is updated by referencing Observation?
-    # No, Player.hand is updated by Round/Game externally?
-    # Wait, RandomBot logic uses `self.hand`. The Round logic updates `player.hand`.
-    # So we need to ensure bot.hand matches what we expect.
-
-    # Flip index 0
     bot.hand[0].face_up = True
 
-    # Valid actions: Pass + Flip face down
     actions = [ActionPass()]
-    # Index 0 is face up, so valid flips are 1..HAND_SIZE-1
     actions.extend(ActionFlipCard(hand_index=i) for i in range(1, HAND_SIZE))
     empty_obs.valid_actions = actions
 

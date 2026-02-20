@@ -8,7 +8,8 @@ from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
     FlipChoice,
-    GameInterface,
+    GameInput,
+    GameRenderer,
 )
 
 if TYPE_CHECKING:
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from pycardgolf.utils.card import Card
 
 
-class NullGameInterface(GameInterface):
+class NullGameInterface(GameRenderer, GameInput):
     """Null object implementation of GameInterface.
 
     This class provides no-op implementations for all methods, allowing it to be

@@ -1,5 +1,7 @@
 """Entry point for the PyCardGolf application."""
 
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -11,7 +13,6 @@ from rich.markdown import Markdown
 from pycardgolf.core.game import Game
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.cli import CLIInterface
-from pycardgolf.players import Player
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
 
@@ -62,11 +63,12 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Display rules and exit if --rules flag is provided
     if args.rules:
         _display_rules()
         sys.exit(0)
 
+    # CLIInterface implements both GameRenderer and GameInput, so a single
+    # object can be passed to both Game (renderer) and HumanPlayer (input).
     interface = CLIInterface(delay=args.delay)
     players: list[Player] = []
 
@@ -74,7 +76,7 @@ def main() -> None:
         name = interface.get_input(f"Enter name for Human {i + 1}: ")
         players.append(HumanPlayer(name, interface))
 
-    players.extend(RandomBot(f"Bot {i + 1}", interface) for i in range(args.bots))
+    players.extend(RandomBot(f"Bot {i + 1}") for i in range(args.bots))
 
     game = Game(players, interface, num_rounds=args.rounds)
     try:

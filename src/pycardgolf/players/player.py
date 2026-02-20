@@ -1,4 +1,4 @@
-"""Module containing the abstract Player class."""
+"""Module containing the abstract BasePlayer class."""
 
 from __future__ import annotations
 
@@ -10,17 +10,21 @@ from pycardgolf.core.hand import Hand
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
     from pycardgolf.core.state import Observation
-    from pycardgolf.interfaces.base import GameInterface
 
 
 class BasePlayer(ABC):
-    """Abstract base class for a game player."""
+    """Abstract base class for a game player.
 
-    def __init__(self, name: str, interface: GameInterface) -> None:
-        """Initialize a player with a name."""
+    Players receive an ``Observation`` and return an ``Action``.  They are
+    deliberately decoupled from any display or input interface — that
+    responsibility belongs to implementations (like ``HumanPlayer`` which
+    holds a ``GameInput``) or is handled by ``Game`` itself.
+    """
+
+    def __init__(self, name: str) -> None:
+        """Initialize the player with a name and an empty hand."""
         self.name: str = name
         self.hand: Hand = Hand([])
-        self.interface: GameInterface = interface
 
     @abstractmethod
     def get_action(self, observation: Observation) -> Action:

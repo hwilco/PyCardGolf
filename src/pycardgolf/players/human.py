@@ -16,21 +16,22 @@ from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
     FlipChoice,
-    GameInterface,
+    GameInput,
 )
 from pycardgolf.players.player import BasePlayer
 
 
 class HumanPlayer(BasePlayer):
-    """A human player that interacts via the game interface.
+    """A human player that delegates all decisions to a ``GameInput`` handler.
 
-    All notifications and prompts should be delegated to the interface. Only
-    the player's internal logic should be implemented here.
+    All notifications and prompts are issued through ``self.input_handler``.
+    Only decision-routing logic lives in this class.
     """
 
-    def __init__(self, name: str, interface: GameInterface) -> None:
-        """Initialize the human player with a name and interface."""
-        super().__init__(name, interface)
+    def __init__(self, name: str, input_handler: GameInput) -> None:
+        """Initialize the human player with a name and an input handler."""
+        super().__init__(name)
+        self.input_handler: GameInput = input_handler
 
     def get_action(self, observation: Observation) -> Action:
         """Decide on an action given the current observation."""
@@ -43,48 +44,39 @@ class HumanPlayer(BasePlayer):
         if observation.phase == RoundPhase.FLIP:
             return self._handle_flip_phase(observation)
 
-        # Default fallback (should not happen in valid state)
+        # Default fallback — should not occur in a valid game state
         return ActionPass()
 
     def _handle_setup_phase(self, _observation: Observation) -> Action:
-        self.interface.display_hand(self, display_indices=True)
-        # Note: Logic for "initial cards to flip" was complex in old round.
-        # Here we just pick ONE card. The engine repeats until enough flipped.
+        self.input_handler.display_hand(self, display_indices=True)
+        # Keep asking until the player picks a face-down card
         while True:
-            idx = self.interface.get_index_to_flip()
-            # Validate that card is not currently face up.
-            # Engine syncs player.hand, so checking self.hand is safe.
+            idx = self.input_handler.get_index_to_flip()
             if self.hand[idx].face_up:
-                self.interface.display_initial_flip_error_already_selected()
+                self.input_handler.display_initial_flip_error_already_selected()
             else:
                 return ActionFlipCard(hand_index=idx)
 
     def _handle_draw_phase(self, observation: Observation) -> Action:
         deck_card = observation.deck_top
         discard_card = observation.discard_top
-        choice = self.interface.get_draw_choice(deck_card, discard_card)
+        choice = self.input_handler.get_draw_choice(deck_card, discard_card)
         if choice == DrawSource.DISCARD:
             return ActionDrawDiscard()
         return ActionDrawDeck()
 
     def _handle_action_phase(self, observation: Observation) -> Action:
-        # We have a drawn card (in observation.drawn_card).
-        # Ask Keep or Discard
-
         can_discard = observation.can_discard_drawn
-
         if can_discard:
-            choice = self.interface.get_keep_or_discard_choice()
+            choice = self.input_handler.get_keep_or_discard_choice()
             if choice == ActionChoice.DISCARD:
                 return ActionDiscardDrawn()
-
-        # If can't discard, or card is kept, proceed to swap
-        idx = self.interface.get_index_to_replace()
+        idx = self.input_handler.get_index_to_replace()
         return ActionSwapCard(hand_index=idx)
 
     def _handle_flip_phase(self, _: Observation) -> Action:
-        choice = self.interface.get_flip_choice()
+        choice = self.input_handler.get_flip_choice()
         if choice == FlipChoice.YES:
-            idx = self.interface.get_valid_flip_index(self.hand)
+            idx = self.input_handler.get_valid_flip_index(self.hand)
             return ActionFlipCard(hand_index=idx)
         return ActionPass()

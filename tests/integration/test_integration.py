@@ -1,46 +1,35 @@
+"""Integration tests for a full game execution."""
+
+from unittest.mock import MagicMock
+
 from pycardgolf.core.game import Game
-from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.interfaces.base import GameRenderer
 from pycardgolf.players.bots.random_bot import RandomBot
 
 
-def test_full_game_execution(mocker):
-    # Setup
-    mock_interface = mocker.MagicMock(spec=GameInterface)
+def test_full_game_execution():
+    """A full 2-round bot game should complete and call renderer methods."""
+    mock_renderer = MagicMock(spec=GameRenderer)
 
-    # Create two random bots
-    bot1 = RandomBot("Bot 1", mock_interface)
-    bot2 = RandomBot("Bot 2", mock_interface)
+    bot1 = RandomBot("Bot 1")
+    bot2 = RandomBot("Bot 2")
 
     players = [bot1, bot2]
 
-    # Initialize game with 2 rounds
-    game = Game(players, mock_interface, num_rounds=2)
-
-    # Execute
+    game = Game(players, mock_renderer, num_rounds=2)
     game.start()
 
-    # Verification
-
-    # 1. Verify game completed (current_round_num should be 2)
+    # Game should have completed both rounds
     assert game.current_round_num == 2
 
-    # 2. Verify scores are calculated (should be non-zero usually, but
-    # technically could be 0 if lucky)
-    # At least check they are integers
+    # Scores should be integers
     assert isinstance(game.scores[bot1], int)
     assert isinstance(game.scores[bot2], int)
 
-    # 3. Verify interface calls
-    # Should have notified start of rounds
-    mock_interface.display_round_start.assert_any_call(1)
-    mock_interface.display_round_start.assert_any_call(2)
+    # Renderer should have been notified at each round start
+    mock_renderer.display_round_start.assert_any_call(1)
+    mock_renderer.display_round_start.assert_any_call(2)
 
-    # Should have declared game over
-    mock_interface.display_game_over.assert_called_once()
-
-    # Should have announced a winner
-    mock_interface.display_winner.assert_called_once()
-
-    # Verify bots took turns
-    # With generic interface calls replaced, we rely on game state changes
-    # (score updates, round progression) which are already asserted above.
+    # Game over and winner should have been declared
+    mock_renderer.display_game_over.assert_called_once()
+    mock_renderer.display_winner.assert_called_once()
