@@ -5,8 +5,8 @@ Defines two focused ABCs following the Interface Segregation Principle:
 - ``GameRenderer`` — all display/output methods (no user interaction).
 - ``GameInput``    — all input/decision methods (returns player choices).
 
-``CLIInterface`` implements both, so a single object can be passed as either
-type.  ``HumanPlayer`` accepts a ``GameInput``; ``Game`` accepts a
+``CLIRenderer`` implements the former, and ``CLIInputHandler`` implements
+the latter.  ``HumanPlayer`` accepts a ``GameInput``; ``Game`` accepts a
 ``GameRenderer``.
 """
 
@@ -98,15 +98,6 @@ class GameRenderer(ABC):
     @abstractmethod
     def display_final_turn_notification(self, player: Player) -> None:
         """Notify that ``player`` triggered the final turn."""
-
-    @abstractmethod
-    def validate_color(self, color: str) -> None:
-        """Validate that a color string is supported by this renderer.
-
-        Raises:
-            GameConfigError: If the color is not usable.
-
-        """
 
     @abstractmethod
     def display_drawn_card(self, player: Player, card: Card) -> None:

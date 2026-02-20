@@ -357,7 +357,8 @@ class CLIRenderer(GameRenderer):
             )
         )
 
-    def validate_color(self, color: str) -> None:
+    @staticmethod
+    def validate_color(color: str) -> None:
         """Validate that a color string is supported by the interface via Rich."""
         try:
             Color.parse(color)
