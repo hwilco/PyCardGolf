@@ -1,5 +1,7 @@
 """Player implementations package."""
 
-from pycardgolf.players.player import Player
+from pycardgolf.players.player import BasePlayer
 
-__all__ = ["Player"]
+Player = BasePlayer
+
+__all__ = ["BasePlayer", "Player"]

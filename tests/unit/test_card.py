@@ -35,7 +35,9 @@ def test_card_creation():
     assert c._Card__rank == Rank.ACE
     assert c._Card__suit == Suit.SPADES
     assert c.back_color == "red"
-    assert c.face_color == "black"  # Default
+    # face_color is protected when face down
+    with pytest.raises(CardStateError):
+        _ = c.face_color
     assert not c.face_up
 
 

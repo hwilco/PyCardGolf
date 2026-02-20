@@ -160,7 +160,9 @@ def test_cards(red_deck):
         Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
         in red_deck._cards
         for rank in Rank
+        if rank != Rank.HIDDEN
         for suit in Suit
+        if suit != Suit.HIDDEN
     )
 
 
@@ -172,7 +174,9 @@ def test_reset(red_deck):
         Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
         in red_deck._cards
         for rank in Rank
+        if rank != Rank.HIDDEN
         for suit in Suit
+        if suit != Suit.HIDDEN
     )
 
 
@@ -186,7 +190,9 @@ def test_add_card_stack_valid(red_deck):
         Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
         in red_deck._cards
         for rank in Rank
+        if rank != Rank.HIDDEN
         for suit in Suit
+        if suit != Suit.HIDDEN
     )
     assert other_card_stack.num_cards == 0
 
@@ -225,7 +231,9 @@ def test_add_card_stack_no_clear_deck(red_deck):
         Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
         in red_deck._cards
         for rank in Rank
+        if rank != Rank.HIDDEN
         for suit in Suit
+        if suit != Suit.HIDDEN
     )
     assert other_card_stack._cards == other_cards
 
@@ -242,7 +250,9 @@ def test_add_card_stack_shuffle_deck(red_deck, mocker):
         Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
         in red_deck._cards
         for rank in Rank
+        if rank != Rank.HIDDEN
         for suit in Suit
+        if suit != Suit.HIDDEN
     )
     assert other_card_stack.num_cards == 0
 
@@ -330,7 +340,9 @@ def test_deck_initialization():
     expected_cards = [
         Card(rank, suit, "red", deck.suit_colors[suit])
         for suit in Suit
+        if suit != Suit.HIDDEN
         for rank in Rank
+        if rank != Rank.HIDDEN
     ]
     assert len(deck._cards) == len(expected_cards)
     for card in expected_cards:

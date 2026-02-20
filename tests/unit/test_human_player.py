@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
+
 import pytest
 
 from pycardgolf.core.actions import (
@@ -10,15 +11,15 @@ from pycardgolf.core.actions import (
     ActionSwapCard,
 )
 from pycardgolf.core.state import Observation, RoundPhase
-from pycardgolf.players.human import HumanPlayer
-from pycardgolf.utils.card import Card, Rank, Suit
-from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,
     FlipChoice,
     GameInterface,
 )
+from pycardgolf.players.human import HumanPlayer
+from pycardgolf.utils.card import Card, Rank, Suit
+from pycardgolf.utils.constants import HAND_SIZE
 
 
 @pytest.fixture
@@ -41,6 +42,7 @@ def obs():
         other_hands={},
         discard_top=Card(Rank.ACE, Suit.SPADES, "blue"),
         deck_size=50,
+        deck_top=None,
         current_player_name="Test Player",
         phase=RoundPhase.SETUP,
         valid_actions=[],
@@ -80,7 +82,7 @@ def test_get_action_action_phase_keep_and_swap(player, mock_interface, obs):
     obs.drawn_card = Card(Rank.KING, Suit.HEARTS, "blue")
     obs.can_discard_drawn = True
 
-    # Keep (Swap)
+    # Choose to keep and swap
     mock_interface.get_keep_or_discard_choice.return_value = ActionChoice.KEEP
     mock_interface.get_index_to_replace.return_value = 1
 

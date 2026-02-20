@@ -7,7 +7,7 @@ from pycardgolf.interfaces.base import ActionChoice, DrawSource, FlipChoice
 from pycardgolf.interfaces.cli import CLIInterface
 from pycardgolf.interfaces.cli_input import CLIInputHandler
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
-from pycardgolf.players.player import Player
+from pycardgolf.players.player import BasePlayer
 from pycardgolf.utils.card import Card, Rank, Suit
 
 
@@ -50,7 +50,7 @@ def sample_card():
 @pytest.fixture
 def mock_player(mocker):
     """Create a mock player."""
-    player = mocker.Mock(spec=Player)
+    player = mocker.Mock(spec=BasePlayer)
     player.name = "TestPlayer"
     return player
 
@@ -121,7 +121,7 @@ class TestGameChoices:
     def test_get_draw_choice(self, cli, sample_card, input_char, expected_source):
         """Test choosing draw source delegates and returns enum."""
         # Setup mock to return input_char
-        cli.input_handler.get_valid_input.return_value = input_char
+        cli.input_handler.get_choice.return_value = input_char
         deck_card = sample_card
         discard_card = sample_card  # Reuse for simplicity
 
@@ -131,7 +131,7 @@ class TestGameChoices:
         cli.renderer.create_draw_choice_prompt.assert_called_once_with(
             deck_card, discard_card
         )
-        cli.input_handler.get_valid_input.assert_called_once()
+        cli.input_handler.get_choice.assert_called_once()
 
     @pytest.mark.parametrize(
         ("input_char", "expected_choice"),
@@ -142,7 +142,7 @@ class TestGameChoices:
     )
     def test_get_keep_or_discard_choice(self, cli, input_char, expected_choice):
         """Test keep/discard choice."""
-        cli.input_handler.get_valid_input.return_value = input_char
+        cli.input_handler.get_choice.return_value = input_char
         assert cli.get_keep_or_discard_choice() == expected_choice
 
     @pytest.mark.parametrize(
@@ -154,22 +154,22 @@ class TestGameChoices:
     )
     def test_get_flip_choice(self, cli, input_char, expected_choice):
         """Test flip choice."""
-        cli.input_handler.get_valid_input.return_value = input_char
+        cli.input_handler.get_choice.return_value = input_char
         assert cli.get_flip_choice() == expected_choice
 
     def test_get_index_to_replace(self, cli):
         """Test getting index to replace."""
-        cli.input_handler.get_valid_input.return_value = 4
+        cli.input_handler.get_validated_input.return_value = 4
         result = cli.get_index_to_replace()
         assert result == 4
-        cli.input_handler.get_valid_input.assert_called_once()
+        cli.input_handler.get_validated_input.assert_called_once()
 
     def test_get_index_to_flip(self, cli):
         """Test getting index to flip."""
-        cli.input_handler.get_valid_input.return_value = 2
+        cli.input_handler.get_validated_input.return_value = 2
         result = cli.get_index_to_flip()
         assert result == 2
-        cli.input_handler.get_valid_input.assert_called_once()
+        cli.input_handler.get_validated_input.assert_called_once()
 
     def test_get_initial_cards_to_flip(self, cli, mock_player, mocker):
         """Test initial card flip loop logic."""

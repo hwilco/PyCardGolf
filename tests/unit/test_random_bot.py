@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+
 import pytest
 
 from pycardgolf.core.actions import (
@@ -28,6 +29,7 @@ def empty_obs():
         other_hands={},
         discard_top=Card(Rank.ACE, Suit.SPADES, "blue"),
         deck_size=50,
+        deck_top=None,
         current_player_name="Bot",
         phase=RoundPhase.SETUP,
         valid_actions=[],
@@ -84,8 +86,7 @@ def test_get_action_flip_phase(bot, empty_obs):
     # Valid actions: Pass + Flip face down
     actions = [ActionPass()]
     # Index 0 is face up, so valid flips are 1..HAND_SIZE-1
-    for i in range(1, HAND_SIZE):
-        actions.append(ActionFlipCard(hand_index=i))
+    actions.extend(ActionFlipCard(hand_index=i) for i in range(1, HAND_SIZE))
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)

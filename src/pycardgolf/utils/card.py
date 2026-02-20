@@ -36,12 +36,14 @@ class Card:
         Suit.HEARTS: "\u2665",
         Suit.DIAMONDS: "\u2666",
         Suit.CLUBS: "\u2663",
+        Suit.HIDDEN: "?",
     }
     __SUIT_OUTLINE_STR: ClassVar[dict[Suit, str]] = {
         Suit.SPADES: "\u2664",
         Suit.HEARTS: "\u2661",
         Suit.DIAMONDS: "\u2662",
         Suit.CLUBS: "\u2667",
+        Suit.HIDDEN: "?",
     }
     _outline_suits: ClassVar[bool] = True
 
@@ -105,6 +107,7 @@ class Card:
         return self.__back_color
 
     @property
+    @requires_face_up
     def face_color(self) -> str:
         """A string representing the color of the face of the card."""
         return self.__face_color
@@ -117,6 +120,13 @@ class Card:
     @face_up.setter
     def face_up(self, value: bool) -> None:
         self.__face_up = value
+
+    def flip(self) -> None:
+        """Flip the card.
+
+        If the card was face up, it will become face down and vice versa.
+        """
+        self.face_up = not self.face_up
 
     @property
     def __rank_str(self) -> str:
@@ -156,10 +166,3 @@ class Card:
         )
 
     __hash__ = None
-
-    def flip(self) -> None:
-        """Flip the card.
-
-        If the card was face up, it will become face down and vice versa.
-        """
-        self.face_up = not self.face_up

@@ -11,7 +11,7 @@ from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
-from pycardgolf.players.player import Player
+from pycardgolf.players.player import BasePlayer
 from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.deck import CardStack, Deck
 
@@ -53,7 +53,7 @@ def sample_hand_cards():
 @pytest.fixture
 def mock_player(sample_hand_cards, mocker):
     """Create a mock player with a hand."""
-    player = mocker.Mock(spec=Player)
+    player = mocker.Mock(spec=BasePlayer)
     player.name = "TestPlayer"
     player.hand = Hand(sample_hand_cards)
     return player
@@ -142,11 +142,12 @@ class TestRendererDisplay:
         assert "TestPlayer flipped card" in result
         assert "A♤" in result
 
-    def test_display_message(self, captured_renderer):
-        """Test display_message method."""
+    def test_display_error(self, captured_renderer):
+        """Test display_error method."""
         renderer, output = captured_renderer
-        renderer.display_message("Test message")
-        assert "Test message" in output.getvalue()
+        renderer.display_error("Test error")
+        assert "Test error" in output.getvalue()
+        assert "[ERROR]" in output.getvalue()
 
     def test_display_hand_output(self, captured_renderer, mock_player):
         """Test that display_hand produces output with borders."""

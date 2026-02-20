@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.stats import PlayerStats
-    from pycardgolf.players.player import Player
+    from pycardgolf.players import Player
     from pycardgolf.utils.card import Card
 
 
@@ -54,7 +54,7 @@ class NullGameInterface(GameInterface):
     def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
         """Do nothing."""
 
-    def display_message(self, message: str) -> None:
+    def display_error(self, message: str) -> None:
         """Do nothing."""
 
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
@@ -74,7 +74,9 @@ class NullGameInterface(GameInterface):
     def validate_color(self, color: str) -> None:
         """Do nothing."""
 
-    def get_draw_choice(self, deck_card: Card, discard_card: Card) -> DrawSource:
+    def get_draw_choice(
+        self, deck_card: Card | None, discard_card: Card | None
+    ) -> DrawSource:
         """Raise NotImplementedError as null interface cannot provide input."""
         raise NotImplementedError
 
@@ -108,7 +110,9 @@ class NullGameInterface(GameInterface):
     def display_flip_action(self, player: Player, index: int, card: Card) -> None:
         """Do nothing."""
 
-    def display_turn_start(self, player: Player) -> None:
+    def display_turn_start(
+        self, player: Player, next_player: Player | None = None
+    ) -> None:
         """Do nothing."""
 
     def display_discard_action(self, player: Player, card: Card) -> None:

@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 import sys
 from typing import TYPE_CHECKING
-import time
 
 from pycardgolf.core.events import (
     CardDiscardedEvent,
@@ -14,7 +13,6 @@ from pycardgolf.core.events import (
     CardFlippedEvent,
     CardSwappedEvent,
     GameEvent,
-    MessageEvent,
     RoundEndEvent,
     TurnStartEvent,
 )
@@ -22,11 +20,10 @@ from pycardgolf.core.round import Round
 from pycardgolf.core.state import RoundPhase
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameExitError
-from pycardgolf.interfaces.base import GameInterface
-from pycardgolf.players.player import Player
 
 if TYPE_CHECKING:
-    pass
+    from pycardgolf.interfaces.base import GameInterface
+    from pycardgolf.players import Player
 
 
 class Game:
@@ -56,18 +53,29 @@ class Game:
                 self.current_round_num = i + 1
                 self.interface.display_round_start(self.current_round_num)
                 round_seed = self._rng.randrange(sys.maxsize)
-                # Note: Round signature changed (removed interface)
-                self.current_round = Round(self, self.players, seed=round_seed)
+
+                # Update: Initialize Round with num_players and names
+                player_names = [p.name for p in self.players]
+                self.current_round = Round(
+                    player_names=player_names,
+                    seed=round_seed,
+                )
+
+                # Sync hands to players so they have the correct state
+                for idx, player in enumerate(self.players):
+                    player.hand = self.current_round.hands[idx]
 
                 # New Loop
                 self._run_round_loop()
 
                 # Update total scores
-                # Round.get_scores() is available but we need latest state.
-                # RoundEndEvent provides scores too.
-                # Logic: _run_round_loop returns scores? or we read from round.
+                round_scores_indices = self.current_round.get_scores()
 
-                round_scores = self.current_round.get_scores()
+                # Map indices back to players
+                round_scores = {
+                    self.players[idx]: score
+                    for idx, score in round_scores_indices.items()
+                }
 
                 for player, score in round_scores.items():
                     self.scores[player] += score
@@ -77,9 +85,9 @@ class Game:
 
             self.declare_winner()
         except GameExitError:
-            self.interface.display_message("\nGame exited by user.")
+            self.interface.display_error("\nGame exited by user.")
         except KeyboardInterrupt:
-            self.interface.display_message("\nGame interrupted.")
+            self.interface.display_error("\nGame interrupted.")
 
     def _run_round_loop(self) -> None:
         """Execute the engine loop for the current round."""
@@ -88,82 +96,52 @@ class Game:
 
         round_instance = self.current_round
 
-        # Initial setup phase prompt or turn?
-        # Round starts in SETUP phase for player 0.
-        # We should display turn start logic manually for the very first action?
-        # Or rely on loop?
-
-        # Display initial state
-        # round_instance.setup() # setup is now implicit in init
-
         # Loop
         while (
             not round_instance.round_over
             and round_instance.phase != RoundPhase.FINISHED
         ):
-            current_player = round_instance.get_current_player()
+            current_player_idx = round_instance.get_current_player_idx()
+            current_player = self.players[current_player_idx]
 
-            # Display update?
-            # Interface typically clears screen or updates board.
-            # We can call display_state here?
-            # But Display State required 'Game' object.
-            # We are inside 'Game'.
-            # self.interface.display_state(self)
-            # Note: display_state(self) might be heavy.
-            # But the old loop called `interface.display_state(game)` inside `HumanPlayer.take_turn`.
-            # We mimic that behavior by calling it if current player is human?
-            # Or just call it always to keep UI fresh.
-            if hasattr(current_player, "get_action"):  # It is a Player
-                # Optimization for bots: maybe don't render full board every step?
-                # But for Human spectator we want to see.
-                # self.interface.display_state(self)
+            if hasattr(current_player, "get_action"):
+                # Optional: display state for humans
                 pass
 
-            obs = round_instance.get_observation(current_player)
+            obs = round_instance.get_observation(current_player_idx)
 
             # Get Action
-            # If Human, this might block on input
-            try:
-                action = current_player.get_action(obs)
-            except GameExitError:
-                raise
-            except Exception as e:
-                # If bot crashes or logic error
-                # We should probably catch/log
-                raise e
+            action = current_player.get_action(obs)
 
             # Step
             events = round_instance.step(action)
 
-            # Process Events (Update UI)
-            self.process_events(events)
+            # Display Events (Update UI)
+            self.display_events(events)
 
-            # Optional: Add small delay for bot moves if viewing?
-            # time.sleep(0.5)
-
-    def process_events(self, events: list[GameEvent]) -> None:
+    def display_events(self, events: list[GameEvent]) -> None:
         """Update interface based on events."""
         for event in events:
-            if isinstance(event, TurnStartEvent):
-                self.interface.display_turn_start(event.player)
-            elif isinstance(event, CardDrawnDeckEvent):
-                self.interface.display_drawn_card(event.player, event.card)
-            elif isinstance(event, CardDrawnDiscardEvent):
-                self.interface.display_discard_draw(event.player, event.card)
-            elif isinstance(event, CardDiscardedEvent):
-                self.interface.display_discard_action(event.player, event.card)
-            elif isinstance(event, CardSwappedEvent):
-                self.interface.display_replace_action(
-                    event.player, event.hand_index, event.new_card, event.old_card
-                )
-            elif isinstance(event, CardFlippedEvent):
-                self.interface.display_flip_action(
-                    event.player, event.hand_index, event.card
-                )
-            elif isinstance(event, RoundEndEvent):
-                self.interface.display_round_end(self)
-            elif isinstance(event, MessageEvent):
-                self.interface.display_message(event.message)
+            match event:
+                case TurnStartEvent(player_idx=pid):
+                    next_player = self.players[(pid + 1) % len(self.players)]
+                    self.interface.display_turn_start(self.players[pid], next_player)
+                case CardDrawnDeckEvent(player_idx=pid, card=card):
+                    self.interface.display_drawn_card(self.players[pid], card)
+                case CardDrawnDiscardEvent(player_idx=pid, card=card):
+                    self.interface.display_discard_draw(self.players[pid], card)
+                case CardDiscardedEvent(player_idx=pid, card=card):
+                    self.interface.display_discard_action(self.players[pid], card)
+                case CardSwappedEvent(
+                    player_idx=pid, hand_index=idx, new_card=new, old_card=old
+                ):
+                    self.interface.display_replace_action(
+                        self.players[pid], idx, new, old
+                    )
+                case CardFlippedEvent(player_idx=pid, hand_index=idx, card=card):
+                    self.interface.display_flip_action(self.players[pid], idx, card)
+                case RoundEndEvent():
+                    self.interface.display_round_end(self)
 
     def display_scores(self) -> None:
         """Display current scores for all players."""

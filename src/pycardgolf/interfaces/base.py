@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.stats import PlayerStats
-    from pycardgolf.players.player import Player
+    from pycardgolf.players import Player
     from pycardgolf.utils.card import Card
 
 
@@ -80,8 +80,13 @@ class GameInterface(ABC):
         """
 
     @abstractmethod
-    def display_message(self, message: str) -> None:
-        """Display a generic message (e.g. input error)."""
+    def display_error(self, message: str) -> None:
+        """Display an error message.
+
+        Args:
+            message: The error message to display.
+
+        """
 
     @abstractmethod
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
@@ -115,7 +120,9 @@ class GameInterface(ABC):
         """
 
     @abstractmethod
-    def get_draw_choice(self, deck_card: Card, discard_card: Card) -> DrawSource:
+    def get_draw_choice(
+        self, deck_card: Card | None, discard_card: Card | None
+    ) -> DrawSource:
         """Get the user's choice to draw from the deck or discard pile.
 
         Args:
@@ -209,11 +216,14 @@ class GameInterface(ABC):
         """
 
     @abstractmethod
-    def display_turn_start(self, player: Player) -> None:
+    def display_turn_start(
+        self, player: Player, next_player: Player | None = None
+    ) -> None:
         """Display the start of a player's turn.
 
         Args:
             player: The player whose turn it is.
+            next_player: The next player in the turn order (optional).
 
         """
 

@@ -14,7 +14,7 @@ from pycardgolf.core.round import Round
 from pycardgolf.core.scoring import calculate_score, calculate_visible_score
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
-from pycardgolf.players.player import Player
+from pycardgolf.players import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 
@@ -77,7 +77,7 @@ class CLIRenderer:
         self.console.print(top_card_text)
         self._display_discard_pile(game_round)
 
-        for i, player in enumerate(game_round.players):
+        for i, player in enumerate(game.players):
             is_current_turn_player = i == game_round.current_player_idx
             marker = "*" if is_current_turn_player else " "
             visible_score = calculate_visible_score(player.hand)
@@ -178,7 +178,9 @@ class CLIRenderer:
                 msg.append(part)
         self.console.print(msg)
 
-    def create_draw_choice_prompt(self, deck_card: Card, discard_card: Card) -> Text:
+    def create_draw_choice_prompt(
+        self, deck_card: Card | None, discard_card: Card | None
+    ) -> Text:
         """Create a prompt for drawing choice."""
         deck_card_text = self.get_card_string(deck_card)
         discard_card_text = self.get_card_string(discard_card)
@@ -223,9 +225,19 @@ class CLIRenderer:
             [f"{player.name} flipped card at position {index + 1}: ", card]
         )
 
-    def display_turn_start(self, player: Player) -> None:
+    def display_turn_start(
+        self, player: Player, next_player: Player | None = None
+    ) -> None:
         """Display the start of a player's turn."""
-        self.display_message(f"It's {player.name}'s turn.")
+        self.console.print(f"It's {player.name}'s turn.")
+        self.console.print(f"[bold]{player.name}'s Hand (Current Player):[/bold]")
+        self.display_hand(player, display_indices=True)
+
+        if next_player and next_player != player:
+            self.console.print(
+                f"\n[bold]{next_player.name}'s Hand (Next Player):[/bold]"
+            )
+            self.display_hand(next_player, display_indices=False)
 
     def display_discard_action(self, player: Player, card: Card) -> None:
         """Display the action of discarding a card."""
@@ -260,9 +272,9 @@ class CLIRenderer:
             Panel(f"[bold gold1]Winner: {winner.name} with score {score}![/bold gold1]")
         )
 
-    def display_message(self, message: str) -> None:
-        """Display a generic message."""
-        self.console.print(message)
+    def display_error(self, message: str) -> None:
+        """Display an error message to the player."""
+        self.console.print(f"\n[bold red][ERROR] {message}[/bold red]\n")
 
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
         """Prompt player to select initial cards to flip."""

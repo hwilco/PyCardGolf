@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from pycardgolf.players.player import Player
 from pycardgolf.utils.card import Card
 
 EventType = Literal[
@@ -15,7 +14,6 @@ EventType = Literal[
     "CARD_SWAPPED",
     "CARD_FLIPPED",
     "ROUND_END",
-    "MESSAGE",
 ]
 
 
@@ -38,7 +36,7 @@ class RoundStartEvent(GameEvent):
 class TurnStartEvent(GameEvent):
     """Event triggered when a player's turn starts."""
 
-    player: Player
+    player_idx: int
     event_type: EventType = "TURN_START"
 
 
@@ -46,7 +44,7 @@ class TurnStartEvent(GameEvent):
 class CardDrawnDeckEvent(GameEvent):
     """Event triggered when a card is drawn from the deck."""
 
-    player: Player
+    player_idx: int
     card: Card
     event_type: EventType = "CARD_DRAWN_DECK"
 
@@ -55,7 +53,7 @@ class CardDrawnDeckEvent(GameEvent):
 class CardDrawnDiscardEvent(GameEvent):
     """Event triggered when a card is drawn from the discard pile."""
 
-    player: Player
+    player_idx: int
     card: Card
     event_type: EventType = "CARD_DRAWN_DISCARD"
 
@@ -64,7 +62,7 @@ class CardDrawnDiscardEvent(GameEvent):
 class CardDiscardedEvent(GameEvent):
     """Event triggered when a card is discarded."""
 
-    player: Player
+    player_idx: int
     card: Card
     event_type: EventType = "CARD_DISCARDED"
 
@@ -73,7 +71,7 @@ class CardDiscardedEvent(GameEvent):
 class CardSwappedEvent(GameEvent):
     """Event triggered when a card is swapped in hand."""
 
-    player: Player
+    player_idx: int
     hand_index: int
     new_card: Card
     old_card: Card
@@ -84,7 +82,7 @@ class CardSwappedEvent(GameEvent):
 class CardFlippedEvent(GameEvent):
     """Event triggered when a card is flipped in hand."""
 
-    player: Player
+    player_idx: int
     hand_index: int
     card: Card
     event_type: EventType = "CARD_FLIPPED"
@@ -94,13 +92,5 @@ class CardFlippedEvent(GameEvent):
 class RoundEndEvent(GameEvent):
     """Event triggered when a round ends."""
 
-    scores: dict[Player, int]
+    scores: dict[int, int]
     event_type: EventType = "ROUND_END"
-
-
-@dataclass(frozen=True, kw_only=True)
-class MessageEvent(GameEvent):
-    """Event triggered to display a generic message."""
-
-    message: str
-    event_type: EventType = "MESSAGE"

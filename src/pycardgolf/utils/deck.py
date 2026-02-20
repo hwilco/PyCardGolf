@@ -226,7 +226,9 @@ class Deck(CardStack):
         self._cards = [
             Card(rank, suit, self.back_color, self.suit_colors[suit])
             for rank in Rank
+            if rank != Rank.HIDDEN
             for suit in Suit
+            if suit != Suit.HIDDEN
         ]
 
     def __repr__(self) -> str:

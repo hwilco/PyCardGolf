@@ -4,15 +4,15 @@ from unittest.mock import Mock
 
 import pytest
 
+from pycardgolf.core.actions import ActionPass
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.state import Observation
-from pycardgolf.core.actions import ActionPass
 from pycardgolf.interfaces.base import GameInterface
-from pycardgolf.players.player import Player
+from pycardgolf.players.player import BasePlayer
 from pycardgolf.utils.card import Card, Rank, Suit
 
 
-class ConcretePlayer(Player):
+class ConcretePlayer(BasePlayer):
     """Concrete implementation for testing."""
 
     def get_action(self, observation: Observation):
@@ -39,7 +39,7 @@ def test_repr():
 
 
 def test_abstract_instantiation_raises():
-    """Test that Player cannot be instantiated directly."""
+    """Test that BasePlayer cannot be instantiated directly."""
     interface = Mock(spec=GameInterface)
     with pytest.raises(TypeError):
-        Player("Abstract", interface)
+        BasePlayer("Abstract", interface)

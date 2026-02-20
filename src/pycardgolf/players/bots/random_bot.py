@@ -6,17 +6,17 @@ import random
 import sys
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.actions import Action, ActionPass
-from pycardgolf.core.state import Observation
-from pycardgolf.interfaces.base import GameInterface
+from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.null import NullGameInterface
-from pycardgolf.players.player import Player
+from pycardgolf.players.player import BasePlayer
 
 if TYPE_CHECKING:
-    pass
+    from pycardgolf.core.actions import Action
+    from pycardgolf.core.state import Observation
+    from pycardgolf.interfaces.base import GameInterface
 
 
-class RandomBot(Player):
+class RandomBot(BasePlayer):
     """A bot player that makes random moves."""
 
     def __init__(
@@ -36,5 +36,6 @@ class RandomBot(Player):
         """Decide on an action given the current observation."""
         if not observation.valid_actions:
             # Should not happen in a valid game state unless game is over
-            return ActionPass()
+            msg = "No valid actions found."
+            raise GameConfigError(msg)
         return self._random.choice(observation.valid_actions)

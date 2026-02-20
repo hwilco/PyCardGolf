@@ -80,6 +80,9 @@ def calculate_visible_score(hand: Hand) -> int:
 
 def _card_value(card: Card) -> int:
     match card.rank:
+        case Rank.HIDDEN:
+            msg = "Cannot calculate value of face-down card"
+            raise ValueError(msg)
         case Rank.ACE:
             return 1
         case Rank.TWO:

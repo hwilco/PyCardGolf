@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import copy
 import random
 import sys
-from typing import TYPE_CHECKING
 
 from pycardgolf.core.actions import (
     Action,
@@ -32,10 +32,7 @@ from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE, INITIAL_CARDS_TO_FLIP
 from pycardgolf.utils.deck import CardStack, Deck
-
-if TYPE_CHECKING:
-    from pycardgolf.core.game import Game
-    from pycardgolf.players.player import Player
+from pycardgolf.utils.enums import Rank, Suit
 
 
 class Round:
@@ -43,13 +40,12 @@ class Round:
 
     def __init__(
         self,
-        game: Game,
-        players: list[Player],
+        player_names: list[str],
         seed: int = random.randrange(sys.maxsize),
     ) -> None:
         """Initialize a round with players."""
-        self.game: Game = game
-        self.players: list[Player] = players
+        self.player_names: list[str] = player_names
+        self.num_players: int = len(player_names)
         self.seed: int = seed
         self._rng: random.Random = random.Random(self.seed)
 
@@ -69,79 +65,137 @@ class Round:
         self.phase: RoundPhase = RoundPhase.SETUP
         self.drawn_card: Card | None = None
         self.drawn_from_deck: bool = False
-        self.cards_flipped_in_setup: dict[Player, int] = {p: 0 for p in players}
+        self.cards_flipped_in_setup: dict[int, int] = dict.fromkeys(
+            range(self.num_players), 0
+        )
+        self.hands: list[Hand] = []
 
-        cards_needed_for_hands = len(self.players) * HAND_SIZE
-        if cards_needed_for_hands >= self.deck.num_cards:
-            msg = (
-                f"Not enough cards for players. "
-                f"{len(self.players)} players need {cards_needed_for_hands + 1} cards, "
-                f"but deck only has {self.deck.num_cards} cards."
-            )
-            raise GameConfigError(msg)
+        # Validate configuration
+        self.validate_config(self.num_players, self.deck.num_cards)
 
         # Initialize hands immediately
         self.deck.shuffle()
-        for player in self.players:
+        for _ in range(self.num_players):
             cards = [self.deck.draw() for _ in range(HAND_SIZE)]
-            player.hand = Hand(cards)
+            self.hands.append(Hand(cards))
 
         # Start discard pile
         card = self.deck.draw()
         card.face_up = True
         self.discard_pile.add_card(card)
 
-    def get_current_player(self) -> Player:
-        """Return the player whose turn it is."""
-        return self.players[self.current_player_idx]
+    def get_current_player_idx(self) -> int:
+        """Return the index of the player whose turn it is."""
+        return self.current_player_idx
 
-    def get_valid_actions(self, player: Player) -> list[Action]:
+    def get_valid_actions(self, player_idx: int) -> list[Action]:
+        """Return a list of valid actions for the given player."""
         actions: list[Action] = []
         if self.phase == RoundPhase.SETUP:
-            for i, card in enumerate(player.hand):
-                if not card.face_up:
-                    actions.append(ActionFlipCard(hand_index=i))
+            actions.extend(
+                [
+                    ActionFlipCard(hand_index=i)
+                    for i, card in enumerate(self.hands[player_idx])
+                    if not card.face_up
+                ]
+            )
         elif self.phase == RoundPhase.DRAW:
             actions.append(ActionDrawDeck())
             if self.discard_pile.num_cards > 0:
                 actions.append(ActionDrawDiscard())
         elif self.phase == RoundPhase.ACTION:
-            for i in range(HAND_SIZE):
-                actions.append(ActionSwapCard(hand_index=i))
+            actions.extend([ActionSwapCard(hand_index=i) for i in range(HAND_SIZE)])
             if self.drawn_from_deck:
                 actions.append(ActionDiscardDrawn())
         elif self.phase == RoundPhase.FLIP:
             actions.append(ActionPass())
-            for i, card in enumerate(player.hand):
-                if not card.face_up:
-                    actions.append(ActionFlipCard(hand_index=i))
+            actions.extend(
+                [
+                    ActionFlipCard(hand_index=i)
+                    for i, card in enumerate(self.hands[player_idx])
+                    if not card.face_up
+                ]
+            )
         return actions
 
-    def get_observation(self, player: Player) -> Observation:
-        """Return a sanitized observation for the given player."""
-        # My hand: direct reference
-        # Note: We rely on Card protecting its data if face_up=False.
-        my_hand_view: list[Card] = list(player.hand)
+    @classmethod
+    def validate_config(cls, num_players: int, deck_size: int = 52) -> None:
+        """Validate game configuration before starting a round.
 
-        # Other hands
+        Args:
+            num_players: Number of players in the game.
+            deck_size (optional): Number of cards in the deck. Defaults to 52.
+
+        Raises:
+            GameConfigError: If there are not enough cards for the number of players.
+
+        """
+        cards_needed_for_hands = num_players * HAND_SIZE
+        if cards_needed_for_hands >= deck_size:
+            msg = (
+                f"Not enough cards for players. "
+                f"{num_players} players need {cards_needed_for_hands + 1} cards, "
+                f"but deck only has {deck_size} cards."
+            )
+            raise GameConfigError(msg)
+
+    @classmethod
+    def _sanitize_card(cls, card: Card) -> Card:
+        """Return a safe copy of the card.
+
+        If face_up, returns a copy.
+        If face_down, returns a dummy card with correct back color but hidden rank/suit.
+        """
+        if card.face_up:
+            return copy.copy(card)
+        # Dummy card
+        return Card(
+            rank=Rank.HIDDEN,
+            suit=Suit.HIDDEN,
+            back_color=card.back_color,
+            face_color="?",
+            face_up=False,
+        )
+
+    @classmethod
+    def _sanitize_cards(cls, cards: list[Card]) -> list[Card]:
+        """Return a list of sanitized cards."""
+        return [cls._sanitize_card(card) for card in cards]
+
+    def get_observation(self, player_idx: int) -> Observation:
+        """Return a sanitized observation for the given player."""
+        # My hand: sanitized copy
+        my_hand_view = self._sanitize_cards(list(self.hands[player_idx]))
+
+        # Other hands: sanitized copy
         other_hands_view = {}
-        for p in self.players:
-            if p != player:
-                other_hands_view[p.name] = list(p.hand)
+        for i in range(self.num_players):
+            if i != player_idx:
+                other_hands_view[self.player_names[i]] = self._sanitize_cards(
+                    list(self.hands[i])
+                )
+
+        # Deck top: dummy if available
+        deck_top = None
+        if self.deck.num_cards > 0:
+            deck_top = self._sanitize_card(self.deck.peek())
 
         return Observation(
             my_hand=my_hand_view,
             other_hands=other_hands_view,
-            discard_top=None
-            if self.discard_pile.num_cards == 0
-            else self.discard_pile.peek(),
+            discard_top=(
+                None if self.discard_pile.num_cards == 0 else self.discard_pile.peek()
+            ),
             deck_size=self.deck.num_cards,
-            current_player_name=self.get_current_player().name,
+            deck_top=deck_top,
+            current_player_name=self.player_names[self.current_player_idx],
             phase=self.phase,
-            valid_actions=self.get_valid_actions(player),
-            drawn_card=self.drawn_card if self.get_current_player() == player else None,
+            valid_actions=self.get_valid_actions(player_idx),
+            drawn_card=self.drawn_card
+            if self.current_player_idx == player_idx
+            else None,
             can_discard_drawn=self.drawn_from_deck
-            if self.get_current_player() == player
+            if self.current_player_idx == player_idx
             else False,
         )
 
@@ -150,103 +204,92 @@ class Round:
         if self.phase == RoundPhase.FINISHED:
             return []
 
-        player = self.get_current_player()
+        player_idx = self.current_player_idx
         events: list[GameEvent] = []
 
         if self.phase == RoundPhase.SETUP:
-            events.extend(self._handle_setup_phase(player, action))
+            events.extend(self._handle_setup_phase(player_idx, action))
         elif self.phase == RoundPhase.DRAW:
-            events.extend(self._handle_draw_phase(player, action))
+            events.extend(self._handle_draw_phase(player_idx, action))
         elif self.phase == RoundPhase.ACTION:
-            events.extend(self._handle_action_phase(player, action))
+            events.extend(self._handle_action_phase(player_idx, action))
         elif self.phase == RoundPhase.FLIP:
-            events.extend(self._handle_flip_phase(player, action))
-
-        # Check round end condition if we just finished a turn (went back to DRAW)
-        # Actually logic is: if turn ended, check update round over.
-        # But we need to know IF turn ended.
-        # I'll let the handlers call advance_turn which checks conditions.
+            events.extend(self._handle_flip_phase(player_idx, action))
 
         return events
 
-    def _handle_setup_phase(self, player: Player, action: Action) -> list[GameEvent]:
+    def _handle_setup_phase(self, player_idx: int, action: Action) -> list[GameEvent]:
         if not isinstance(action, ActionFlipCard):
-            raise IllegalActionError("Must flip a card in setup phase.")
+            msg = "Must flip a card in setup phase."
+            raise IllegalActionError(msg)
 
-        if player.hand[action.hand_index].face_up:
-            raise IllegalActionError("Card already face up.")
+        hand = self.hands[player_idx]
+        if hand[action.hand_index].face_up:
+            msg = "Card already face up."
+            raise IllegalActionError(msg)
 
-        player.hand.flip_card(action.hand_index)
-        events = [
+        hand.flip_card(action.hand_index)
+        events: list[GameEvent] = [
             CardFlippedEvent(
-                player=player,
+                player_idx=player_idx,
                 hand_index=action.hand_index,
-                card=player.hand[action.hand_index],
+                card=hand[action.hand_index],
             )
         ]
-        self.cards_flipped_in_setup[player] += 1
+        self.cards_flipped_in_setup[player_idx] += 1
 
-        if self.cards_flipped_in_setup[player] >= INITIAL_CARDS_TO_FLIP:
+        if self.cards_flipped_in_setup[player_idx] >= INITIAL_CARDS_TO_FLIP:
             # Move to next player
             self.current_player_idx += 1
-            if self.current_player_idx >= len(self.players):
+            if self.current_player_idx >= self.num_players:
                 # All players done setup
                 self.current_player_idx = 0
                 self.phase = RoundPhase.DRAW
-                events.append(TurnStartEvent(player=self.players[0]))
+                events.append(TurnStartEvent(player_idx=0))
             else:
-                # Next player setup
-                # events.append(MessageEvent(f"{self.players[self.current_player_idx].name}'s turn to set up."))
                 pass
 
         return events
 
-    def _handle_draw_phase(self, player: Player, action: Action) -> list[GameEvent]:
-        events = []
+    def _handle_draw_phase(self, player_idx: int, action: Action) -> list[GameEvent]:
+        events: list[GameEvent] = []
         if isinstance(action, ActionDrawDeck):
             card = self.deck.draw()
             card.face_up = True
             self.drawn_card = card
             self.drawn_from_deck = True
             self.phase = RoundPhase.ACTION
-            events.append(CardDrawnDeckEvent(player=player, card=card))
+            events.append(CardDrawnDeckEvent(player_idx=player_idx, card=card))
         elif isinstance(action, ActionDrawDiscard):
             if self.discard_pile.num_cards == 0:
-                raise IllegalActionError("Discard pile is empty.")
+                msg = "Discard pile is empty."
+                raise IllegalActionError(msg)
             card = self.discard_pile.draw()
             self.drawn_card = card
             self.drawn_from_deck = False
-            # Drawing from discard forces a swap.
-            # But we can reuse ACTION phase if we track that valid actions are only SWAP.
             self.phase = RoundPhase.ACTION
-            events.append(CardDrawnDiscardEvent(player=player, card=card))
+            events.append(CardDrawnDiscardEvent(player_idx=player_idx, card=card))
         else:
-            raise IllegalActionError(f"Invalid action for DRAW phase: {action}")
+            msg = f"Invalid action for DRAW phase: {action}"
+            raise IllegalActionError(msg)
 
         return events
 
-    def _handle_action_phase(self, player: Player, action: Action) -> list[GameEvent]:
-        events = []
+    def _handle_action_phase(self, player_idx: int, action: Action) -> list[GameEvent]:
+        events: list[GameEvent] = []
         if self.drawn_card is None:
-            raise IllegalActionError("No card drawn.")
+            msg = "No card drawn."
+            raise IllegalActionError(msg)
 
-        # Check if we drew from discard (which restricts actions)
-        # We can implement this simply: if last event was DrawDiscard...
-        # Or check logic: Discard draw MUST swap.
-        # But here we just process the action. If they try to discard the drawn card
-        # but they drew from discard, that is illegal.
-        # Ideally we track source of drawn card.
-        # For now let's assume the player/logic knows.
-
-        # Improvement: Track `drawn_source` in state.
+        hand = self.hands[player_idx]
 
         if isinstance(action, ActionSwapCard):
-            old_card = player.hand.replace(action.hand_index, self.drawn_card)
+            old_card = hand.replace(action.hand_index, self.drawn_card)
             old_card.face_up = True
             self.discard_pile.add_card(old_card)
             events.append(
                 CardSwappedEvent(
-                    player=player,
+                    player_idx=player_idx,
                     hand_index=action.hand_index,
                     new_card=self.drawn_card,
                     old_card=old_card,
@@ -255,53 +298,54 @@ class Round:
             self.drawn_card = None
             self._end_turn(events)
         elif isinstance(action, ActionDiscardDrawn):
-            # Validate: Can only discard drawn if it came from deck.
-            # We need to know where it came from.
-            # Hack: Check if drawn card was previously top of discard? No, it's already drawn.
-            # Let's assume for now this action is legal only if Deck was source.
-            # I SHOULD add `drawn_from_deck`
             self.discard_pile.add_card(self.drawn_card)
-            events.append(CardDiscardedEvent(player=player, card=self.drawn_card))
+            events.append(
+                CardDiscardedEvent(player_idx=player_idx, card=self.drawn_card)
+            )
             self.drawn_card = None
             self.phase = RoundPhase.FLIP
         else:
-            raise IllegalActionError(f"Invalid action for ACTION phase: {action}")
+            msg = f"Invalid action for ACTION phase: {action}"
+            raise IllegalActionError(msg)
 
         return events
 
-    def _handle_flip_phase(self, player: Player, action: Action) -> list[GameEvent]:
-        events = []
+    def _handle_flip_phase(self, player_idx: int, action: Action) -> list[GameEvent]:
+        events: list[GameEvent] = []
+        hand = self.hands[player_idx]
         if isinstance(action, ActionFlipCard):
-            if player.hand[action.hand_index].face_up:
-                raise IllegalActionError("Card already face up.")
-            player.hand.flip_card(action.hand_index)
+            if hand[action.hand_index].face_up:
+                msg = "Card already face up."
+                raise IllegalActionError(msg)
+            hand.flip_card(action.hand_index)
             events.append(
                 CardFlippedEvent(
-                    player=player,
+                    player_idx=player_idx,
                     hand_index=action.hand_index,
-                    card=player.hand[action.hand_index],
+                    card=hand[action.hand_index],
                 )
             )
             self._end_turn(events)
         elif isinstance(action, ActionPass):
-            # Choose not to flip
             self._end_turn(events)
         else:
-            raise IllegalActionError(f"Invalid action for FLIP phase: {action}")
+            msg = f"Invalid action for FLIP phase: {action}"
+            raise IllegalActionError(msg)
         return events
 
     def _end_turn(self, events: list[GameEvent]) -> None:
         """Finalize turn, check end conditions, and advance."""
-        player = self.get_current_player()
+        player_idx = self.current_player_idx
 
         # Check round end condition
-        if self.check_round_end_condition(player) and self.last_turn_player_idx is None:
+        if (
+            self.check_round_end_condition(player_idx)
+            and self.last_turn_player_idx is None
+        ):
             self.last_turn_player_idx = self.current_player_idx
-            # Notify final turn start for others?
-            # events.append(MessageEvent(f"{player.name} triggered the final round!"))
 
         # Advance
-        self.current_player_idx = (self.current_player_idx + 1) % len(self.players)
+        self.current_player_idx = (self.current_player_idx + 1) % self.num_players
         if self.current_player_idx == 0:
             self.turn_count += 1
 
@@ -317,20 +361,20 @@ class Round:
             events.append(RoundEndEvent(scores=scores))
         else:
             self.phase = RoundPhase.DRAW
-            events.append(TurnStartEvent(player=self.players[self.current_player_idx]))
+            events.append(TurnStartEvent(player_idx=self.current_player_idx))
 
-    def check_round_end_condition(self, player: Player) -> bool:
+    def check_round_end_condition(self, player_idx: int) -> bool:
         """Check if the round should end (player has all cards face up)."""
-        return player.hand.all_face_up()
+        return self.hands[player_idx].all_face_up()
 
     def reveal_hands(self) -> None:
         """Reveal all cards for all players."""
-        for player in self.players:
-            player.hand.reveal_all()
+        for hand in self.hands:
+            hand.reveal_all()
 
-    def get_scores(self) -> dict[Player, int]:
+    def get_scores(self) -> dict[int, int]:
         """Calculate scores for all players."""
-        return {player: calculate_score(player.hand) for player in self.players}
+        return {i: calculate_score(hand) for i, hand in enumerate(self.hands)}
 
     def __repr__(self) -> str:
-        return f"Round(phase={self.phase}, players={self.players})"
+        return f"Round(phase={self.phase}, num_players={self.num_players})"

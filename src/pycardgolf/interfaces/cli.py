@@ -14,7 +14,7 @@ from pycardgolf.interfaces.base import (
 )
 from pycardgolf.interfaces.cli_input import CLIInputHandler
 from pycardgolf.interfaces.cli_renderer import CLIRenderer
-from pycardgolf.players.player import Player
+from pycardgolf.players import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 
@@ -52,10 +52,12 @@ class CLIInterface(GameInterface):
         """Get input from the user."""
         return self.input_handler.get_input(prompt)
 
-    def get_draw_choice(self, deck_card: Card, discard_card: Card) -> DrawSource:
+    def get_draw_choice(
+        self, deck_card: Card | None, discard_card: Card | None
+    ) -> DrawSource:
         """Get the user's choice to draw from the deck or discard pile."""
         prompt = self.renderer.create_draw_choice_prompt(deck_card, discard_card)
-        choice = self.input_handler.get_valid_input(
+        choice = self.input_handler.get_choice(
             prompt,
             valid_options=["d", "p"],
             error_msg="Invalid input. Please enter 'd' or 'p'.",
@@ -66,10 +68,11 @@ class CLIInterface(GameInterface):
 
     def get_keep_or_discard_choice(self) -> ActionChoice:
         """Get the user's choice to keep the drawn card or discard it."""
-        choice = self.input_handler.get_valid_input(
+        choice = self.input_handler.get_choice(
             "Action: (k)eep or (d)iscard? (k/d) ",
             valid_options=["k", "d"],
             error_msg="Invalid input. Please enter 'k' or 'd'.",
+            capitilization_sensitive=False,
         )
         if choice == "k":
             return ActionChoice.KEEP
@@ -77,7 +80,7 @@ class CLIInterface(GameInterface):
 
     def get_flip_choice(self) -> FlipChoice:
         """Get the user's choice to flip a card."""
-        choice = self.input_handler.get_valid_input(
+        choice = self.input_handler.get_choice(
             "Flip a card? (y/n) ",
             valid_options=["y", "n"],
             error_msg="Invalid input. Please enter 'y' or 'n'.",
@@ -95,7 +98,7 @@ class CLIInterface(GameInterface):
                 return idx - 1
             raise ValueError
 
-        return self.input_handler.get_valid_input(
+        return self.input_handler.get_validated_input(
             "Select which card to replace (1-6)? ",
             validation_func=validate,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
@@ -110,7 +113,7 @@ class CLIInterface(GameInterface):
                 return idx - 1
             raise ValueError
 
-        return self.input_handler.get_valid_input(
+        return self.input_handler.get_validated_input(
             "Which card to flip (1-6)? ",
             validation_func=validate,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
@@ -145,17 +148,19 @@ class CLIInterface(GameInterface):
         """Display the choices made for initial cards to flip."""
         self.renderer.display_initial_flip_choices(player, choices)
 
-    def get_valid_flip_index(self, hand: "Hand") -> int:  # type: ignore[name-defined]
+    def get_valid_flip_index(self, hand: "Hand") -> int:
         """Get a valid index of a face-down card to flip."""
-        # Note: hand type hint uses string forward ref or needs import if used.
-        # Original cli.py imported Hand? Yes. I missed Hand import.
-        # Adding Hand import to be safe, or use type checking block.
-        # Original used `from pycardgolf.core.hand import Hand`.
-        while True:
-            idx = self.get_index_to_flip()
-            if not hand[idx].face_up:
-                return idx
-            self.renderer.display_message("Card is already face up.")
+        face_down_indices = [
+            str(i + 1) for i, card in enumerate(hand) if not card.face_up
+        ]
+        choice = self.input_handler.get_choice(
+            f"Which card to flip (1-{HAND_SIZE})? ",
+            valid_options=face_down_indices,
+            error_msg=(
+                f"Invalid input. Please select a face-down card. ({face_down_indices})"
+            ),
+        )
+        return int(choice) - 1
 
     def display_drawn_card(self, player: Player, card: Card) -> None:
         """Display the card drawn from the deck."""
@@ -179,9 +184,11 @@ class CLIInterface(GameInterface):
         self.renderer.display_flip_action(player, index, card)
         self.wait_for_enter()
 
-    def display_turn_start(self, player: Player) -> None:
+    def display_turn_start(
+        self, player: Player, next_player: Player | None = None
+    ) -> None:
         """Display the start of a player's turn."""
-        self.renderer.display_turn_start(player)
+        self.renderer.display_turn_start(player, next_player)
         self.wait_for_enter()
 
     def display_discard_action(self, player: Player, card: Card) -> None:
@@ -211,10 +218,6 @@ class CLIInterface(GameInterface):
         """Display the winner."""
         self.renderer.display_winner(winner, score)
 
-    def display_message(self, message: str) -> None:
-        """Display a generic message."""
-        self.renderer.display_message(message)
-
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
         """Prompt player to select initial cards to flip."""
         self.renderer.display_initial_flip_prompt(player, num_to_flip)
@@ -240,3 +243,7 @@ class CLIInterface(GameInterface):
     def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
         """Display game statistics."""
         self.renderer.display_game_stats(stats)
+
+    def display_error(self, message: str) -> None:
+        """Display an error message."""
+        self.renderer.display_error(message)

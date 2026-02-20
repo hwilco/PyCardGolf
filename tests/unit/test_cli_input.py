@@ -35,20 +35,20 @@ class TestInputHandlerValidation:
         assert result == "test"
         mock_console.input.assert_called_once_with("Prompt: ")
 
-    def test_get_valid_input_with_valid_options(self, input_handler, mock_console):
+    def test_get_choice_with_valid_options(self, input_handler, mock_console):
         """Test that valid options are accepted."""
         mock_console.input.return_value = "d"
-        result = input_handler.get_valid_input(
+        result = input_handler.get_choice(
             "Choose: ", valid_options=["d", "p"], error_msg="Invalid"
         )
         assert result == "d"
 
-    def test_get_valid_input_retries_on_invalid(self, input_handler, mock_console):
+    def test_get_choice_retries_on_invalid(self, input_handler, mock_console):
         """Test that invalid input causes retry."""
         # First return invalid, then valid
         mock_console.input.side_effect = ["invalid", "d"]
 
-        result = input_handler.get_valid_input(
+        result = input_handler.get_choice(
             "Choose: ", valid_options=["d", "p"], error_msg="Invalid input."
         )
 
@@ -65,13 +65,13 @@ class TestInputHandlerValidation:
             pytest.param("QUIT", id="QUIT"),
         ],
     )
-    def test_get_valid_input_quit(self, input_handler, mock_console, quit_input):
+    def test_get_choice_quit(self, input_handler, mock_console, quit_input):
         """Test that quit inputs raise GameExitError."""
         mock_console.input.return_value = quit_input
         with pytest.raises(GameExitError):
-            input_handler.get_valid_input("Choose: ", valid_options=["a", "b"])
+            input_handler.get_choice("Choose: ", valid_options=["a", "b"])
 
-    def test_get_valid_input_with_validation_func(self, input_handler, mock_console):
+    def test_get_validated_input_with_func(self, input_handler, mock_console):
         """Test input validation with custom validation function."""
         mock_console.input.return_value = "5"
 
@@ -81,14 +81,14 @@ class TestInputHandlerValidation:
                 return num
             raise ValueError
 
-        result = input_handler.get_valid_input(
+        result = input_handler.get_validated_input(
             "Enter number: ",
             validation_func=validate_number,
             error_msg="Invalid number",
         )
         assert result == 5
 
-    def test_get_valid_input_validation_func_retries(self, input_handler, mock_console):
+    def test_get_validated_input_retries(self, input_handler, mock_console):
         """Test that validation function failures cause retry."""
         mock_console.input.side_effect = ["99", "5"]
 
@@ -98,7 +98,7 @@ class TestInputHandlerValidation:
                 return num
             raise ValueError
 
-        result = input_handler.get_valid_input(
+        result = input_handler.get_validated_input(
             "Enter number: ",
             validation_func=validate_number,
             error_msg="Invalid number",

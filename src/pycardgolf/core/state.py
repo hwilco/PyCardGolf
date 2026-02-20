@@ -25,6 +25,7 @@ class Observation:
     other_hands: dict[str, list[Card]]
     discard_top: Card | None
     deck_size: int
+    deck_top: Card | None  # Top card of deck (sanitized/dummy if strictly face down)
     current_player_name: str
     phase: RoundPhase
     valid_actions: list[Action]

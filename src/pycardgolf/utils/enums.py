@@ -17,6 +17,7 @@ class Suit(Enum, metaclass=_ContainsEnumMeta):
     DIAMONDS = (1, "D")
     HEARTS = (2, "H")
     SPADES = (3, "S")
+    HIDDEN = (None, "?")
 
     def __lt__(self, other: Suit) -> bool:
         """Compare suits based on their value."""
@@ -39,6 +40,7 @@ class Rank(Enum, metaclass=_ContainsEnumMeta):
     JACK = (11, "J")
     QUEEN = (12, "Q")
     KING = (13, "K")
+    HIDDEN = (None, "?")
 
     def __lt__(self, other: Rank) -> bool:
         """Compare ranks based on their value."""

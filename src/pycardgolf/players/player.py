@@ -5,17 +5,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.actions import Action
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.state import Observation
-from pycardgolf.interfaces.base import GameInterface
 
 if TYPE_CHECKING:
-    from pycardgolf.core.game import Game
+    from pycardgolf.core.actions import Action
+    from pycardgolf.core.state import Observation
+    from pycardgolf.interfaces.base import GameInterface
 
 
-class Player(ABC):
-    """Abstract base class for a game player (Agent)."""
+class BasePlayer(ABC):
+    """Abstract base class for a game player."""
 
     def __init__(self, name: str, interface: GameInterface) -> None:
         """Initialize a player with a name."""
