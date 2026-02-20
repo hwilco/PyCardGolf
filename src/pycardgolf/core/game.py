@@ -17,7 +17,8 @@ from pycardgolf.core.events import (
     TurnStartEvent,
 )
 from pycardgolf.core.observation import ObservationBuilder
-from pycardgolf.core.round import Round, RoundPhase
+from pycardgolf.core.phases import RoundPhase
+from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:

@@ -5,7 +5,8 @@ import pytest
 from pycardgolf.core.actions import ActionDrawDeck
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.observation import ObservationBuilder
-from pycardgolf.core.round import Round, RoundPhase
+from pycardgolf.core.phases import RoundPhase
+from pycardgolf.core.round import Round
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
 

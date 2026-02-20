@@ -11,7 +11,8 @@ from pycardgolf.utils.enums import Rank, Suit
 
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
-    from pycardgolf.core.round import Round, RoundPhase
+    from pycardgolf.core.phases import RoundPhase
+    from pycardgolf.core.round import Round
 
 
 @dataclass

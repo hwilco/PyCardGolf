@@ -13,7 +13,7 @@ from pycardgolf.core.actions import (
     ActionSwapCard,
 )
 from pycardgolf.core.observation import Observation
-from pycardgolf.core.round import RoundPhase
+from pycardgolf.core.phases import RoundPhase
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,

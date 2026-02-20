@@ -13,7 +13,7 @@ from pycardgolf.core.actions import (
     ActionPass,
     ActionSwapCard,
 )
-from pycardgolf.core.round import RoundPhase
+from pycardgolf.core.phases import RoundPhase
 
 if TYPE_CHECKING:
     from pycardgolf.core.observation import Observation
