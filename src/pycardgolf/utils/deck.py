@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import random
 import sys
 from typing import ClassVar
@@ -27,7 +28,11 @@ class CardStack:
         """
         self._cards: list[Card] = [] if cards is None else cards
         self.seed: int = seed
-        self.rand: random.Random = random.Random(self.seed)
+
+    @functools.cached_property
+    def rand(self) -> random.Random:
+        """Returns the random number generator, lazily initialized."""
+        return random.Random(self.seed)
 
     @property
     def num_cards(self) -> int:

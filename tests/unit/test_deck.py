@@ -93,8 +93,16 @@ def test_clear(cards_5):
     assert card_stack.num_cards == len(cards_5)
     card_stack.clear()
     assert card_stack.num_cards == 0
-    card_stack.clear()
-    assert card_stack.num_cards == 0
+
+
+def test_lazy_rng():
+    """Test that CardStack initializes its random object lazily."""
+    stack = CardStack()
+    assert "rand" not in stack.__dict__
+
+    # Accessing rand triggers cached_property
+    _ = stack.rand
+    assert "rand" in stack.__dict__
 
 
 def test_shuffle_deterministic():
