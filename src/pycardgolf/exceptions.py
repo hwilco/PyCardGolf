@@ -16,9 +16,5 @@ class GameExitError(PyCardGolfError):
     """Exception raised when the user wants to exit the game."""
 
 
-class CardStateError(PyCardGolfError):
-    """Raised when a card is in an invalid state for the operation."""
-
-
 class IllegalActionError(PyCardGolfError):
     """Raised when a player attempts an illegal action."""

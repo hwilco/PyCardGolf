@@ -1,6 +1,5 @@
 import pytest
 
-from pycardgolf.exceptions import CardStateError
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
 
@@ -35,9 +34,6 @@ def test_card_creation():
     assert c._Card__rank == Rank.ACE
     assert c._Card__suit == Suit.SPADES
     assert c.back_color == "red"
-    # face_color is protected when face down
-    with pytest.raises(CardStateError):
-        _ = c.face_color
     assert not c.face_up
 
 
@@ -209,14 +205,6 @@ def test_property_getters():
     assert card.suit == Suit.DIAMONDS
     assert card.back_color == "blue"  # Should be lowercase
     assert card.face_up is True
-
-    card2 = Card(Rank.ACE, Suit.SPADES, "RED", face_up=False)
-    with pytest.raises(CardStateError, match="face down"):
-        _ = card2.rank
-    with pytest.raises(CardStateError, match="face down"):
-        _ = card2.suit
-    assert card2.back_color == "red"  # Should be lowercase
-    assert card2.face_up is False
 
 
 def test_face_up_setter():

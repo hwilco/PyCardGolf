@@ -1,31 +1,12 @@
 """Module containing the Card class."""
 
-import functools
-from collections.abc import Callable
-from typing import ClassVar, Concatenate
+from __future__ import annotations
 
-from pycardgolf.exceptions import CardStateError
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import ClassVar
 from pycardgolf.utils.enums import Rank, Suit
-
-
-def requires_face_up[**P, R](
-    func: Callable[Concatenate["Card", P], R],
-) -> Callable[Concatenate["Card", P], R]:
-    """Check if the Card instance is face_up before executing the method.
-
-    Raises:
-        CardStateError: If the card is face down.
-
-    """
-
-    @functools.wraps(func)
-    def wrapper(self: "Card", *args: P.args, **kwargs: P.kwargs) -> R:
-        if not self.face_up:
-            msg = f"Cannot call '{func.__name__}' on a card that is face down."
-            raise CardStateError(msg)
-        return func(self, *args, **kwargs)
-
-    return wrapper
 
 
 class Card:
@@ -90,13 +71,11 @@ class Card:
         self.__face_up: bool = face_up
 
     @property
-    @requires_face_up
     def rank(self) -> Rank:
         """The rank of the card as a Rank enum."""
         return self.__rank
 
     @property
-    @requires_face_up
     def suit(self) -> Suit:
         """The suit of the card."""
         return self.__suit
@@ -107,7 +86,6 @@ class Card:
         return self.__back_color
 
     @property
-    @requires_face_up
     def face_color(self) -> str:
         """A string representing the color of the face of the card."""
         return self.__face_color
