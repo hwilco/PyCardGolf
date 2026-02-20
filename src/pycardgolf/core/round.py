@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import copy
 import random
 import sys
+from enum import Enum, auto
+from typing import TYPE_CHECKING
 
 from pycardgolf.core.actions import (
     Action,
@@ -27,12 +28,22 @@ from pycardgolf.core.events import (
 )
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.scoring import calculate_score
-from pycardgolf.core.state import Observation, RoundPhase
+
+if TYPE_CHECKING:
+    from pycardgolf.utils.card import Card
 from pycardgolf.exceptions import GameConfigError, IllegalActionError
-from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE, INITIAL_CARDS_TO_FLIP
 from pycardgolf.utils.deck import CardStack, Deck
-from pycardgolf.utils.enums import Rank, Suit
+
+
+class RoundPhase(Enum):
+    """Phases of a round."""
+
+    SETUP = auto()  # Initial flipping of cards
+    DRAW = auto()  # Waiting for player to draw
+    ACTION = auto()  # Waiting for player to swap/discard
+    FLIP = auto()  # Waiting for player to flip (optional after discard)
+    FINISHED = auto()
 
 
 class Round:
@@ -138,66 +149,6 @@ class Round:
                 f"but deck only has {deck_size} cards."
             )
             raise GameConfigError(msg)
-
-    @classmethod
-    def _sanitize_card(cls, card: Card) -> Card:
-        """Return a safe copy of the card.
-
-        If face_up, returns a copy.
-        If face_down, returns a dummy card with correct back color but hidden rank/suit.
-        """
-        if card.face_up:
-            return copy.copy(card)
-        # Dummy card
-        return Card(
-            rank=Rank.HIDDEN,
-            suit=Suit.HIDDEN,
-            back_color=card.back_color,
-            face_color="?",
-            face_up=False,
-        )
-
-    @classmethod
-    def _sanitize_cards(cls, cards: list[Card]) -> list[Card]:
-        """Return a list of sanitized cards."""
-        return [cls._sanitize_card(card) for card in cards]
-
-    def get_observation(self, player_idx: int) -> Observation:
-        """Return a sanitized observation for the given player."""
-        # My hand: sanitized copy
-        my_hand_view = self._sanitize_cards(list(self.hands[player_idx]))
-
-        # Other hands: sanitized copy
-        other_hands_view = {}
-        for i in range(self.num_players):
-            if i != player_idx:
-                other_hands_view[self.player_names[i]] = self._sanitize_cards(
-                    list(self.hands[i])
-                )
-
-        # Deck top: dummy if available
-        deck_top = None
-        if self.deck.num_cards > 0:
-            deck_top = self._sanitize_card(self.deck.peek())
-
-        return Observation(
-            my_hand=my_hand_view,
-            other_hands=other_hands_view,
-            discard_top=(
-                None if self.discard_pile.num_cards == 0 else self.discard_pile.peek()
-            ),
-            deck_size=self.deck.num_cards,
-            deck_top=deck_top,
-            current_player_name=self.player_names[self.current_player_idx],
-            phase=self.phase,
-            valid_actions=self.get_valid_actions(player_idx),
-            drawn_card=self.drawn_card
-            if self.current_player_idx == player_idx
-            else None,
-            can_discard_drawn=self.drawn_from_deck
-            if self.current_player_idx == player_idx
-            else False,
-        )
 
     def step(self, action: Action) -> list[GameEvent]:
         """Advance the game state by one step based on the action."""

@@ -9,7 +9,7 @@ from pycardgolf.core.hand import Hand
 
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
-    from pycardgolf.core.state import Observation
+    from pycardgolf.core.observation import Observation
 
 
 class BasePlayer(ABC):

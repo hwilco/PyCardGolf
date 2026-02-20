@@ -14,8 +14,7 @@ from pycardgolf.core.events import (
     CardSwappedEvent,
     TurnStartEvent,
 )
-from pycardgolf.core.round import Round
-from pycardgolf.core.state import RoundPhase
+from pycardgolf.core.round import Round, RoundPhase
 from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pycardgolf.core.actions import (
     Action,
     ActionDiscardDrawn,
@@ -11,7 +13,10 @@ from pycardgolf.core.actions import (
     ActionPass,
     ActionSwapCard,
 )
-from pycardgolf.core.state import Observation, RoundPhase
+from pycardgolf.core.round import RoundPhase
+
+if TYPE_CHECKING:
+    from pycardgolf.core.observation import Observation
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,

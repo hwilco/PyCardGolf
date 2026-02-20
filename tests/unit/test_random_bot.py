@@ -10,7 +10,8 @@ from pycardgolf.core.actions import (
     ActionPass,
     ActionSwapCard,
 )
-from pycardgolf.core.state import Observation, RoundPhase
+from pycardgolf.core.observation import Observation
+from pycardgolf.core.round import RoundPhase
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.constants import HAND_SIZE

@@ -4,7 +4,7 @@ import pytest
 
 from pycardgolf.core.actions import ActionPass
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.state import Observation
+from pycardgolf.core.observation import Observation
 from pycardgolf.players.player import BasePlayer
 from pycardgolf.utils.card import Card, Rank, Suit
 

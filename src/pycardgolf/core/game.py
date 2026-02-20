@@ -16,8 +16,8 @@ from pycardgolf.core.events import (
     RoundEndEvent,
     TurnStartEvent,
 )
-from pycardgolf.core.round import Round
-from pycardgolf.core.state import RoundPhase
+from pycardgolf.core.observation import ObservationBuilder
+from pycardgolf.core.round import Round, RoundPhase
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:
@@ -105,7 +105,7 @@ class Game:
             current_player_idx = round_instance.get_current_player_idx()
             current_player = self.players[current_player_idx]
 
-            obs = round_instance.get_observation(current_player_idx)
+            obs = ObservationBuilder.build(round_instance, current_player_idx)
             action = current_player.get_action(obs)
             events = round_instance.step(action)
             self.display_events(events)

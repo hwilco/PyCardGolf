@@ -11,7 +11,7 @@ from pycardgolf.players.player import BasePlayer
 
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
-    from pycardgolf.core.state import Observation
+    from pycardgolf.core.observation import Observation
 
 
 class RandomBot(BasePlayer):
