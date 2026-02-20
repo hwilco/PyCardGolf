@@ -277,14 +277,16 @@ class CLIRenderer(GameRenderer):
         self.wait_for_enter()
 
     def display_turn_start(
-        self, player: Player, next_player: Player | None = None
+        self, player: Player, players: list[Player], current_idx: int
     ) -> None:
         """Display the start of a player's turn."""
         self.console.print(f"It's {player.name}'s turn.")
         self.console.print(f"[bold]{player.name}'s Hand (Current Player):[/bold]")
         self.display_hand(player, display_indices=True)
 
-        if next_player and next_player != player:
+        next_idx = (current_idx + 1) % len(players)
+        next_player = players[next_idx]
+        if next_player != player:
             self.console.print(
                 f"\n[bold]{next_player.name}'s Hand (Next Player):[/bold]"
             )

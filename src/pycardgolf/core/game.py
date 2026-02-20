@@ -21,6 +21,9 @@ from pycardgolf.core.state import RoundPhase
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
     from pycardgolf.interfaces.base import GameRenderer
     from pycardgolf.players import Player
 
@@ -44,6 +47,16 @@ class Game:
         self.current_round: Round | None = None
         self.seed: int = seed
         self._rng: random.Random = random.Random(self.seed)
+
+        self._event_handlers: dict[type[GameEvent], Callable[[Any], None]] = {
+            TurnStartEvent: self._on_turn_start,
+            CardDrawnDeckEvent: self._on_card_drawn_deck,
+            CardDrawnDiscardEvent: self._on_card_drawn_discard,
+            CardDiscardedEvent: self._on_card_discarded,
+            CardSwappedEvent: self._on_card_swapped,
+            CardFlippedEvent: self._on_card_flipped,
+            RoundEndEvent: self._on_round_end,
+        }
 
     def start(self) -> None:
         """Start the game loop."""
@@ -100,26 +113,41 @@ class Game:
     def display_events(self, events: list[GameEvent]) -> None:
         """Dispatch each game event to the appropriate renderer method."""
         for event in events:
-            match event:
-                case TurnStartEvent(player_idx=pid):
-                    next_player = self.players[(pid + 1) % len(self.players)]
-                    self.renderer.display_turn_start(self.players[pid], next_player)
-                case CardDrawnDeckEvent(player_idx=pid, card=card):
-                    self.renderer.display_drawn_card(self.players[pid], card)
-                case CardDrawnDiscardEvent(player_idx=pid, card=card):
-                    self.renderer.display_discard_draw(self.players[pid], card)
-                case CardDiscardedEvent(player_idx=pid, card=card):
-                    self.renderer.display_discard_action(self.players[pid], card)
-                case CardSwappedEvent(
-                    player_idx=pid, hand_index=idx, new_card=new, old_card=old
-                ):
-                    self.renderer.display_replace_action(
-                        self.players[pid], idx, new, old
-                    )
-                case CardFlippedEvent(player_idx=pid, hand_index=idx, card=card):
-                    self.renderer.display_flip_action(self.players[pid], idx, card)
-                case RoundEndEvent():
-                    self.renderer.display_round_end(self)
+            handler = self._event_handlers.get(type(event))
+            if handler is None:
+                msg = f"No handler registered for {type(event).__name__}"
+                raise TypeError(msg)
+            handler(event)
+
+    def _on_turn_start(self, event: TurnStartEvent) -> None:
+        self.renderer.display_turn_start(
+            self.players[event.player_idx], self.players, event.player_idx
+        )
+
+    def _on_card_drawn_deck(self, event: CardDrawnDeckEvent) -> None:
+        self.renderer.display_drawn_card(self.players[event.player_idx], event.card)
+
+    def _on_card_drawn_discard(self, event: CardDrawnDiscardEvent) -> None:
+        self.renderer.display_discard_draw(self.players[event.player_idx], event.card)
+
+    def _on_card_discarded(self, event: CardDiscardedEvent) -> None:
+        self.renderer.display_discard_action(self.players[event.player_idx], event.card)
+
+    def _on_card_swapped(self, event: CardSwappedEvent) -> None:
+        self.renderer.display_replace_action(
+            self.players[event.player_idx],
+            event.hand_index,
+            event.new_card,
+            event.old_card,
+        )
+
+    def _on_card_flipped(self, event: CardFlippedEvent) -> None:
+        self.renderer.display_flip_action(
+            self.players[event.player_idx], event.hand_index, event.card
+        )
+
+    def _on_round_end(self, _event: RoundEndEvent) -> None:
+        self.renderer.display_round_end(self)
 
     def display_scores(self) -> None:
         """Display current scores for all players."""

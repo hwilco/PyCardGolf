@@ -119,7 +119,7 @@ class GameRenderer(ABC):
 
     @abstractmethod
     def display_turn_start(
-        self, player: Player, next_player: Player | None = None
+        self, player: Player, players: list[Player], current_idx: int
     ) -> None:
         """Display the start of ``player``'s turn."""
 

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pycardgolf.core.events import RoundEndEvent
+from pycardgolf.core.events import GameEvent, RoundEndEvent
 from pycardgolf.core.game import Game
 from pycardgolf.core.round import Round
 from pycardgolf.interfaces.base import GameRenderer
@@ -62,6 +62,21 @@ def test_game_start_and_loop_flow(players, mock_renderer, mocker):
     mock_renderer.display_game_over.assert_called_once()
     mock_renderer.display_standings.assert_called_once()
     mock_renderer.display_winner.assert_called_once()
+
+
+def test_display_events_unknown_event(players, mock_renderer):
+    """Test that display_events raises TypeError for unregistered events."""
+    game = Game(players, mock_renderer)
+
+    class UnknownEvent(GameEvent):
+        pass
+
+    event = UnknownEvent(event_type="UNKNOWN")  # type: ignore[arg-type]
+
+    # Should raise TypeError
+    with pytest.raises(TypeError, match="No handler registered for UnknownEvent"):
+        game.display_events([event])
+    mock_renderer.assert_not_called()
 
 
 def test_process_events_round_end(players, mock_renderer):
