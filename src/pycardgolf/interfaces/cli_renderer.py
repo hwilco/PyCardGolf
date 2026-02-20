@@ -1,6 +1,8 @@
 """Module containing the CLI renderer implementation."""
 
 import dataclasses
+import sys
+import time
 from typing import ClassVar
 
 from color_contrast import ModulationMode, modulate
@@ -14,12 +16,23 @@ from pycardgolf.core.round import Round
 from pycardgolf.core.scoring import calculate_score, calculate_visible_score
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
+from pycardgolf.interfaces.base import GameRenderer
 from pycardgolf.players import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None  # type: ignore[assignment]
 
-class CLIRenderer:
+try:
+    import select
+except ImportError:
+    select = None  # type: ignore[assignment]
+
+
+class CLIRenderer(GameRenderer):
     """Renderer for the CLI interface."""
 
     CARD_DISPLAY_WIDTH: ClassVar[int] = 4
@@ -27,8 +40,42 @@ class CLIRenderer:
     LUMINANCE_THRESHOLD: ClassVar[float] = 0.179
     MAX_OPPONENT_HANDS_TO_DISPLAY: ClassVar[int] = 1
 
-    def __init__(self, console: Console) -> None:
+    def __init__(self, console: Console, delay: float = 0.0) -> None:
         self.console = console
+        self.delay = delay
+
+    def wait_for_enter(self) -> None:
+        """Wait for the configured delay. Key press skips delay."""
+        if self.delay < 0:
+            msg = f"Delay cannot be negative. Got {self.delay}"
+            raise GameConfigError(msg)
+        if self.delay == 0:
+            return
+
+        end_time = time.time() + self.delay
+
+        if msvcrt:
+            # Windows
+            while time.time() < end_time:
+                if msvcrt.kbhit():
+                    msvcrt.getch()
+                    break
+                time.sleep(0.05)
+
+        elif select:
+            # Unix / Linux / macOS
+            while time.time() < end_time:
+                # Check for input availability (non-blocking)
+                dr, _, _ = select.select([sys.stdin], [], [], 0)
+                if dr:
+                    # Input available, read line to consume (assuming Enter pressed)
+                    sys.stdin.readline()
+                    break
+                time.sleep(0.05)
+
+        else:
+            # Fallback
+            time.sleep(self.delay)
 
     def get_card_string(self, card: Card | None) -> Text:
         """Get a rich Text object for a card with appropriate coloring."""
@@ -56,7 +103,7 @@ class CLIRenderer:
         try:
             return Text(text, style=style)
         except ColorParseError as e:
-            msg = f"Invalid color 'color': {e}"
+            msg = f"Invalid color '{text_color}' or '{background_color}': {e}"
             raise GameConfigError(msg) from e
 
     def display_state(self, game: Game) -> None:
@@ -194,6 +241,7 @@ class CLIRenderer:
     def display_drawn_card(self, player: Player, card: Card) -> None:
         """Display the card drawn from the deck."""
         self.print_card_message([f"{player.name} drew: ", card])
+        self.wait_for_enter()
 
     def display_discard_draw(self, player: Player, card: Card) -> None:
         """Display the card drawn from the discard pile."""
@@ -204,6 +252,7 @@ class CLIRenderer:
                 " from the discard pile. They must replace one of their cards with it.",
             ]
         )
+        self.wait_for_enter()
 
     def display_replace_action(
         self, player: Player, index: int, new_card: Card, old_card: Card
@@ -218,12 +267,14 @@ class CLIRenderer:
                 ".",
             ]
         )
+        self.wait_for_enter()
 
     def display_flip_action(self, player: Player, index: int, card: Card) -> None:
         """Display the action of flipping a card in hand."""
         self.print_card_message(
             [f"{player.name} flipped card at position {index + 1}: ", card]
         )
+        self.wait_for_enter()
 
     def display_turn_start(
         self, player: Player, next_player: Player | None = None
@@ -238,22 +289,26 @@ class CLIRenderer:
                 f"\n[bold]{next_player.name}'s Hand (Next Player):[/bold]"
             )
             self.display_hand(next_player, display_indices=False)
+        self.wait_for_enter()
 
     def display_discard_action(self, player: Player, card: Card) -> None:
         """Display the action of discarding a card."""
         self.print_card_message([f"{player.name} discarded ", card, "."])
+        self.wait_for_enter()
 
     def display_round_start(self, round_num: int) -> None:
         """Display the start of a round."""
         self.console.print(
             Panel(f"[bold cyan]--- Starting Round {round_num} ---[/bold cyan]")
         )
+        self.wait_for_enter()
 
     def display_scores(self, scores: dict[Player, int]) -> None:
         """Display scores. scores is a map of player -> score."""
         self.console.print("\n[bold]Current Scores:[/bold]")
         for player, score in scores.items():
             self.console.print(f"{player.name}: {score}")
+        self.wait_for_enter()
 
     def display_game_over(self) -> None:
         """Display game over message."""

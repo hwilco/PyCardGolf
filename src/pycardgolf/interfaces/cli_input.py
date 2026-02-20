@@ -1,76 +1,45 @@
 """Module containing the CLI input handler implementation."""
 
-import sys
-import time
 from collections.abc import Callable
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from rich.console import Console
-from rich.text import Text
 
-from pycardgolf.exceptions import GameConfigError, GameExitError
+from pycardgolf.exceptions import GameExitError
+from pycardgolf.interfaces.base import (
+    ActionChoice,
+    DrawSource,
+    FlipChoice,
+    GameInput,
+)
+from pycardgolf.utils.constants import HAND_SIZE
 
-try:
-    import msvcrt
-except ImportError:
-    msvcrt = None  # type: ignore[assignment]
+if TYPE_CHECKING:
+    from rich.text import Text
 
-try:
-    import select
-except ImportError:
-    select = None  # type: ignore[assignment]
+    from pycardgolf.core.hand import Hand
+    from pycardgolf.interfaces.cli_renderer import CLIRenderer
+    from pycardgolf.players import Player
+    from pycardgolf.utils.card import Card
 
 
 T = TypeVar("T")
 
 
-class CLIInputHandler:
+class CLIInputHandler(GameInput):
     """Input handler for the CLI interface."""
 
-    def __init__(self, console: Console, delay: float = 0.0) -> None:
+    def __init__(self, console: Console, renderer: "CLIRenderer") -> None:
         self.console = console
-        self.delay = delay
+        self.renderer = renderer
 
-    def wait_for_enter(self) -> None:
-        """Wait for the configured delay. Key press skips delay."""
-        if self.delay < 0:
-            msg = f"Delay cannot be negative. Got {self.delay}"
-            raise GameConfigError(msg)
-        if self.delay == 0:
-            return
-
-        end_time = time.time() + self.delay
-
-        if msvcrt:
-            # Windows
-            while time.time() < end_time:
-                if msvcrt.kbhit():
-                    msvcrt.getch()
-                    break
-                time.sleep(0.05)
-
-        elif select:
-            # Unix / Linux / macOS
-            while time.time() < end_time:
-                # Check for input availability (non-blocking)
-                dr, _, _ = select.select([sys.stdin], [], [], 0)
-                if dr:
-                    # Input available, read line to consume (assuming Enter pressed)
-                    sys.stdin.readline()
-                    break
-                time.sleep(0.05)
-
-        else:
-            # Fallback
-            time.sleep(self.delay)
-
-    def get_input(self, prompt: str | Text) -> str:
+    def get_input(self, prompt: "str | Text") -> str:
         """Get input from the user."""
         return self.console.input(prompt)
 
     def get_choice(
         self,
-        prompt: str | Text,
+        prompt: "str | Text",
         valid_options: list[str],
         error_msg: str = "Invalid input.",
         capitilization_sensitive: bool = False,
@@ -106,7 +75,7 @@ class CLIInputHandler:
 
     def get_validated_input(
         self,
-        prompt: str | Text,
+        prompt: "str | Text",
         validation_func: Callable[[str], T],
         error_msg: str = "Invalid input.",
     ) -> T:
@@ -135,3 +104,112 @@ class CLIInputHandler:
                 return validation_func(user_input)
             except ValueError:
                 self.console.print(error_msg)
+
+    def get_draw_choice(
+        self, deck_card: "Card | None", discard_card: "Card | None"
+    ) -> DrawSource:
+        """Get the user's choice to draw from the deck or discard pile."""
+        prompt = self.renderer.create_draw_choice_prompt(deck_card, discard_card)
+        choice = self.get_choice(
+            prompt,
+            valid_options=["d", "p"],
+            error_msg="Invalid input. Please enter 'd' or 'p'.",
+        )
+        if choice == "d":
+            return DrawSource.DECK
+        return DrawSource.DISCARD
+
+    def get_keep_or_discard_choice(self) -> ActionChoice:
+        """Get the user's choice to keep the drawn card or discard it."""
+        choice = self.get_choice(
+            "Action: (k)eep or (d)iscard? (k/d) ",
+            valid_options=["k", "d"],
+            error_msg="Invalid input. Please enter 'k' or 'd'.",
+            capitilization_sensitive=False,
+        )
+        if choice == "k":
+            return ActionChoice.KEEP
+        return ActionChoice.DISCARD
+
+    def get_flip_choice(self) -> FlipChoice:
+        """Get the user's choice to flip a card."""
+        choice = self.get_choice(
+            "Flip a card? (y/n) ",
+            valid_options=["y", "n"],
+            error_msg="Invalid input. Please enter 'y' or 'n'.",
+        )
+        if choice == "y":
+            return FlipChoice.YES
+        return FlipChoice.NO
+
+    def _validate_card_index(self, s: str) -> int:
+        """Validate input is a valid card index mapping to 0-based index."""
+        idx = int(s)
+        if 1 <= idx <= HAND_SIZE:
+            return idx - 1
+        raise ValueError
+
+    def get_index_to_replace(self) -> int:
+        """Get the index of the card to replace in the hand."""
+        return self.get_validated_input(
+            "Select which card to replace (1-6)? ",
+            validation_func=self._validate_card_index,
+            error_msg="Invalid input. Please enter a number between 1 and 6.",
+        )
+
+    def get_index_to_flip(self) -> int:
+        """Get the index of the card to flip in the hand."""
+        return self.get_validated_input(
+            "Which card to flip (1-6)? ",
+            validation_func=self._validate_card_index,
+            error_msg="Invalid input. Please enter a number between 1 and 6.",
+        )
+
+    def get_initial_cards_to_flip(
+        self, player: "Player", num_to_flip: int
+    ) -> list[int]:
+        """Get the indices of cards to flip at the start of the round."""
+        self.renderer.display_initial_flip_prompt(player, num_to_flip)
+
+        # Show initial hand (all face down)
+        self.display_hand(player, display_indices=True)
+
+        selected_indices: list[int] = []
+        while len(selected_indices) < num_to_flip:
+            self.renderer.display_initial_flip_selection_prompt(
+                len(selected_indices) + 1, num_to_flip
+            )
+            idx = self.get_index_to_flip()
+
+            if idx in selected_indices:
+                self.display_initial_flip_error_already_selected()
+            else:
+                # Flip the card immediately to show it to the user
+                player.hand[idx].face_up = True
+                selected_indices.append(idx)
+                # Show the hand with the newly flipped card
+                self.display_hand(player, display_indices=True)
+
+        return selected_indices
+
+    def get_valid_flip_index(self, hand: "Hand") -> int:
+        """Get a valid index of a face-down card to flip."""
+        face_down_indices = [
+            str(i + 1) for i, card in enumerate(hand) if not card.face_up
+        ]
+        choice = self.get_choice(
+            f"Which card to flip (1-{HAND_SIZE})? ",
+            valid_options=face_down_indices,
+            error_msg=(
+                f"Invalid input. Please select a face-down card. ({face_down_indices})"
+            ),
+        )
+        return int(choice) - 1
+
+    def display_hand(self, player: "Player", display_indices: bool = False) -> None:
+        """Display a player's hand via the renderer."""
+        self.renderer.display_hand(player, display_indices)
+
+    def display_initial_flip_error_already_selected(self) -> None:
+        """Notify the user they selected an already flipped card via the renderer."""
+        self.renderer.display_initial_flip_error_already_selected()

@@ -3,8 +3,9 @@
 import pytest
 from rich.console import Console
 
-from pycardgolf.exceptions import GameConfigError, GameExitError
+from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.cli_input import CLIInputHandler
+from pycardgolf.interfaces.cli_renderer import CLIRenderer
 
 
 @pytest.fixture
@@ -14,19 +15,19 @@ def mock_console(mocker):
 
 
 @pytest.fixture
-def input_handler(mock_console):
-    """Create a CLI input handler with a mock console."""
-    return CLIInputHandler(mock_console)
+def mock_renderer(mocker):
+    """Create a mock renderer."""
+    return mocker.Mock(spec=CLIRenderer)
+
+
+@pytest.fixture
+def input_handler(mock_console, mock_renderer):
+    """Create a CLI input handler with a mock console and renderer."""
+    return CLIInputHandler(mock_console, mock_renderer)
 
 
 class TestInputHandlerValidation:
     """Tests for user input validation in CLIInputHandler."""
-
-    def test_init_negative_delay(self, mock_console):
-        """Test that negative delay raises GameConfigError."""
-        handler = CLIInputHandler(mock_console, delay=-1.0)
-        with pytest.raises(GameConfigError, match="Delay cannot be negative"):
-            handler.wait_for_enter()
 
     def test_get_input(self, input_handler, mock_console):
         """Test basic input retrieval."""
@@ -106,23 +107,3 @@ class TestInputHandlerValidation:
 
         assert result == 5
         mock_console.print.assert_any_call("Invalid number")
-
-    def test_wait_for_enter_windows_kbhit(self, input_handler, mocker):
-        """Test wait_for_enter logic when msvcrt is present (Windows)."""
-        # Mock modules
-        mock_msvcrt = mocker.patch("pycardgolf.interfaces.cli_input.msvcrt")
-        mock_time = mocker.patch("pycardgolf.interfaces.cli_input.time")
-
-        # Scenario: loop runs twice.
-        # 1. time < end_time, kbhit=False (sleeps)
-        # 2. time < end_time, kbhit=True (breaks)
-
-        # Setup mocks
-        mock_time.time.side_effect = [0, 0.5, 0.9, 1.5]  # progress time
-        input_handler.delay = 1.0
-
-        mock_msvcrt.kbhit.side_effect = [False, True]
-
-        input_handler.wait_for_enter()
-
-        assert mock_msvcrt.getch.called is True

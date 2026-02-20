@@ -25,6 +25,30 @@ def captured_renderer():
     return renderer, string_io
 
 
+class TestRendererWait:
+    """Tests for wait_for_enter functionality."""
+
+    def test_init_negative_delay(self):
+        """Test that negative delay raises GameConfigError."""
+        console = Console()
+        renderer = CLIRenderer(console, delay=-1.0)
+        with pytest.raises(GameConfigError, match="Delay cannot be negative"):
+            renderer.wait_for_enter()
+
+    def test_wait_for_enter_windows_kbhit(self, mocker):
+        """Test wait_for_enter logic when msvcrt is present (Windows)."""
+        mock_msvcrt = mocker.patch("pycardgolf.interfaces.cli_renderer.msvcrt")
+        mock_time = mocker.patch("pycardgolf.interfaces.cli_renderer.time")
+
+        mock_time.time.side_effect = [0, 0.5, 0.9, 1.5]
+        console = Console()
+        renderer = CLIRenderer(console, delay=1.0)
+
+        mock_msvcrt.kbhit.side_effect = [False, True]
+        renderer.wait_for_enter()
+        assert mock_msvcrt.getch.called is True
+
+
 @pytest.fixture
 def sample_card():
     """Create a sample card for testing."""

@@ -12,7 +12,8 @@ from rich.markdown import Markdown
 
 from pycardgolf.core.game import Game
 from pycardgolf.exceptions import GameExitError
-from pycardgolf.interfaces.cli import CLIInterface
+from pycardgolf.interfaces.cli_input import CLIInputHandler
+from pycardgolf.interfaces.cli_renderer import CLIRenderer
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
 
@@ -67,18 +68,18 @@ def main() -> None:
         _display_rules()
         sys.exit(0)
 
-    # CLIInterface implements both GameRenderer and GameInput, so a single
-    # object can be passed to both Game (renderer) and HumanPlayer (input).
-    interface = CLIInterface(delay=args.delay)
+    # Instantiate renderer (for Game) and input handler (for HumanPlayer).
+    renderer = CLIRenderer(Console(), delay=args.delay)
+    input_handler = CLIInputHandler(renderer.console, renderer)
     players: list[Player] = []
 
     for i in range(args.humans):
-        name = interface.get_input(f"Enter name for Human {i + 1}: ")
-        players.append(HumanPlayer(name, interface))
+        name = input_handler.get_input(f"Enter name for Human {i + 1}: ")
+        players.append(HumanPlayer(name, input_handler))
 
     players.extend(RandomBot(f"Bot {i + 1}") for i in range(args.bots))
 
-    game = Game(players, interface, num_rounds=args.rounds)
+    game = Game(players, renderer, num_rounds=args.rounds)
     try:
         game.start()
     except GameExitError:
