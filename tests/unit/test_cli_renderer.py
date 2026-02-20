@@ -142,13 +142,6 @@ class TestRendererDisplay:
         assert "TestPlayer flipped card" in result
         assert "A♤" in result
 
-    def test_display_error(self, captured_renderer):
-        """Test display_error method."""
-        renderer, output = captured_renderer
-        renderer.display_error("Test error")
-        assert "Test error" in output.getvalue()
-        assert "[ERROR]" in output.getvalue()
-
     def test_display_hand_output(self, captured_renderer, mock_player):
         """Test that display_hand produces output with borders."""
         renderer, output = captured_renderer

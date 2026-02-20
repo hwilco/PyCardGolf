@@ -243,7 +243,3 @@ class CLIInterface(GameInterface):
     def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
         """Display game statistics."""
         self.renderer.display_game_stats(stats)
-
-    def display_error(self, message: str) -> None:
-        """Display an error message."""
-        self.renderer.display_error(message)

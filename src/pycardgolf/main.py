@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 from pycardgolf.core.game import Game
+from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.cli import CLIInterface
 from pycardgolf.players import Player
 from pycardgolf.players.bots.random_bot import RandomBot
@@ -76,7 +77,14 @@ def main() -> None:
     players.extend(RandomBot(f"Bot {i + 1}", interface) for i in range(args.bots))
 
     game = Game(players, interface, num_rounds=args.rounds)
-    game.start()
+    try:
+        game.start()
+    except GameExitError:
+        console = Console()
+        console.print("\n[bold red][ERROR] Game exited by user.[/bold red]\n")
+    except KeyboardInterrupt:
+        console = Console()
+        console.print("\n[bold red][ERROR] Game interrupted.[/bold red]\n")
 
 
 if __name__ == "__main__":

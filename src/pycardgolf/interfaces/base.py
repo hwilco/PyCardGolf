@@ -80,15 +80,6 @@ class GameInterface(ABC):
         """
 
     @abstractmethod
-    def display_error(self, message: str) -> None:
-        """Display an error message.
-
-        Args:
-            message: The error message to display.
-
-        """
-
-    @abstractmethod
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
         """Prompt player to select initial cards to flip."""
 

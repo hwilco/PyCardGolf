@@ -272,10 +272,6 @@ class CLIRenderer:
             Panel(f"[bold gold1]Winner: {winner.name} with score {score}![/bold gold1]")
         )
 
-    def display_error(self, message: str) -> None:
-        """Display an error message to the player."""
-        self.console.print(f"\n[bold red][ERROR] {message}[/bold red]\n")
-
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
         """Prompt player to select initial cards to flip."""
         msg = (

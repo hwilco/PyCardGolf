@@ -19,7 +19,6 @@ from pycardgolf.core.events import (
 from pycardgolf.core.round import Round
 from pycardgolf.core.state import RoundPhase
 from pycardgolf.core.stats import PlayerStats
-from pycardgolf.exceptions import GameExitError
 
 if TYPE_CHECKING:
     from pycardgolf.interfaces.base import GameInterface
@@ -48,46 +47,40 @@ class Game:
 
     def start(self) -> None:
         """Start the game loop."""
-        try:
-            for i in range(self.num_rounds):
-                self.current_round_num = i + 1
-                self.interface.display_round_start(self.current_round_num)
-                round_seed = self._rng.randrange(sys.maxsize)
+        for i in range(self.num_rounds):
+            self.current_round_num = i + 1
+            self.interface.display_round_start(self.current_round_num)
+            round_seed = self._rng.randrange(sys.maxsize)
 
-                # Update: Initialize Round with num_players and names
-                player_names = [p.name for p in self.players]
-                self.current_round = Round(
-                    player_names=player_names,
-                    seed=round_seed,
-                )
+            # Update: Initialize Round with num_players and names
+            player_names = [p.name for p in self.players]
+            self.current_round = Round(
+                player_names=player_names,
+                seed=round_seed,
+            )
 
-                # Sync hands to players so they have the correct state
-                for idx, player in enumerate(self.players):
-                    player.hand = self.current_round.hands[idx]
+            # Sync hands to players so they have the correct state
+            for idx, player in enumerate(self.players):
+                player.hand = self.current_round.hands[idx]
 
-                # New Loop
-                self._run_round_loop()
+            # New Loop
+            self._run_round_loop()
 
-                # Update total scores
-                round_scores_indices = self.current_round.get_scores()
+            # Update total scores
+            round_scores_indices = self.current_round.get_scores()
 
-                # Map indices back to players
-                round_scores = {
-                    self.players[idx]: score
-                    for idx, score in round_scores_indices.items()
-                }
+            # Map indices back to players
+            round_scores = {
+                self.players[idx]: score for idx, score in round_scores_indices.items()
+            }
 
-                for player, score in round_scores.items():
-                    self.scores[player] += score
-                    self.round_history[player].append(score)
+            for player, score in round_scores.items():
+                self.scores[player] += score
+                self.round_history[player].append(score)
 
-                self.display_scores()
+            self.display_scores()
 
-            self.declare_winner()
-        except GameExitError:
-            self.interface.display_error("\nGame exited by user.")
-        except KeyboardInterrupt:
-            self.interface.display_error("\nGame interrupted.")
+        self.declare_winner()
 
     def _run_round_loop(self) -> None:
         """Execute the engine loop for the current round."""

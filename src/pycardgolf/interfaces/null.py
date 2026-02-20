@@ -54,9 +54,6 @@ class NullGameInterface(GameInterface):
     def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
         """Do nothing."""
 
-    def display_error(self, message: str) -> None:
-        """Do nothing."""
-
     def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
         """Do nothing."""
 
