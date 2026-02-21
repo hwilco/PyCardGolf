@@ -145,7 +145,8 @@ class Game:
         )
 
     def _on_round_end(self, _event: RoundEndEvent) -> None:
-        self.renderer.display_round_end(self)
+        """Handle end of round."""
+        self.renderer.display_round_end(self.current_round_num, self.players)
 
     def display_scores(self) -> None:
         """Display current scores for all players."""

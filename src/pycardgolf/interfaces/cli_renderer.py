@@ -12,7 +12,7 @@ from rich.color import Color, ColorParseError
 from rich.panel import Panel
 from rich.text import Style, Text
 
-from pycardgolf.core.scoring import calculate_score, calculate_visible_score
+from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameRenderer
 from pycardgolf.utils.card import Card
@@ -21,7 +21,6 @@ from pycardgolf.utils.constants import HAND_SIZE
 if TYPE_CHECKING:
     from rich.console import Console
 
-    from pycardgolf.core.game import Game
     from pycardgolf.core.round import Round
     from pycardgolf.core.stats import PlayerStats
     from pycardgolf.players import BasePlayer
@@ -111,47 +110,13 @@ class CLIRenderer(GameRenderer):
             msg = f"Invalid color '{text_color}' or '{background_color}': {e}"
             raise GameConfigError(msg) from e
 
-    def display_state(self, game: Game) -> None:
-        """Display the current state of the game round."""
-        if game.current_round is None:
-            msg = "Game round is None."
-            raise GameConfigError(msg)
-        game_round = game.current_round
-        top_card_text = self.get_card_string(game_round.deck.peek())
-        self.console.print(
-            (
-                f"\nTurn: {game_round.turn_count} | Deck: {game_round.deck.num_cards} "
-                f"cards - Top Card: "
-            ),
-            style="bold",
-            end="",
-        )
-        self.console.print(top_card_text)
-        self._display_discard_pile(game_round)
-
-        for i, player in enumerate(game.players):
-            is_current_turn_player = i == game_round.current_player_idx
-            marker = "*" if is_current_turn_player else " "
-            visible_score = calculate_visible_score(player.hand)
-            self.console.print(
-                f"{marker} Player: {player.name} (Visible Score: {visible_score})"
-            )
-            if (i - game_round.current_player_idx) % len(
-                game.players
-            ) <= self.MAX_OPPONENT_HANDS_TO_DISPLAY:
-                self.display_hand(player, display_indices=is_current_turn_player)
-
-    def display_round_end(self, game: Game) -> None:
+    def display_round_end(self, round_num: int, players: list[BasePlayer]) -> None:
         """Display the state of the game at the end of a round."""
-        if game.current_round is None:
-            msg = "Game round is None."
-            raise GameConfigError(msg)
-
         self.console.print(
-            Panel(f"[bold cyan]--- Round {game.current_round_num} End ---[/bold cyan]")
+            Panel(f"[bold cyan]--- Round {round_num} End ---[/bold cyan]")
         )
 
-        for player in game.players:
+        for player in players:
             round_score = calculate_score(player.hand)
             self.console.print(f"Player: {player.name} (Round Score: {round_score})")
             self.display_hand(player, display_indices=False)

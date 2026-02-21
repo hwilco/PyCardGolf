@@ -17,6 +17,16 @@ from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.constants import HAND_SIZE
 
 
+def test_random_bot_no_actions(mocker):
+    """Test that RandomBot raises RuntimeError if no valid actions are found."""
+    bot = RandomBot("Bot")
+    mock_observation = mocker.Mock(spec=Observation)
+    mock_observation.valid_actions = []
+
+    with pytest.raises(RuntimeError, match=r"No valid actions found."):
+        bot.get_action(mock_observation)
+
+
 @pytest.fixture
 def bot():
     """Create a RandomBot with a fixed seed (no interface required)."""

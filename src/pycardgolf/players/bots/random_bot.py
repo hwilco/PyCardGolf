@@ -6,7 +6,6 @@ import random
 import sys
 from typing import TYPE_CHECKING
 
-from pycardgolf.exceptions import GameConfigError
 from pycardgolf.players.player import BasePlayer
 
 if TYPE_CHECKING:
@@ -36,5 +35,5 @@ class RandomBot(BasePlayer):
         if not observation.valid_actions:
             # Should not occur in a valid game state unless the game is over
             msg = "No valid actions found."
-            raise GameConfigError(msg)
+            raise RuntimeError(msg)
         return self._random.choice(observation.valid_actions)

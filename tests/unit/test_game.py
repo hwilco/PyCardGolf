@@ -87,7 +87,9 @@ def test_process_events_round_end(players, mock_renderer):
     event = RoundEndEvent(scores=scores)
     game.display_events([event])
 
-    mock_renderer.display_round_end.assert_called_once()
+    mock_renderer.display_round_end.assert_called_once_with(
+        game.current_round_num, players
+    )
 
 
 def test_declare_winner(players, mock_renderer):

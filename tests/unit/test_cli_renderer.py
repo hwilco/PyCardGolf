@@ -186,29 +186,6 @@ class TestRendererDisplay:
         assert "+" in result
         assert "|" in result
 
-    def test_display_state(self, captured_renderer, mock_round, mocker):
-        """Test display_state method covers the game state display."""
-        renderer, output = captured_renderer
-        mock_game = mocker.Mock()
-        mock_game.current_round = mock_round
-        mock_game.players = mock_round.players
-
-        renderer.display_state(mock_game)
-
-        result = output.getvalue()
-        assert "5" in result  # Turn count
-        assert "40" in result  # Deck count
-        assert "Player: TestPlayer" in result
-
-    def test_display_state_no_round(self, captured_renderer, mocker):
-        """Test display_state raises error if round is missing."""
-        renderer, _ = captured_renderer
-        mock_game = mocker.Mock()
-        mock_game.current_round = None
-
-        with pytest.raises(GameConfigError):
-            renderer.display_state(mock_game)
-
     def test_display_discard_pile(self, captured_renderer, mocker):
         """Test _display_discard_pile method."""
         renderer, output = captured_renderer

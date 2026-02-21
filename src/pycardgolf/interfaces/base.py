@@ -17,7 +17,6 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.stats import PlayerStats
     from pycardgolf.players.player import BasePlayer
@@ -64,11 +63,7 @@ class GameRenderer(ABC):
     """
 
     @abstractmethod
-    def display_state(self, game: Game) -> None:
-        """Display the current state of the game (cards, scores, etc.)."""
-
-    @abstractmethod
-    def display_round_end(self, game: Game) -> None:
+    def display_round_end(self, round_num: int, players: list[BasePlayer]) -> None:
         """Display the state of the game at the end of a round."""
 
     @abstractmethod
@@ -140,10 +135,9 @@ class NullGameRenderer(GameRenderer):
     where only a subset of display methods needs to be overridden.
     """
 
-    def display_state(self, game: Game) -> None:  # pragma: no cover
-        """No-op."""
-
-    def display_round_end(self, game: Game) -> None:  # pragma: no cover
+    def display_round_end(
+        self, round_num: int, players: list[BasePlayer]
+    ) -> None:  # pragma: no cover
         """No-op."""
 
     def display_round_start(self, round_num: int) -> None:  # pragma: no cover
