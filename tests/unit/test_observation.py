@@ -123,3 +123,11 @@ def test_observation_drawn_card_leak(mock_round):
     # Other player doesn't
     obs1 = ObservationBuilder.build(mock_round, 1)
     assert obs1.drawn_card is None
+
+
+def test_build_observation_empty_deck(mock_round):
+    """Test building observation when deck is empty."""
+    mock_round.deck.num_cards = 0
+    obs = ObservationBuilder.build(mock_round, 0)
+    assert obs.deck_size == 0
+    assert obs.deck_top is None

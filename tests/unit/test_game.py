@@ -101,3 +101,19 @@ def test_declare_winner(players, mock_renderer):
     game.declare_winner()
 
     mock_renderer.display_winner.assert_called_once_with(players[1], 5)
+
+
+def test_run_round_loop_none_round(players, mock_renderer):
+    """Test that _run_round_loop returns early if current_round is None."""
+    game = Game(players, mock_renderer)
+    game.current_round = None
+    # Should return early without error
+    game._run_round_loop()
+
+
+def test_get_winner(players, mock_renderer):
+    """Test get_winner returns player with lowest score."""
+    game = Game(players, mock_renderer)
+    game.scores[players[0]] = 10
+    game.scores[players[1]] = 5
+    assert game.get_winner() == players[1]

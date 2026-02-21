@@ -1,7 +1,11 @@
 import pytest
 
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.scoring import calculate_score, calculate_visible_score
+from pycardgolf.core.scoring import (
+    _card_value,
+    calculate_score,
+    calculate_visible_score,
+)
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank, Suit
@@ -180,3 +184,10 @@ def test_calculate_visible_score_invalid_hand_size(hand_size):
     hand = Hand(cards)
     with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
         calculate_visible_score(hand)
+
+
+def test_card_value_hidden_rank_raises():
+    """Test that _card_value raises ValueError for HIDDEN rank."""
+    card = Card(Rank.HIDDEN, Suit.SPADES, "blue")
+    with pytest.raises(ValueError, match="Cannot calculate value of face-down card"):
+        _card_value(card)

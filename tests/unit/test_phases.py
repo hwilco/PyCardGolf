@@ -24,6 +24,7 @@ from pycardgolf.core.phases import (
     handle_step,
 )
 from pycardgolf.core.round import Round
+from pycardgolf.exceptions import IllegalActionError
 
 
 @pytest.fixture
@@ -146,3 +147,101 @@ def test_round_end(round_state):
 
     assert round_state.phase == RoundPhase.FINISHED
     assert any(isinstance(e, RoundEndEvent) for e in events)
+
+
+def test_handle_step_finished_phase(round_state):
+    """Test that handle_step returns empty list for FINISHED phase."""
+    round_state.phase = RoundPhase.FINISHED
+    events = handle_step(round_state, ActionPass())
+    assert events == []
+
+
+def test_setup_flip_face_up_card_raises(round_state):
+    """Test that flipping already face-up card in SETUP raises error."""
+    round_state.phase = RoundPhase.SETUP
+    round_state.hands[0][0].face_up = True
+
+    with pytest.raises(IllegalActionError, match="Card already face up"):
+        handle_step(round_state, ActionFlipCard(hand_index=0))
+
+
+def test_draw_from_empty_discard_raises(round_state, mocker):
+    """Test that drawing from empty discard raises error."""
+    round_state.phase = RoundPhase.DRAW
+    round_state.discard_pile = mocker.Mock()
+    round_state.discard_pile.num_cards = 0
+
+    with pytest.raises(IllegalActionError, match="Discard pile is empty"):
+        handle_step(round_state, ActionDrawDiscard())
+
+
+def test_draw_invalid_action_raises(round_state):
+    """Test that invalid action in DRAW phase raises error."""
+    round_state.phase = RoundPhase.DRAW
+
+    with pytest.raises(IllegalActionError, match="Invalid action for DRAW phase"):
+        handle_step(round_state, ActionPass())
+
+
+def test_action_no_drawn_card_raises(round_state):
+    """Test that ACTION phase without drawn card raises error."""
+    round_state.phase = RoundPhase.ACTION
+    round_state.drawn_card = None
+
+    with pytest.raises(IllegalActionError, match="No card drawn"):
+        handle_step(round_state, ActionSwapCard(hand_index=0))
+
+
+def test_action_invalid_action_raises(round_state):
+    """Test that invalid action in ACTION phase raises error."""
+    round_state.phase = RoundPhase.ACTION
+    round_state.drawn_card = round_state.deck.draw()
+
+    with pytest.raises(IllegalActionError, match="Invalid action for ACTION phase"):
+        handle_step(round_state, ActionDrawDeck())
+
+
+def test_flip_face_up_card_raises(round_state):
+    """Test that flipping already face-up card in FLIP phase raises error."""
+    round_state.phase = RoundPhase.FLIP
+    round_state.hands[0][0].face_up = True
+
+    with pytest.raises(IllegalActionError, match="Card already face up"):
+        handle_step(round_state, ActionFlipCard(hand_index=0))
+
+
+def test_flip_invalid_action_raises(round_state):
+    """Test that invalid action in FLIP phase raises error."""
+    round_state.phase = RoundPhase.FLIP
+
+    with pytest.raises(IllegalActionError, match="Invalid action for FLIP phase"):
+        handle_step(round_state, ActionDrawDeck())
+
+
+def test_get_valid_actions_finished(round_state):
+    """Test that FINISHED phase returns no valid actions."""
+    round_state.phase = RoundPhase.FINISHED
+    actions = get_valid_actions(round_state, 0)
+    assert actions == []
+
+
+def test_get_valid_actions_draw_empty_discard(round_state):
+    """Test DRAW phase actions when discard pile is empty."""
+    round_state.phase = RoundPhase.DRAW
+    # Round initializes with 1 discard card, so we must clear it to hit the branch
+    while round_state.discard_pile.num_cards > 0:
+        round_state.discard_pile.draw()
+
+    actions = get_valid_actions(round_state, 0)
+    assert len(actions) == 1
+    assert isinstance(actions[0], ActionDrawDeck)
+    # ActionDrawDiscard should NOT be in actions
+    assert not any(isinstance(a, ActionDrawDiscard) for a in actions)
+
+
+def test_handle_step_invalid_phase(round_state):
+    """Test handle_step with an invalid phase to hit fallthrough."""
+    # Using a string to bypass enum-only typing and hit the return [] fallthrough
+    round_state.phase = "INVALID_PHASE"  # type: ignore[assignment]
+    events = handle_step(round_state, ActionPass())
+    assert events == []

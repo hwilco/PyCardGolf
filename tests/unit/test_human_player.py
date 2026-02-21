@@ -135,3 +135,25 @@ def test_get_action_flip_phase_no(player, mock_input_handler, obs):
 
     action = player.get_action(obs)
     assert isinstance(action, ActionPass)
+
+
+def test_get_action_finished_phase_fallback(player, obs):
+    """Test that get_action returns ActionPass for FINISHED phase."""
+    obs.phase = RoundPhase.FINISHED
+    action = player.get_action(obs)
+    assert isinstance(action, ActionPass)
+
+
+def test_get_action_action_phase_no_discard(player, mock_input_handler, obs):
+    """Action phase: can_discard_drawn=False skips discard prompt."""
+    obs.phase = RoundPhase.ACTION
+    obs.drawn_card = Card(Rank.KING, Suit.HEARTS, "blue")
+    obs.can_discard_drawn = False
+
+    mock_input_handler.get_index_to_replace.return_value = 1
+
+    action = player.get_action(obs)
+    assert isinstance(action, ActionSwapCard)
+    assert action.hand_index == 1
+    mock_input_handler.get_keep_or_discard_choice.assert_not_called()
+    mock_input_handler.get_index_to_replace.assert_called_once_with(player)
