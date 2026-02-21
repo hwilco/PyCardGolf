@@ -121,7 +121,7 @@ class CardStack:
             return NotImplemented
         return self.seed == other.seed and self._cards == other._cards
 
-    __hash__ = None
+    __hash__ = None  # type: ignore[assignment]
 
     def __repr__(self) -> str:
         """Return string representation of the CardStack."""
@@ -262,4 +262,4 @@ class Deck(CardStack):
             and self.suit_colors == other.suit_colors
         )
 
-    __hash__ = None
+    __hash__ = None  # type: ignore[assignment]

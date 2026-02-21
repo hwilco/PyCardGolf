@@ -13,7 +13,6 @@ repos:
     hooks:
       - id: isort
 
-
   # 3. Code Formatting Hook
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.8
@@ -41,6 +40,16 @@ repos:
       - id: pyrefly-check
         name: Pyrefly (type checking)
         entry: poetry run pyrefly check
+        language: system
+        pass_filenames: false
+        types: [python]
+
+  # 7. Pyright Type Checking Hook
+  - repo: local
+    hooks:
+      - id: pyright
+        name: Pyright (type checking)
+        entry: poetry run pyright
         language: system
         pass_filenames: false
         types: [python]

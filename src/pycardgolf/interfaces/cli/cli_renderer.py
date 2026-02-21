@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, ClassVar
 from color_contrast import ModulationMode, modulate
 from rich.color import Color, ColorParseError
 from rich.panel import Panel
-from rich.text import Style, Text
+from rich.style import Style
+from rich.text import Text
 
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError

@@ -143,4 +143,4 @@ class Card:
             and self.__face_up == other.__face_up
         )
 
-    __hash__ = None
+    __hash__ = None  # type: ignore[assignment]
