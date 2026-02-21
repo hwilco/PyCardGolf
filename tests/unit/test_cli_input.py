@@ -26,6 +26,15 @@ def input_handler(mock_console, mock_renderer):
     return CLIInputHandler(mock_console, mock_renderer)
 
 
+@pytest.fixture
+def mock_player(mocker):
+    """Create a mock player."""
+    player = mocker.Mock()
+    player.name = "Test Player"
+    player.hand = [mocker.Mock() for _ in range(6)]
+    return player
+
+
 class TestInputHandlerValidation:
     """Tests for user input validation in CLIInputHandler."""
 
@@ -107,3 +116,45 @@ class TestInputHandlerValidation:
 
         assert result == 5
         mock_console.print.assert_any_call("Invalid number")
+
+    def test_get_index_to_replace_shows_hand(
+        self, input_handler, mock_console, mock_renderer, mock_player
+    ):
+        """Test that get_index_to_replace shows the hand."""
+        mock_console.input.return_value = "1"
+        result = input_handler.get_index_to_replace(mock_player)
+        assert result == 0
+        mock_renderer.display_hand.assert_called_once_with(
+            mock_player, display_indices=True
+        )
+
+    def test_get_index_to_flip_shows_hand(
+        self, input_handler, mock_console, mock_renderer, mock_player
+    ):
+        """Test that get_index_to_flip shows the hand."""
+        mock_console.input.return_value = "6"
+        result = input_handler.get_index_to_flip(mock_player)
+        assert result == 5
+        mock_renderer.display_hand.assert_called_once_with(
+            mock_player, display_indices=True
+        )
+
+    def test_get_valid_flip_index_shows_hand(
+        self, input_handler, mock_console, mock_renderer, mock_player
+    ):
+        """Test that get_valid_flip_index shows the hand and filters valid indices."""
+        # Setup hand: indices 0, 1 are face up, rest are face down
+        for i in range(2):
+            mock_player.hand[i].face_up = True
+        for i in range(2, 6):
+            mock_player.hand[i].face_up = False
+
+        # Mock input to pick index 3 (human 4)
+        mock_console.input.return_value = "4"
+
+        result = input_handler.get_valid_flip_index(mock_player)
+
+        assert result == 3
+        mock_renderer.display_hand.assert_called_once_with(
+            mock_player, display_indices=True
+        )

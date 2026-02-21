@@ -58,22 +58,27 @@ def obs():
 def test_get_action_setup_phase(player, mock_input_handler, obs):
     """Setup phase: player flips a face-down card."""
     obs.phase = RoundPhase.SETUP
-    mock_input_handler.get_index_to_flip.return_value = 2
+    mock_input_handler.get_valid_flip_index.return_value = 2
 
     action = player.get_action(obs)
 
     assert isinstance(action, ActionFlipCard)
     assert action.hand_index == 2
-    mock_input_handler.display_hand.assert_called_once()
+    mock_input_handler.get_valid_flip_index.assert_called_once_with(player)
 
 
 def test_get_action_draw_phase(player, mock_input_handler, obs):
     """Draw phase: player draws from deck or discard."""
     obs.phase = RoundPhase.DRAW
+    obs.deck_top = Card(Rank.KING, Suit.HEARTS, "blue")
+    obs.discard_top = Card(Rank.ACE, Suit.SPADES, "blue")
 
     mock_input_handler.get_draw_choice.return_value = DrawSource.DECK
     action = player.get_action(obs)
     assert isinstance(action, ActionDrawDeck)
+    mock_input_handler.get_draw_choice.assert_called_with(
+        player, obs.deck_top, obs.discard_top
+    )
 
     mock_input_handler.get_draw_choice.return_value = DrawSource.DISCARD
     action = player.get_action(obs)
@@ -92,6 +97,8 @@ def test_get_action_action_phase_keep_and_swap(player, mock_input_handler, obs):
     action = player.get_action(obs)
     assert isinstance(action, ActionSwapCard)
     assert action.hand_index == 1
+    mock_input_handler.get_keep_or_discard_choice.assert_called_once_with(player)
+    mock_input_handler.get_index_to_replace.assert_called_once_with(player)
 
 
 def test_get_action_action_phase_discard_drawn(player, mock_input_handler, obs):
@@ -116,6 +123,8 @@ def test_get_action_flip_phase_yes(player, mock_input_handler, obs):
     action = player.get_action(obs)
     assert isinstance(action, ActionFlipCard)
     assert action.hand_index == 3
+    mock_input_handler.get_flip_choice.assert_called_once_with(player)
+    mock_input_handler.get_valid_flip_index.assert_called_once_with(player)
 
 
 def test_get_action_flip_phase_no(player, mock_input_handler, obs):

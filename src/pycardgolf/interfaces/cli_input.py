@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from rich.console import Console
     from rich.text import Text
 
-    from pycardgolf.core.hand import Hand
     from pycardgolf.interfaces.cli_renderer import CLIRenderer
     from pycardgolf.players import BasePlayer
     from pycardgolf.utils.card import Card
@@ -108,10 +107,11 @@ class CLIInputHandler(GameInput):
                 self.console.print(error_msg)
 
     def get_draw_choice(
-        self, deck_card: Card | None, discard_card: Card | None
+        self, player: BasePlayer, deck_card: Card | None, discard_card: Card | None
     ) -> DrawSource:
         """Get the user's choice to draw from the deck or discard pile."""
         prompt = self.renderer.create_draw_choice_prompt(deck_card, discard_card)
+        self.console.print(f"{player.name}'s turn:")
         choice = self.get_choice(
             prompt,
             valid_options=["d", "p"],
@@ -121,10 +121,10 @@ class CLIInputHandler(GameInput):
             return DrawSource.DECK
         return DrawSource.DISCARD
 
-    def get_keep_or_discard_choice(self) -> ActionChoice:
+    def get_keep_or_discard_choice(self, player: BasePlayer) -> ActionChoice:
         """Get the user's choice to keep the drawn card or discard it."""
         choice = self.get_choice(
-            "Action: (k)eep or (d)iscard? (k/d) ",
+            f"{player.name}, (k)eep or (d)iscard? (k/d) ",
             valid_options=["k", "d"],
             error_msg="Invalid input. Please enter 'k' or 'd'.",
             capitilization_sensitive=False,
@@ -133,10 +133,10 @@ class CLIInputHandler(GameInput):
             return ActionChoice.KEEP
         return ActionChoice.DISCARD
 
-    def get_flip_choice(self) -> FlipChoice:
+    def get_flip_choice(self, player: BasePlayer) -> FlipChoice:
         """Get the user's choice to flip a card."""
         choice = self.get_choice(
-            "Flip a card? (y/n) ",
+            f"{player.name}, flip a card? (y/n) ",
             valid_options=["y", "n"],
             error_msg="Invalid input. Please enter 'y' or 'n'.",
         )
@@ -151,53 +151,31 @@ class CLIInputHandler(GameInput):
             return idx - 1
         raise ValueError
 
-    def get_index_to_replace(self) -> int:
+    def get_index_to_replace(self, player: BasePlayer) -> int:
         """Get the index of the card to replace in the hand."""
+        self.renderer.display_hand(player, display_indices=True)
         return self.get_validated_input(
             "Select which card to replace (1-6)? ",
             validation_func=self._validate_card_index,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
         )
 
-    def get_index_to_flip(self) -> int:
+    def get_index_to_flip(self, player: BasePlayer) -> int:
         """Get the index of the card to flip in the hand."""
+        self.renderer.display_hand(player, display_indices=True)
         return self.get_validated_input(
             "Which card to flip (1-6)? ",
             validation_func=self._validate_card_index,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
         )
 
-    def get_initial_cards_to_flip(
-        self, player: BasePlayer, num_to_flip: int
-    ) -> list[int]:
-        """Get the indices of cards to flip at the start of the round."""
-        self.renderer.display_initial_flip_prompt(player, num_to_flip)
-
-        # Show initial hand (all face down)
-        self.display_hand(player, display_indices=True)
-
-        selected_indices: list[int] = []
-        while len(selected_indices) < num_to_flip:
-            self.renderer.display_initial_flip_selection_prompt(
-                len(selected_indices) + 1, num_to_flip
-            )
-            idx = self.get_index_to_flip()
-
-            if idx in selected_indices:
-                self.display_initial_flip_error_already_selected()
-            else:
-                # Flip the card immediately to show it to the user
-                player.hand[idx].face_up = True
-                selected_indices.append(idx)
-                # Show the hand with the newly flipped card
-                self.display_hand(player, display_indices=True)
-
-        return selected_indices
-
-    def get_valid_flip_index(self, hand: Hand) -> int:
+    def get_valid_flip_index(self, player: BasePlayer) -> int:
         """Get a valid index of a face-down card to flip."""
+        # Show hand for context (especially critical in setup phase)
+        self.renderer.display_hand(player, display_indices=True)
+
         face_down_indices = [
-            str(i + 1) for i, card in enumerate(hand) if not card.face_up
+            str(i + 1) for i, card in enumerate(player.hand) if not card.face_up
         ]
         choice = self.get_choice(
             f"Which card to flip (1-{HAND_SIZE})? ",
@@ -207,11 +185,3 @@ class CLIInputHandler(GameInput):
             ),
         )
         return int(choice) - 1
-
-    def display_hand(self, player: BasePlayer, display_indices: bool = False) -> None:
-        """Display a player's hand via the renderer."""
-        self.renderer.display_hand(player, display_indices)
-
-    def display_initial_flip_error_already_selected(self) -> None:
-        """Notify the user they selected an already flipped card via the renderer."""
-        self.renderer.display_initial_flip_error_already_selected()

@@ -54,19 +54,13 @@ class HumanPlayer(BasePlayer):
         return ActionPass()
 
     def _handle_setup_phase(self, _observation: Observation) -> Action:
-        self.input_handler.display_hand(self, display_indices=True)
-        # Keep asking until the player picks a face-down card
-        while True:
-            idx = self.input_handler.get_index_to_flip()
-            if self.hand[idx].face_up:
-                self.input_handler.display_initial_flip_error_already_selected()
-            else:
-                return ActionFlipCard(hand_index=idx)
+        idx = self.input_handler.get_valid_flip_index(self)
+        return ActionFlipCard(hand_index=idx)
 
     def _handle_draw_phase(self, observation: Observation) -> Action:
         deck_card = observation.deck_top
         discard_card = observation.discard_top
-        choice = self.input_handler.get_draw_choice(deck_card, discard_card)
+        choice = self.input_handler.get_draw_choice(self, deck_card, discard_card)
         if choice == DrawSource.DISCARD:
             return ActionDrawDiscard()
         return ActionDrawDeck()
@@ -74,15 +68,15 @@ class HumanPlayer(BasePlayer):
     def _handle_action_phase(self, observation: Observation) -> Action:
         can_discard = observation.can_discard_drawn
         if can_discard:
-            choice = self.input_handler.get_keep_or_discard_choice()
+            choice = self.input_handler.get_keep_or_discard_choice(self)
             if choice == ActionChoice.DISCARD:
                 return ActionDiscardDrawn()
-        idx = self.input_handler.get_index_to_replace()
+        idx = self.input_handler.get_index_to_replace(self)
         return ActionSwapCard(hand_index=idx)
 
     def _handle_flip_phase(self, _: Observation) -> Action:
-        choice = self.input_handler.get_flip_choice()
+        choice = self.input_handler.get_flip_choice(self)
         if choice == FlipChoice.YES:
-            idx = self.input_handler.get_valid_flip_index(self.hand)
+            idx = self.input_handler.get_valid_flip_index(self)
             return ActionFlipCard(hand_index=idx)
         return ActionPass()
