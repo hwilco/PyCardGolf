@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from rich.console import Console
     from rich.text import Text
 
-    from pycardgolf.interfaces.cli_renderer import CLIRenderer
+    from pycardgolf.interfaces.cli.cli_renderer import CLIRenderer
     from pycardgolf.players import BasePlayer
     from pycardgolf.utils.card import Card
 

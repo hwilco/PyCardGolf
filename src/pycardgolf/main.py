@@ -12,8 +12,7 @@ from rich.markdown import Markdown
 
 from pycardgolf.core.game import Game
 from pycardgolf.exceptions import GameExitError
-from pycardgolf.interfaces.cli_input import CLIInputHandler
-from pycardgolf.interfaces.cli_renderer import CLIRenderer
+from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
 from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
 

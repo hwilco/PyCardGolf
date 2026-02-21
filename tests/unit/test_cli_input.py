@@ -4,8 +4,7 @@ import pytest
 from rich.console import Console
 
 from pycardgolf.exceptions import GameExitError
-from pycardgolf.interfaces.cli_input import CLIInputHandler
-from pycardgolf.interfaces.cli_renderer import CLIRenderer
+from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ from pycardgolf.core.hand import Hand
 from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
-from pycardgolf.interfaces.cli_renderer import CLIRenderer
+from pycardgolf.interfaces.cli.cli_renderer import CLIRenderer
 from pycardgolf.players.player import BasePlayer
 from pycardgolf.utils.card import Card, Rank, Suit
 from pycardgolf.utils.deck import CardStack, Deck
@@ -37,8 +37,8 @@ class TestRendererWait:
 
     def test_wait_for_enter_windows_kbhit(self, mocker):
         """Test wait_for_enter logic when msvcrt is present (Windows)."""
-        mock_msvcrt = mocker.patch("pycardgolf.interfaces.cli_renderer.msvcrt")
-        mock_time = mocker.patch("pycardgolf.interfaces.cli_renderer.time")
+        mock_msvcrt = mocker.patch("pycardgolf.interfaces.cli.cli_renderer.msvcrt")
+        mock_time = mocker.patch("pycardgolf.interfaces.cli.cli_renderer.time")
 
         mock_time.time.side_effect = [0, 0.5, 0.9, 1.5]
         console = Console()
