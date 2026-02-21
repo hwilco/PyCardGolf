@@ -4,17 +4,22 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pycardgolf.core.events import GameEvent, RoundEndEvent
+from pycardgolf.core.event_bus import EventBus
+from pycardgolf.core.events import (
+    GameOverEvent,
+    GameStatsEvent,
+    RoundStartEvent,
+    ScoreBoardEvent,
+)
 from pycardgolf.core.game import Game
 from pycardgolf.core.round import Round
-from pycardgolf.interfaces.base import GameRenderer
 from pycardgolf.players.player import BasePlayer
 
 
 @pytest.fixture
-def mock_renderer():
-    """Create a mock GameRenderer."""
-    return MagicMock(spec=GameRenderer)
+def mock_event_bus():
+    """Create a mock EventBus."""
+    return MagicMock(spec=EventBus)
 
 
 @pytest.fixture
@@ -27,17 +32,17 @@ def players():
     return [p1, p2]
 
 
-def test_game_init(players, mock_renderer):
+def test_game_init(players, mock_event_bus):
     """Test Game initializes with correct defaults."""
-    game = Game(players, mock_renderer, num_rounds=5)
+    game = Game(players, mock_event_bus, num_rounds=5)
     assert game.num_rounds == 5
     assert len(game.players) == 2
     assert game.scores[players[0]] == 0
 
 
-def test_game_start_and_loop_flow(players, mock_renderer, mocker):
+def test_game_start_and_loop_flow(players, mock_event_bus, mocker):
     """Test the full game loop calls Round and display methods."""
-    game = Game(players, mock_renderer, num_rounds=2)
+    game = Game(players, mock_event_bus, num_rounds=2)
 
     mock_round_cls = mocker.patch("pycardgolf.core.game.Round")
     mock_round_instance = MagicMock(spec=Round)
@@ -57,63 +62,72 @@ def test_game_start_and_loop_flow(players, mock_renderer, mocker):
     # P2 (index 1) gets 5 per round * 2 = 10
     assert game.scores[players[1]] == 10
 
-    mock_renderer.display_round_start.assert_any_call(1)
-    mock_renderer.display_round_start.assert_any_call(2)
-    mock_renderer.display_game_over.assert_called_once()
-    mock_renderer.display_standings.assert_called_once()
-    mock_renderer.display_winner.assert_called_once()
+    # Test event publishing
+    assert mock_event_bus.publish.call_count > 0
+    published_events = [call.args[0] for call in mock_event_bus.publish.call_args_list]
 
-
-def test_display_events_unknown_event(players, mock_renderer):
-    """Test that display_events raises TypeError for unregistered events."""
-    game = Game(players, mock_renderer)
-
-    class UnknownEvent(GameEvent):
-        pass
-
-    event = UnknownEvent(event_type="UNKNOWN")  # type: ignore[arg-type]
-
-    # Should raise TypeError
-    with pytest.raises(TypeError, match="No handler registered for UnknownEvent"):
-        game.display_events([event])
-    mock_renderer.assert_not_called()
-
-
-def test_process_events_round_end(players, mock_renderer):
-    """Test that RoundEndEvent triggers display_round_end."""
-    game = Game(players, mock_renderer)
-
-    scores = {0: 10, 1: 5}
-    event = RoundEndEvent(scores=scores)
-    game.display_events([event])
-
-    mock_renderer.display_round_end.assert_called_once_with(
-        game.current_round_num, players
+    assert any(
+        isinstance(e, RoundStartEvent) and e.round_num == 1 for e in published_events
     )
+    assert any(
+        isinstance(e, RoundStartEvent) and e.round_num == 2 for e in published_events
+    )
+    assert any(isinstance(e, GameOverEvent) for e in published_events)
+    assert any(isinstance(e, ScoreBoardEvent) for e in published_events)
 
 
-def test_declare_winner(players, mock_renderer):
+def test_publish_events(players, mock_event_bus):
+    """Test that publish_events sends events to the event bus."""
+    game = Game(players, mock_event_bus)
+
+    event = RoundStartEvent(round_num=1)
+    game.publish_events([event])
+
+    mock_event_bus.publish.assert_called_once_with(event)
+
+
+def test_publish_scores(players, mock_event_bus):
+    """Test that publish_scores publishes a ScoreBoardEvent."""
+    game = Game(players, mock_event_bus)
+    game.scores = {players[0]: 10, players[1]: 5}
+
+    game.publish_scores()
+
+    assert mock_event_bus.publish.call_count == 1
+    published_event = mock_event_bus.publish.call_args[0][0]
+    assert isinstance(published_event, ScoreBoardEvent)
+    assert published_event.scores == game.scores
+
+
+def test_declare_winner(players, mock_event_bus):
     """Test that declare_winner notifies the renderer correctly."""
-    game = Game(players, mock_renderer)
+    game = Game(players, mock_event_bus)
     game.scores[players[0]] = 10
     game.scores[players[1]] = 5  # Winner (lower is better)
 
     game.declare_winner()
 
-    mock_renderer.display_winner.assert_called_once_with(players[1], 5)
+    published_events = [call.args[0] for call in mock_event_bus.publish.call_args_list]
+
+    assert any(isinstance(e, GameStatsEvent) for e in published_events)
+    assert any(isinstance(e, ScoreBoardEvent) for e in published_events)
+    game_over_events = [e for e in published_events if isinstance(e, GameOverEvent)]
+    assert len(game_over_events) == 1
+    assert game_over_events[0].winner == players[1]
+    assert game_over_events[0].winning_score == 5
 
 
-def test_run_round_loop_none_round(players, mock_renderer):
+def test_run_round_loop_none_round(players, mock_event_bus):
     """Test that _run_round_loop returns early if current_round is None."""
-    game = Game(players, mock_renderer)
+    game = Game(players, mock_event_bus)
     game.current_round = None
     # Should return early without error
     game._run_round_loop()
 
 
-def test_get_winner(players, mock_renderer):
+def test_get_winner(players, mock_event_bus):
     """Test get_winner returns player with lowest score."""
-    game = Game(players, mock_renderer)
+    game = Game(players, mock_event_bus)
     game.scores[players[0]] = 10
     game.scores[players[1]] = 5
     assert game.get_winner() == players[1]

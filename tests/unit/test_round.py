@@ -49,6 +49,20 @@ def test_round_initialization():
     assert round_instance.discard_pile.peek().face_up
 
 
+def test_rounds_have_unique_default_seeds(mocker):
+    """Test that multiple rounds instantiated without seeds get unique seeds."""
+    mock_randrange = mocker.patch("pycardgolf.core.round.random.randrange")
+    mock_randrange.side_effect = [100, 200, 300]
+
+    r1 = Round(["P1", "P2"])
+    r2 = Round(["P1", "P2"])
+    r3 = Round(["P1", "P2"])
+
+    assert r1.seed == 100
+    assert r2.seed == 200
+    assert r3.seed == 300
+
+
 def test_round_step_setup_phase():
     player_names = ["P1"]
     round_instance = Round(player_names=player_names)

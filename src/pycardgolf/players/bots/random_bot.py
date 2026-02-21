@@ -23,11 +23,11 @@ class RandomBot(BasePlayer):
     def __init__(
         self,
         name: str,
-        seed: int = random.randrange(sys.maxsize),
+        seed: int | None = None,
     ) -> None:
         """Initialize the bot with a name and an optional RNG seed."""
         super().__init__(name)
-        self.seed: int = seed
+        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
         self._random: random.Random = random.Random(self.seed)
 
     def get_action(self, observation: Observation) -> Action:

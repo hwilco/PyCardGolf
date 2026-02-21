@@ -105,6 +105,34 @@ def test_lazy_rng():
     assert "rand" in stack.__dict__
 
 
+def test_cardstack_unique_default_seed(mocker):
+    """Test that multiple CardStacks without seeds get unique seeds."""
+    mock_randrange = mocker.patch("pycardgolf.utils.deck.random.randrange")
+    mock_randrange.side_effect = [100, 200, 300]
+
+    s1 = CardStack()
+    s2 = CardStack()
+    s3 = CardStack()
+
+    assert s1.seed == 100
+    assert s2.seed == 200
+    assert s3.seed == 300
+
+
+def test_deck_unique_default_seed(mocker):
+    """Test that multiple Decks without seeds get unique seeds."""
+    mock_randrange = mocker.patch("pycardgolf.utils.deck.random.randrange")
+    mock_randrange.side_effect = [100, 200, 300]
+
+    d1 = Deck("red")
+    d2 = Deck("red")
+    d3 = Deck("red")
+
+    assert d1.seed == 100
+    assert d2.seed == 200
+    assert d3.seed == 300
+
+
 def test_shuffle_deterministic():
     """Test that shuffling with the same seed produces deterministic results."""
     cards = [Card(i, Suit.HEARTS, "red") for i in Rank]

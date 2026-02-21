@@ -25,12 +25,12 @@ class Round:
     def __init__(
         self,
         player_names: list[str],
-        seed: int = random.randrange(sys.maxsize),
+        seed: int | None = None,
     ) -> None:
         """Initialize a round with players."""
         self.player_names: list[str] = player_names
         self.num_players: int = len(player_names)
-        self.seed: int = seed
+        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
         self._rng: random.Random = random.Random(self.seed)
 
         # Game State

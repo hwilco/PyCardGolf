@@ -22,7 +22,6 @@ from pycardgolf.core.events import (
     CardFlippedEvent,
     CardSwappedEvent,
     GameEvent,
-    RoundEndEvent,
     TurnStartEvent,
 )
 from pycardgolf.exceptions import IllegalActionError
@@ -311,8 +310,6 @@ def _end_turn(round_state: Round, events: list[GameEvent]) -> None:
     ):
         round_state.phase = RoundPhase.FINISHED
         round_state.reveal_hands()  # Reveal hidden cards
-        scores = round_state.get_scores()
-        events.append(RoundEndEvent(scores=scores))
     else:
         round_state.phase = RoundPhase.DRAW
         events.append(TurnStartEvent(player_idx=round_state.current_player_idx))

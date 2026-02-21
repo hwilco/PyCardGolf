@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 from rich.markdown import Markdown
 
+from pycardgolf.core.event_bus import EventBus
 from pycardgolf.core.game import Game
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
@@ -67,8 +68,8 @@ def main() -> None:
         _display_rules()
         sys.exit(0)
 
-    # Instantiate renderer (for Game) and input handler (for HumanPlayer).
-    renderer = CLIRenderer(Console(), delay=args.delay)
+    event_bus = EventBus()
+    renderer = CLIRenderer(event_bus, Console(), delay=args.delay)
     input_handler = CLIInputHandler(renderer.console, renderer)
     players: list[BasePlayer] = []
 
@@ -78,7 +79,7 @@ def main() -> None:
 
     players.extend(RandomBot(f"Bot {i + 1}") for i in range(args.bots))
 
-    game = Game(players, renderer, num_rounds=args.rounds)
+    game = Game(players, event_bus, num_rounds=args.rounds)
     try:
         game.start()
     except GameExitError:

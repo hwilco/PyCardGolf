@@ -4,18 +4,16 @@ from __future__ import annotations
 
 import random
 import sys
-from functools import singledispatchmethod
 from typing import TYPE_CHECKING
 
 from pycardgolf.core.events import (
-    CardDiscardedEvent,
-    CardDrawnDeckEvent,
-    CardDrawnDiscardEvent,
-    CardFlippedEvent,
-    CardSwappedEvent,
     GameEvent,
+    GameOverEvent,
+    GameStartedEvent,
+    GameStatsEvent,
     RoundEndEvent,
-    TurnStartEvent,
+    RoundStartEvent,
+    ScoreBoardEvent,
 )
 from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.core.phases import RoundPhase
@@ -23,7 +21,7 @@ from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:
-    from pycardgolf.interfaces.base import GameRenderer
+    from pycardgolf.core.event_bus import EventBus
     from pycardgolf.players import BasePlayer
 
 
@@ -33,14 +31,14 @@ class Game:
     def __init__(
         self,
         players: list[BasePlayer],
-        renderer: GameRenderer,
+        event_bus: EventBus,
         num_rounds: int = 9,
         seed: int | None = None,
     ) -> None:
         self.players: list[BasePlayer] = players
         self.scores: dict[BasePlayer, int] = dict.fromkeys(players, 0)
         self.round_history: dict[BasePlayer, list[int]] = {p: [] for p in players}
-        self.renderer: GameRenderer = renderer
+        self.event_bus: EventBus = event_bus
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
         self.current_round: Round | None = None
@@ -49,9 +47,11 @@ class Game:
 
     def start(self) -> None:
         """Start the game loop."""
+        self.event_bus.publish(GameStartedEvent(players=self.players))
+
         for i in range(self.num_rounds):
             self.current_round_num = i + 1
-            self.renderer.display_round_start(self.current_round_num)
+            self.event_bus.publish(RoundStartEvent(round_num=self.current_round_num))
             round_seed = self._rng.randrange(sys.maxsize)
 
             player_names = [p.name for p in self.players]
@@ -76,7 +76,13 @@ class Game:
                 self.scores[player] += score
                 self.round_history[player].append(score)
 
-            self.display_scores()
+            self.event_bus.publish(
+                RoundEndEvent(
+                    scores=round_scores.copy(), round_num=self.current_round_num
+                )
+            )
+
+            self.publish_scores()
 
         self.declare_winner()
 
@@ -94,66 +100,16 @@ class Game:
             obs = ObservationBuilder.build(round_instance, current_player_idx)
             action = current_player.get_action(obs)
             events = round_instance.step(action)
-            self.display_events(events)
+            self.publish_events(events)
 
-    def display_events(self, events: list[GameEvent]) -> None:
-        """Dispatch each game event to the appropriate renderer method."""
+    def publish_events(self, events: list[GameEvent]) -> None:
+        """Publish each game event to the event bus."""
         for event in events:
-            self._handle_event(event)
+            self.event_bus.publish(event)
 
-    @singledispatchmethod
-    def _handle_event(self, event: GameEvent) -> None:
-        """Fallback handler if an unknown event is passed."""
-        msg = f"No handler registered for {type(event).__name__}"
-        raise TypeError(msg)
-
-    @_handle_event.register
-    def _on_turn_start(self, event: TurnStartEvent) -> None:
-        """Handle start of turn."""
-        self.renderer.display_turn_start(
-            self.players[event.player_idx], self.players, event.player_idx
-        )
-
-    @_handle_event.register
-    def _on_card_drawn_deck(self, event: CardDrawnDeckEvent) -> None:
-        """Handle card drawn from deck."""
-        self.renderer.display_drawn_card(self.players[event.player_idx], event.card)
-
-    @_handle_event.register
-    def _on_card_drawn_discard(self, event: CardDrawnDiscardEvent) -> None:
-        """Handle card drawn from discard pile."""
-        self.renderer.display_discard_draw(self.players[event.player_idx], event.card)
-
-    @_handle_event.register
-    def _on_card_discarded(self, event: CardDiscardedEvent) -> None:
-        """Handle card discarded."""
-        self.renderer.display_discard_action(self.players[event.player_idx], event.card)
-
-    @_handle_event.register
-    def _on_card_swapped(self, event: CardSwappedEvent) -> None:
-        """Handle card swapped in hand."""
-        self.renderer.display_replace_action(
-            self.players[event.player_idx],
-            event.hand_index,
-            event.new_card,
-            event.old_card,
-        )
-
-    @_handle_event.register
-    def _on_card_flipped(self, event: CardFlippedEvent) -> None:
-        """Handle card flipped in hand."""
-        self.renderer.display_flip_action(
-            self.players[event.player_idx], event.hand_index, event.card
-        )
-
-    @_handle_event.register
-    def _on_round_end(self, _event: RoundEndEvent) -> None:
-        """Handle end of round."""
-        self.renderer.display_round_end(self.current_round_num, self.players)
-
-    def display_scores(self) -> None:
-        """Display current scores for all players."""
-        self.renderer.display_scores(self.scores)
+    def publish_scores(self) -> None:
+        """Publish current scores for all players."""
+        self.event_bus.publish(ScoreBoardEvent(scores=self.scores.copy()))
 
     def get_standings(self) -> list[tuple[BasePlayer, int]]:
         """Return (player, score) pairs sorted by score (ascending — lowest wins)."""
@@ -171,16 +127,17 @@ class Game:
         }
 
     def declare_winner(self) -> None:
-        """Notify the renderer of the game winner and final standings."""
-        self.renderer.display_game_over()
-
+        """Publish the game winner and final standings."""
         standings = self.get_standings()
+        stats = self.get_stats()
 
-        self.renderer.display_game_stats(self.get_stats())
-        self.renderer.display_standings(standings)
+        self.event_bus.publish(GameStatsEvent(stats=stats))
+        self.event_bus.publish(
+            ScoreBoardEvent(scores=self.scores.copy(), standings=standings)
+        )
 
         winner, score = standings[0]
-        self.renderer.display_winner(winner, score)
+        self.event_bus.publish(GameOverEvent(winner=winner, winning_score=score))
 
     def __repr__(self) -> str:
-        return f"Game(players={self.players}, renderer={self.renderer})"
+        return f"Game(players={self.players}, event_bus={self.event_bus})"

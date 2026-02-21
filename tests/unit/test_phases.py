@@ -15,7 +15,6 @@ from pycardgolf.core.events import (
     CardDrawnDeckEvent,
     CardFlippedEvent,
     CardSwappedEvent,
-    RoundEndEvent,
     TurnStartEvent,
 )
 from pycardgolf.core.phases import (
@@ -133,7 +132,7 @@ def test_round_end(round_state):
     round_state.phase = RoundPhase.FLIP
 
     # Player 1 is current player, just finished their turn
-    events = handle_step(round_state, ActionPass())
+    handle_step(round_state, ActionPass())
 
     # Should flag last turn
     assert round_state.last_turn_player_idx == 0
@@ -143,10 +142,9 @@ def test_round_end(round_state):
     # Player 2 turn
     round_state.hands[1][5].face_up = True
     round_state.phase = RoundPhase.FLIP
-    events = handle_step(round_state, ActionPass())
+    handle_step(round_state, ActionPass())
 
     assert round_state.phase == RoundPhase.FINISHED
-    assert any(isinstance(e, RoundEndEvent) for e in events)
 
 
 def test_handle_step_finished_phase(round_state):

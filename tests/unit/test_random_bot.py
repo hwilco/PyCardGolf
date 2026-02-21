@@ -27,6 +27,20 @@ def test_random_bot_no_actions(mocker):
         bot.get_action(mock_observation)
 
 
+def test_bots_have_unique_default_seeds(mocker):
+    """Test that multiple bots instantiated without seeds get unique seeds."""
+    mock_randrange = mocker.patch("pycardgolf.players.bots.random_bot.random.randrange")
+    mock_randrange.side_effect = [100, 200, 300]
+
+    bot1 = RandomBot("Bot 1")
+    bot2 = RandomBot("Bot 2")
+    bot3 = RandomBot("Bot 3")
+
+    assert bot1.seed == 100
+    assert bot2.seed == 200
+    assert bot3.seed == 300
+
+
 @pytest.fixture
 def bot():
     """Create a RandomBot with a fixed seed (no interface required)."""

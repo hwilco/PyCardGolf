@@ -6,6 +6,20 @@ import pytest
 from rich.console import Console
 from rich.text import Text
 
+from pycardgolf.core.event_bus import EventBus
+from pycardgolf.core.events import (
+    CardDiscardedEvent,
+    CardDrawnDeckEvent,
+    CardDrawnDiscardEvent,
+    CardFlippedEvent,
+    CardSwappedEvent,
+    GameOverEvent,
+    GameStatsEvent,
+    RoundEndEvent,
+    RoundStartEvent,
+    ScoreBoardEvent,
+    TurnStartEvent,
+)
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
@@ -21,7 +35,8 @@ def captured_renderer():
     """Create a renderer that captures output to a string buffer."""
     string_io = io.StringIO()
     console = Console(file=string_io, force_terminal=False)
-    renderer = CLIRenderer(console)
+    event_bus = EventBus()
+    renderer = CLIRenderer(event_bus, console)
     return renderer, string_io
 
 
@@ -31,7 +46,8 @@ class TestRendererWait:
     def test_init_negative_delay(self):
         """Test that negative delay raises GameConfigError."""
         console = Console()
-        renderer = CLIRenderer(console, delay=-1.0)
+        event_bus = EventBus()
+        renderer = CLIRenderer(event_bus, console, delay=-1.0)
         with pytest.raises(GameConfigError, match="Delay cannot be negative"):
             renderer.wait_for_enter()
 
@@ -42,7 +58,8 @@ class TestRendererWait:
 
         mock_time.time.side_effect = [0, 0.5, 0.9, 1.5]
         console = Console()
-        renderer = CLIRenderer(console, delay=1.0)
+        event_bus = EventBus()
+        renderer = CLIRenderer(event_bus, console, delay=1.0)
 
         mock_msvcrt.kbhit.side_effect = [False, True]
         renderer.wait_for_enter()
@@ -151,15 +168,17 @@ class TestRendererDisplay:
     def test_display_drawn_card(self, captured_renderer, sample_card, mock_player):
         """Test displaying a drawn card."""
         renderer, output = captured_renderer
-        renderer.display_drawn_card(mock_player, sample_card)
-        assert "TestPlayer drew:" in output.getvalue()
+        event = CardDrawnDeckEvent(player_idx=0, card=sample_card)
+        renderer.display_drawn_card(event)
+        assert "Player 0 drew:" in output.getvalue()
         assert "A♤" in output.getvalue()
 
     def test_display_discard_draw(self, captured_renderer, sample_card, mock_player):
         """Test displaying a discard pile draw."""
         renderer, output = captured_renderer
-        renderer.display_discard_draw(mock_player, sample_card)
-        assert "TestPlayer drew" in output.getvalue()
+        event = CardDrawnDiscardEvent(player_idx=0, card=sample_card)
+        renderer.display_discard_draw(event)
+        assert "Player 0 drew" in output.getvalue()
         assert "A♤" in output.getvalue()
 
     def test_display_replace_action(self, captured_renderer, mock_player):
@@ -168,20 +187,24 @@ class TestRendererDisplay:
         new_card = Card(Rank.ACE, Suit.SPADES, "red", face_up=True)
         old_card = Card(Rank.TWO, Suit.HEARTS, "red", face_up=True)
 
-        renderer.display_replace_action(mock_player, 2, new_card, old_card)
+        event = CardSwappedEvent(
+            player_idx=0, hand_index=2, new_card=new_card, old_card=old_card
+        )
+        renderer.display_replace_action(event)
 
         result = output.getvalue()
-        assert "TestPlayer replaced card" in result
+        assert "Player 0 replaced card" in result
         assert "A♤" in result
         assert "2♡" in result
 
     def test_display_flip_action(self, captured_renderer, sample_card, mock_player):
         """Test displaying a flip action."""
         renderer, output = captured_renderer
-        renderer.display_flip_action(mock_player, 1, sample_card)
+        event = CardFlippedEvent(player_idx=0, hand_index=1, card=sample_card)
+        renderer.display_flip_action(event)
 
         result = output.getvalue()
-        assert "TestPlayer flipped card" in result
+        assert "Player 0 flipped card" in result
         assert "A♤" in result
 
     def test_display_hand_output(self, captured_renderer, mock_player):
@@ -233,7 +256,8 @@ class TestRendererDisplay:
         player_stats.round_scores = [1, 99]
 
         stats = {mock_player: player_stats}
-        renderer.display_game_stats(stats)
+        event = GameStatsEvent(stats=stats)
+        renderer.display_game_stats(event)
 
         result = output.getvalue()
         assert "Game Statistics:" in result
@@ -278,7 +302,9 @@ class TestRendererGameFlow:
         # Ensure all cards are face up for calculate_score
         for card in mock_player.hand:
             card.face_up = True
-        renderer.display_round_end(1, [mock_player])
+        scores = {mock_player: 10}
+        event = RoundEndEvent(scores=scores, round_num=1)
+        renderer.display_round_end(event)
         result = output.getvalue()
         assert "Round 1 End" in result
         assert "TestPlayer" in result
@@ -292,54 +318,61 @@ class TestRendererGameFlow:
 
     def test_display_turn_start(self, captured_renderer, mock_player):
         renderer, output = captured_renderer
-        renderer.display_turn_start(mock_player, [mock_player], 0)
+        event = TurnStartEvent(player_idx=0)
+        renderer.display_turn_start(event)
         result = output.getvalue()
-        assert "It's TestPlayer's turn" in result
-        assert "TestPlayer's Hand (Current Player):" in result
+        assert "It's Player 0's turn" in result
 
     def test_display_turn_start_with_next(self, captured_renderer, mock_player, mocker):
         renderer, output = captured_renderer
-        next_player = mocker.Mock(spec=BasePlayer)
-        next_player.name = "NextPlayer"
-        next_player.hand = mock_player.hand
-        renderer.display_turn_start(mock_player, [mock_player, next_player], 0)
+
+        mock_player2 = mocker.Mock(spec=BasePlayer)
+        mock_player2.name = "Opponent"
+        mock_player2.hand = Hand([])
+
+        renderer.players = [mock_player, mock_player2]
+
+        event = TurnStartEvent(player_idx=0)
+        renderer.display_turn_start(event)
+
         result = output.getvalue()
-        assert "NextPlayer's Hand (Next Player):" in result
+        assert "It's TestPlayer's turn." in result
+        assert "Opponent's Hand (Next Player):" in result
+        assert "TestPlayer's Hand (Current Player):" in result
 
     def test_display_discard_action(self, captured_renderer, mock_player, sample_card):
         renderer, output = captured_renderer
-        renderer.display_discard_action(mock_player, sample_card)
-        assert "TestPlayer discarded" in output.getvalue()
+        event = CardDiscardedEvent(player_idx=0, card=sample_card)
+        renderer.display_discard_action(event)
+        assert "Player 0 discarded" in output.getvalue()
 
     def test_display_round_start(self, captured_renderer):
         renderer, output = captured_renderer
-        renderer.display_round_start(1)
+        event = RoundStartEvent(round_num=1)
+        renderer.display_round_start(event)
         assert "Starting Round 1" in output.getvalue()
 
     def test_display_scores(self, captured_renderer, mock_player):
         renderer, output = captured_renderer
-        renderer.display_scores({mock_player: 10})
+        event = ScoreBoardEvent(scores={mock_player: 10})
+        renderer.display_scoreboard(event)
         result = output.getvalue()
         assert "Current Scores:" in result
         assert "TestPlayer: 10" in result
 
     def test_display_game_over(self, captured_renderer):
         renderer, output = captured_renderer
-        renderer.display_game_over()
+        event = GameOverEvent(winner=mock_player, winning_score=10)
+        renderer.display_game_over(event)
         assert "Game Over" in output.getvalue()
 
     def test_display_standings(self, captured_renderer, mock_player):
         renderer, output = captured_renderer
-        renderer.display_standings([(mock_player, 10)])
+        event = ScoreBoardEvent(scores={}, standings=[(mock_player, 10)])
+        renderer.display_standings(event.standings)
         result = output.getvalue()
         assert "Final Standings:" in result
         assert "1. TestPlayer: 10" in result
-
-    def test_display_winner(self, captured_renderer, mock_player):
-        renderer, output = captured_renderer
-        renderer.display_winner(mock_player, 10)
-        result = output.getvalue()
-        assert "Winner: TestPlayer with score 10!" in result
 
     def test_display_initial_flip_prompt(self, captured_renderer, mock_player):
         renderer, output = captured_renderer

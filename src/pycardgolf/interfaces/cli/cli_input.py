@@ -156,7 +156,7 @@ class CLIInputHandler(GameInput):
         """Get the index of the card to replace in the hand."""
         self.renderer.display_hand(player, display_indices=True)
         return self.get_validated_input(
-            "Select which card to replace (1-6)? ",
+            "Select which card to replace (1-6): ",
             validation_func=self._validate_card_index,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
         )
@@ -165,7 +165,7 @@ class CLIInputHandler(GameInput):
         """Get the index of the card to flip in the hand."""
         self.renderer.display_hand(player, display_indices=True)
         return self.get_validated_input(
-            "Which card to flip (1-6)? ",
+            "Select which card to flip (1-6): ",
             validation_func=self._validate_card_index,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
         )
@@ -179,7 +179,7 @@ class CLIInputHandler(GameInput):
             str(i + 1) for i, card in enumerate(player.hand) if not card.face_up
         ]
         choice = self.get_choice(
-            f"Which card to flip (1-{HAND_SIZE})? ",
+            f"Select which card to flip (1-{HAND_SIZE}): ",
             valid_options=face_down_indices,
             error_msg=(
                 f"Invalid input. Please select a face-down card. ({face_down_indices})"

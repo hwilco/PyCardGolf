@@ -17,7 +17,7 @@ class CardStack:
     def __init__(
         self,
         cards: list[Card] | None = None,
-        seed: int = random.randrange(sys.maxsize),
+        seed: int | None = None,
     ) -> None:
         """Construct a CardStack object.
 
@@ -27,7 +27,7 @@ class CardStack:
 
         """
         self._cards: list[Card] = [] if cards is None else cards
-        self.seed: int = seed
+        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
 
     @functools.cached_property
     def rand(self) -> random.Random:
@@ -149,7 +149,7 @@ class Deck(CardStack):
         self,
         back_color: str,
         suit_colors: dict[Suit, str] | None = None,
-        seed: int = random.randrange(sys.maxsize),
+        seed: int | None = None,
     ) -> None:
         """Construct a Deck object of 52 ordered cards.
 

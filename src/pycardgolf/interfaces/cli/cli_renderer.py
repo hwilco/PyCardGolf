@@ -13,7 +13,6 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 
-from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameRenderer
 from pycardgolf.utils.card import Card
@@ -22,8 +21,21 @@ from pycardgolf.utils.constants import HAND_SIZE
 if TYPE_CHECKING:
     from rich.console import Console
 
+    from pycardgolf.core.event_bus import EventBus
+    from pycardgolf.core.events import (
+        CardDiscardedEvent,
+        CardDrawnDeckEvent,
+        CardDrawnDiscardEvent,
+        CardFlippedEvent,
+        CardSwappedEvent,
+        GameOverEvent,
+        GameStatsEvent,
+        RoundEndEvent,
+        RoundStartEvent,
+        ScoreBoardEvent,
+        TurnStartEvent,
+    )
     from pycardgolf.core.round import Round
-    from pycardgolf.core.stats import PlayerStats
     from pycardgolf.players import BasePlayer
 
 try:
@@ -43,9 +55,12 @@ class CLIRenderer(GameRenderer):
     CARD_DISPLAY_WIDTH: ClassVar[int] = 4
     FACE_BACKGROUND_COLOR: ClassVar[str] = "white"
     LUMINANCE_THRESHOLD: ClassVar[float] = 0.179
-    MAX_OPPONENT_HANDS_TO_DISPLAY: ClassVar[int] = 1
+    MAX_OPPONENT_HANDS_TO_DISPLAY: ClassVar[int] = 3
 
-    def __init__(self, console: Console, delay: float = 0.0) -> None:
+    def __init__(
+        self, event_bus: EventBus, console: Console, delay: float = 0.0
+    ) -> None:
+        super().__init__(event_bus)
         self.console = console
         self.delay = delay
 
@@ -110,15 +125,14 @@ class CLIRenderer(GameRenderer):
             msg = f"Invalid color '{text_color}' or '{background_color}': {e}"
             raise GameConfigError(msg) from e
 
-    def display_round_end(self, round_num: int, players: list[BasePlayer]) -> None:
+    def display_round_end(self, event: RoundEndEvent) -> None:
         """Display the state of the game at the end of a round."""
         self.console.print(
-            Panel(f"[bold cyan]--- Round {round_num} End ---[/bold cyan]")
+            Panel(f"[bold cyan]--- Round {event.round_num} End ---[/bold cyan]")
         )
 
-        for player in players:
-            round_score = calculate_score(player.hand)
-            self.console.print(f"Player: {player.name} (Round Score: {round_score})")
+        for player, score in event.scores.items():
+            self.console.print(f"Player: {player.name} (Round Score: {score})")
             self.display_hand(player, display_indices=False)
 
     def _display_discard_pile(self, game_round: Round) -> None:
@@ -208,83 +222,120 @@ class CLIRenderer(GameRenderer):
         prompt.append("? (d/p) ")
         return prompt
 
-    def display_drawn_card(self, player: BasePlayer, card: Card) -> None:
+    def display_drawn_card(self, event: CardDrawnDeckEvent) -> None:
         """Display the card drawn from the deck."""
-        self.print_card_message([f"{player.name} drew: ", card])
+        player_name = (
+            self.players[event.player_idx].name
+            if self.players
+            else f"Player {event.player_idx}"
+        )
+        self.print_card_message([f"{player_name} drew: ", event.card])
         self.wait_for_enter()
 
-    def display_discard_draw(self, player: BasePlayer, card: Card) -> None:
+    def display_discard_draw(self, event: CardDrawnDiscardEvent) -> None:
         """Display the card drawn from the discard pile."""
+        player_name = (
+            self.players[event.player_idx].name
+            if self.players
+            else f"Player {event.player_idx}"
+        )
         self.print_card_message(
             [
-                f"{player.name} drew ",
-                card,
+                f"{player_name} drew ",
+                event.card,
                 " from the discard pile. They must replace one of their cards with it.",
             ]
         )
         self.wait_for_enter()
 
-    def display_replace_action(
-        self, player: BasePlayer, index: int, new_card: Card, old_card: Card
-    ) -> None:
+    def display_replace_action(self, event: CardSwappedEvent) -> None:
         """Display the action of replacing a card in hand."""
+        player_name = (
+            self.players[event.player_idx].name
+            if self.players
+            else f"Player {event.player_idx}"
+        )
+        msg = f"{player_name} replaced card at position {event.hand_index + 1} with "
         self.print_card_message(
             [
-                f"{player.name} replaced card at position {index + 1} with ",
-                new_card,
+                msg,
+                event.new_card,
                 ". Discarded ",
-                old_card,
+                event.old_card,
                 ".",
             ]
         )
         self.wait_for_enter()
 
-    def display_flip_action(self, player: BasePlayer, index: int, card: Card) -> None:
+    def display_flip_action(self, event: CardFlippedEvent) -> None:
         """Display the action of flipping a card in hand."""
+        player_name = (
+            self.players[event.player_idx].name
+            if self.players
+            else f"Player {event.player_idx}"
+        )
+        msg = f"{player_name} flipped card at position {event.hand_index + 1}: "
         self.print_card_message(
-            [f"{player.name} flipped card at position {index + 1}: ", card]
+            [
+                msg,
+                event.card,
+            ]
         )
         self.wait_for_enter()
 
-    def display_turn_start(
-        self, player: BasePlayer, players: list[BasePlayer], current_idx: int
-    ) -> None:
+    def display_turn_start(self, event: TurnStartEvent) -> None:
         """Display the start of a player's turn."""
-        self.console.print(f"It's {player.name}'s turn.")
-        self.console.print(f"[bold]{player.name}'s Hand (Current Player):[/bold]")
-        self.display_hand(player, display_indices=True)
+        if self.players:
+            player = self.players[event.player_idx]
+            self.console.print(f"It's {player.name}'s turn.")
 
-        next_idx = (current_idx + 1) % len(players)
-        next_player = players[next_idx]
-        if next_player != player:
-            self.console.print(
-                f"\n[bold]{next_player.name}'s Hand (Next Player):[/bold]"
-            )
-            self.display_hand(next_player, display_indices=False)
+            num_players = len(self.players)
+            num_to_display = min(num_players - 1, self.MAX_OPPONENT_HANDS_TO_DISPLAY)
+            for i in reversed(range(1, num_to_display + 1)):
+                opp_idx = (event.player_idx + i) % num_players
+                opp_player = self.players[opp_idx]
+                label = "Next Player" if i == 1 else f"Opponent {i}"
+                self.console.print(f"{opp_player.name}'s Hand ({label}):")
+                self.display_hand(opp_player, display_indices=False)
+
+            self.console.print(f"{player.name}'s Hand (Current Player):")
+            self.display_hand(player, display_indices=True)
+        else:
+            self.console.print(f"It's Player {event.player_idx}'s turn.")
         self.wait_for_enter()
 
-    def display_discard_action(self, player: BasePlayer, card: Card) -> None:
+    def display_discard_action(self, event: CardDiscardedEvent) -> None:
         """Display the action of discarding a card."""
-        self.print_card_message([f"{player.name} discarded ", card, "."])
+        player_name = (
+            self.players[event.player_idx].name
+            if self.players
+            else f"Player {event.player_idx}"
+        )
+        self.print_card_message([f"{player_name} discarded ", event.card, "."])
         self.wait_for_enter()
 
-    def display_round_start(self, round_num: int) -> None:
+    def display_round_start(self, event: RoundStartEvent) -> None:
         """Display the start of a round."""
         self.console.print(
-            Panel(f"[bold cyan]--- Starting Round {round_num} ---[/bold cyan]")
+            Panel(f"[bold cyan]--- Starting Round {event.round_num} ---[/bold cyan]")
         )
         self.wait_for_enter()
 
-    def display_scores(self, scores: dict[BasePlayer, int]) -> None:
-        """Display scores. scores is a map of player -> score."""
+    def display_scoreboard(self, event: ScoreBoardEvent) -> None:
+        """Display current scores for all players."""
         self.console.print("\n[bold]Current Scores:[/bold]")
-        for player, score in scores.items():
+        for player, score in event.scores.items():
             self.console.print(f"{player.name}: {score}")
         self.wait_for_enter()
 
-    def display_game_over(self) -> None:
+    def display_game_over(self, event: GameOverEvent) -> None:
         """Display game over message."""
         self.console.print(Panel("[bold red]--- Game Over ---[/bold red]"))
+        msg = (
+            f"[bold gold1]Winner: {event.winner.name} with score "
+            f"{event.winning_score}![/bold gold1]"
+        )
+        self.console.print(Panel(msg))
 
     def display_standings(self, standings: list[tuple[BasePlayer, int]]) -> None:
         """Display standings. List of (player, score) tuples, sorted by rank."""
@@ -292,12 +343,6 @@ class CLIRenderer(GameRenderer):
         for i, (player, score) in enumerate(standings):
             color = "green" if i == 0 else "white"
             self.console.print(f"[{color}]{i + 1}. {player.name}: {score}[/{color}]")
-
-    def display_winner(self, winner: BasePlayer, score: int) -> None:
-        """Display the winner."""
-        self.console.print(
-            Panel(f"[bold gold1]Winner: {winner.name} with score {score}![/bold gold1]")
-        )
 
     def display_initial_flip_prompt(self, player: BasePlayer, num_to_flip: int) -> None:
         """Prompt player to select initial cards to flip."""
@@ -338,15 +383,15 @@ class CLIRenderer(GameRenderer):
             msg = f"Invalid color '{color}': {e}"
             raise GameConfigError(msg) from e
 
-    def display_game_stats(self, stats: dict[BasePlayer, PlayerStats]) -> None:
+    def display_game_stats(self, event: GameStatsEvent) -> None:
         """Display game statistics.
 
         Args:
-            stats: A dictionary mapping players to their statistics.
+            event: A GameStatsEvent containing the stats mapping.
 
         """
         self.console.print("\n[bold]Game Statistics:[/bold]")
-        for player, player_stats in stats.items():
+        for player, player_stats in event.stats.items():
             self.console.print(Panel(f"[bold]{player.name}[/bold]"))
             for field in dataclasses.fields(player_stats):
                 name = field.name.replace("_", " ").title()

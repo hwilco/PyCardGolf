@@ -1,9 +1,13 @@
 """Module containing GameEvent definitions for the game engine."""
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pycardgolf.utils.card import Card
+
+if TYPE_CHECKING:
+    from pycardgolf.core.stats import PlayerStats
+    from pycardgolf.players.player import BasePlayer
 
 EventType = Literal[
     "ROUND_START",
@@ -14,6 +18,10 @@ EventType = Literal[
     "CARD_SWAPPED",
     "CARD_FLIPPED",
     "ROUND_END",
+    "GAME_OVER",
+    "SCORE_BOARD",
+    "GAME_STATS",
+    "GAME_STARTED",
 ]
 
 
@@ -22,6 +30,14 @@ class GameEvent:
     """Base class for all game events."""
 
     event_type: EventType
+
+
+@dataclass(frozen=True, kw_only=True)
+class GameStartedEvent(GameEvent):
+    """Event triggered when the game starts."""
+
+    players: list["BasePlayer"]
+    event_type: EventType = "GAME_STARTED"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -92,5 +108,32 @@ class CardFlippedEvent(GameEvent):
 class RoundEndEvent(GameEvent):
     """Event triggered when a round ends."""
 
-    scores: dict[int, int]
+    round_num: int
+    scores: dict["BasePlayer", int]
     event_type: EventType = "ROUND_END"
+
+
+@dataclass(frozen=True, kw_only=True)
+class GameOverEvent(GameEvent):
+    """Event triggered when the entire game ends."""
+
+    winner: "BasePlayer"
+    winning_score: int
+    event_type: EventType = "GAME_OVER"
+
+
+@dataclass(frozen=True, kw_only=True)
+class ScoreBoardEvent(GameEvent):
+    """Event triggered to display the current scores or standings."""
+
+    scores: dict["BasePlayer", int]
+    standings: list[tuple["BasePlayer", int]] | None = None
+    event_type: EventType = "SCORE_BOARD"
+
+
+@dataclass(frozen=True, kw_only=True)
+class GameStatsEvent(GameEvent):
+    """Event triggered to display final game statistics."""
+
+    stats: dict["BasePlayer", "PlayerStats"]
+    event_type: EventType = "GAME_STATS"
