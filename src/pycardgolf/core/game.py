@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import sys
+from functools import singledispatchmethod
 from typing import TYPE_CHECKING
 
 from pycardgolf.core.events import (
@@ -22,9 +23,6 @@ from pycardgolf.core.round import Round
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-    from typing import Any
-
     from pycardgolf.interfaces.base import GameRenderer
     from pycardgolf.players import BasePlayer
 
@@ -37,7 +35,7 @@ class Game:
         players: list[BasePlayer],
         renderer: GameRenderer,
         num_rounds: int = 9,
-        seed: int = random.randrange(sys.maxsize),
+        seed: int | None = None,
     ) -> None:
         self.players: list[BasePlayer] = players
         self.scores: dict[BasePlayer, int] = dict.fromkeys(players, 0)
@@ -46,18 +44,8 @@ class Game:
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
         self.current_round: Round | None = None
-        self.seed: int = seed
+        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
         self._rng: random.Random = random.Random(self.seed)
-
-        self._event_handlers: dict[type[GameEvent], Callable[[Any], None]] = {
-            TurnStartEvent: self._on_turn_start,
-            CardDrawnDeckEvent: self._on_card_drawn_deck,
-            CardDrawnDiscardEvent: self._on_card_drawn_discard,
-            CardDiscardedEvent: self._on_card_discarded,
-            CardSwappedEvent: self._on_card_swapped,
-            CardFlippedEvent: self._on_card_flipped,
-            RoundEndEvent: self._on_round_end,
-        }
 
     def start(self) -> None:
         """Start the game loop."""
@@ -111,27 +99,39 @@ class Game:
     def display_events(self, events: list[GameEvent]) -> None:
         """Dispatch each game event to the appropriate renderer method."""
         for event in events:
-            handler = self._event_handlers.get(type(event))
-            if handler is None:
-                msg = f"No handler registered for {type(event).__name__}"
-                raise TypeError(msg)
-            handler(event)
+            self._handle_event(event)
 
+    @singledispatchmethod
+    def _handle_event(self, event: GameEvent) -> None:
+        """Fallback handler if an unknown event is passed."""
+        msg = f"No handler registered for {type(event).__name__}"
+        raise TypeError(msg)
+
+    @_handle_event.register
     def _on_turn_start(self, event: TurnStartEvent) -> None:
+        """Handle start of turn."""
         self.renderer.display_turn_start(
             self.players[event.player_idx], self.players, event.player_idx
         )
 
+    @_handle_event.register
     def _on_card_drawn_deck(self, event: CardDrawnDeckEvent) -> None:
+        """Handle card drawn from deck."""
         self.renderer.display_drawn_card(self.players[event.player_idx], event.card)
 
+    @_handle_event.register
     def _on_card_drawn_discard(self, event: CardDrawnDiscardEvent) -> None:
+        """Handle card drawn from discard pile."""
         self.renderer.display_discard_draw(self.players[event.player_idx], event.card)
 
+    @_handle_event.register
     def _on_card_discarded(self, event: CardDiscardedEvent) -> None:
+        """Handle card discarded."""
         self.renderer.display_discard_action(self.players[event.player_idx], event.card)
 
+    @_handle_event.register
     def _on_card_swapped(self, event: CardSwappedEvent) -> None:
+        """Handle card swapped in hand."""
         self.renderer.display_replace_action(
             self.players[event.player_idx],
             event.hand_index,
@@ -139,11 +139,14 @@ class Game:
             event.old_card,
         )
 
+    @_handle_event.register
     def _on_card_flipped(self, event: CardFlippedEvent) -> None:
+        """Handle card flipped in hand."""
         self.renderer.display_flip_action(
             self.players[event.player_idx], event.hand_index, event.card
         )
 
+    @_handle_event.register
     def _on_round_end(self, _event: RoundEndEvent) -> None:
         """Handle end of round."""
         self.renderer.display_round_end(self.current_round_num, self.players)
@@ -152,13 +155,14 @@ class Game:
         """Display current scores for all players."""
         self.renderer.display_scores(self.scores)
 
-    def get_standings(self) -> list[BasePlayer]:
-        """Return players sorted by score (ascending — lowest score wins)."""
-        return sorted(self.players, key=lambda p: self.scores[p])
+    def get_standings(self) -> list[tuple[BasePlayer, int]]:
+        """Return (player, score) pairs sorted by score (ascending — lowest wins)."""
+        pairs = [(p, self.scores[p]) for p in self.players]
+        return sorted(pairs, key=lambda x: x[1])
 
     def get_winner(self) -> BasePlayer:
         """Return the player with the lowest score."""
-        return self.get_standings()[0]
+        return self.get_standings()[0][0]
 
     def get_stats(self) -> dict[BasePlayer, PlayerStats]:
         """Calculate game statistics for each player."""
@@ -171,13 +175,12 @@ class Game:
         self.renderer.display_game_over()
 
         standings = self.get_standings()
-        standings_tuples = [(p, self.scores[p]) for p in standings]
 
         self.renderer.display_game_stats(self.get_stats())
-        self.renderer.display_standings(standings_tuples)
+        self.renderer.display_standings(standings)
 
-        winner = standings[0]
-        self.renderer.display_winner(winner, self.scores[winner])
+        winner, score = standings[0]
+        self.renderer.display_winner(winner, score)
 
     def __repr__(self) -> str:
         return f"Game(players={self.players}, renderer={self.renderer})"

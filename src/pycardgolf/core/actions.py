@@ -57,7 +57,7 @@ class ActionFlipCard(Action):
     action_type: ActionType = "FLIP_CARD"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class ActionPass(Action):
     """Action to pass (e.g., choose not to flip a card)."""
 
