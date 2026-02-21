@@ -149,7 +149,8 @@ class CLIInputHandler(GameInput):
         idx = int(s)
         if 1 <= idx <= HAND_SIZE:
             return idx - 1
-        raise ValueError
+        msg = f"Card index must be between 1 and {HAND_SIZE}. Got: {s}"
+        raise ValueError(msg)
 
     def get_index_to_replace(self, player: BasePlayer) -> int:
         """Get the index of the card to replace in the hand."""

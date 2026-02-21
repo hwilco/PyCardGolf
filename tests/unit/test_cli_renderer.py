@@ -126,6 +126,24 @@ class TestCardDisplay:
         assert isinstance(card_text, Text)
         assert "??" in str(card_text)
 
+    def test_get_card_string_none_card(self, captured_renderer):
+        """Test that None card shows ?? with default blue back."""
+        renderer, _ = captured_renderer
+        card_text = renderer.get_card_string(None)
+        assert isinstance(card_text, Text)
+        assert "??" in str(card_text)
+        # Default back color is blue, which is black text on blue background usually
+        # but we just check it doesn't crash and returns Text.
+
+    def test_get_card_string_invalid_color_raises(self, captured_renderer, mocker):
+        """Test that invalid card colors raise GameConfigError."""
+        renderer, _ = captured_renderer
+        mock_card = mocker.Mock(spec=Card)
+        mock_card.face_up = True
+        mock_card.face_color = "invalid_color"
+        with pytest.raises(GameConfigError, match="Invalid color"):
+            renderer.get_card_string(mock_card)
+
 
 class TestRendererDisplay:
     """Tests for display methods using captured output."""
@@ -250,3 +268,104 @@ class TestColorValidation:
         renderer, _ = captured_renderer
         with pytest.raises(GameConfigError, match="Invalid color"):
             renderer.validate_color("notacolorstring")
+
+
+class TestRendererGameFlow:
+    """Tests for game lifecycle display methods in CLIRenderer."""
+
+    def test_display_round_end(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        # Ensure all cards are face up for calculate_score
+        for card in mock_player.hand:
+            card.face_up = True
+        renderer.display_round_end(1, [mock_player])
+        result = output.getvalue()
+        assert "Round 1 End" in result
+        assert "TestPlayer" in result
+
+    def test_create_draw_choice_prompt(self, captured_renderer, sample_card):
+        renderer, _ = captured_renderer
+        prompt = renderer.create_draw_choice_prompt(sample_card, sample_card)
+        assert isinstance(prompt, Text)
+        assert "Draw from (d)eck" in str(prompt)
+        assert "or (p)ile" in str(prompt)
+
+    def test_display_turn_start(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_turn_start(mock_player, [mock_player], 0)
+        result = output.getvalue()
+        assert "It's TestPlayer's turn" in result
+        assert "TestPlayer's Hand (Current Player):" in result
+
+    def test_display_turn_start_with_next(self, captured_renderer, mock_player, mocker):
+        renderer, output = captured_renderer
+        next_player = mocker.Mock(spec=BasePlayer)
+        next_player.name = "NextPlayer"
+        next_player.hand = mock_player.hand
+        renderer.display_turn_start(mock_player, [mock_player, next_player], 0)
+        result = output.getvalue()
+        assert "NextPlayer's Hand (Next Player):" in result
+
+    def test_display_discard_action(self, captured_renderer, mock_player, sample_card):
+        renderer, output = captured_renderer
+        renderer.display_discard_action(mock_player, sample_card)
+        assert "TestPlayer discarded" in output.getvalue()
+
+    def test_display_round_start(self, captured_renderer):
+        renderer, output = captured_renderer
+        renderer.display_round_start(1)
+        assert "Starting Round 1" in output.getvalue()
+
+    def test_display_scores(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_scores({mock_player: 10})
+        result = output.getvalue()
+        assert "Current Scores:" in result
+        assert "TestPlayer: 10" in result
+
+    def test_display_game_over(self, captured_renderer):
+        renderer, output = captured_renderer
+        renderer.display_game_over()
+        assert "Game Over" in output.getvalue()
+
+    def test_display_standings(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_standings([(mock_player, 10)])
+        result = output.getvalue()
+        assert "Final Standings:" in result
+        assert "1. TestPlayer: 10" in result
+
+    def test_display_winner(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_winner(mock_player, 10)
+        result = output.getvalue()
+        assert "Winner: TestPlayer with score 10!" in result
+
+    def test_display_initial_flip_prompt(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_initial_flip_prompt(mock_player, 2)
+        result = output.getvalue()
+        assert "TestPlayer, draw start!" in result
+        assert "Select 2 cards to flip." in result
+
+    def test_display_initial_flip_selection_prompt(self, captured_renderer):
+        renderer, output = captured_renderer
+        renderer.display_initial_flip_selection_prompt(1, 2)
+        assert "Select card 1 of 2 to flip." in output.getvalue()
+
+    def test_display_initial_flip_error_already_selected(self, captured_renderer):
+        renderer, output = captured_renderer
+        renderer.display_initial_flip_error_already_selected()
+        assert "You already selected that card." in output.getvalue()
+
+    def test_display_final_turn_notification(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_final_turn_notification(mock_player)
+        result = output.getvalue()
+        assert "TestPlayer has revealed all their cards!" in result
+
+    def test_display_initial_flip_choices(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_initial_flip_choices(mock_player, [0, 1])
+        result = output.getvalue()
+        assert "TestPlayer flipped initial cards:" in result

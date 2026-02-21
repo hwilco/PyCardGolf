@@ -4,6 +4,11 @@ import pytest
 from rich.console import Console
 
 from pycardgolf.exceptions import GameExitError
+from pycardgolf.interfaces.base import (
+    ActionChoice,
+    DrawSource,
+    FlipChoice,
+)
 from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
 
 
@@ -157,3 +162,58 @@ class TestInputHandlerValidation:
         mock_renderer.display_hand.assert_called_once_with(
             mock_player, display_indices=True
         )
+
+    def test_get_validated_input_quit(self, input_handler, mock_console):
+        """Test that quit input in get_validated_input raises GameExitError."""
+        mock_console.input.return_value = "q"
+        with pytest.raises(GameExitError):
+            input_handler.get_validated_input("Prompt: ", lambda x: x)
+
+    def test_get_draw_choice_deck(self, input_handler, mock_console, mock_player):
+        """Test get_draw_choice returning DECK."""
+        mock_console.input.return_value = "d"
+        result = input_handler.get_draw_choice(mock_player, None, None)
+        assert result == DrawSource.DECK
+
+    def test_get_draw_choice_discard(self, input_handler, mock_console, mock_player):
+        """Test get_draw_choice returning DISCARD."""
+        mock_console.input.return_value = "p"
+        result = input_handler.get_draw_choice(mock_player, None, None)
+        assert result == DrawSource.DISCARD
+
+    def test_get_keep_or_discard_choice_keep(
+        self, input_handler, mock_console, mock_player
+    ):
+        """Test get_keep_or_discard_choice returning KEEP."""
+        mock_console.input.return_value = "k"
+        result = input_handler.get_keep_or_discard_choice(mock_player)
+        assert result == ActionChoice.KEEP
+
+    def test_get_keep_or_discard_choice_discard(
+        self, input_handler, mock_console, mock_player
+    ):
+        """Test get_keep_or_discard_choice returning DISCARD."""
+        mock_console.input.return_value = "d"
+        result = input_handler.get_keep_or_discard_choice(mock_player)
+        assert result == ActionChoice.DISCARD
+
+    def test_get_flip_choice_yes(self, input_handler, mock_console, mock_player):
+        """Test get_flip_choice returning YES."""
+        mock_console.input.return_value = "y"
+        result = input_handler.get_flip_choice(mock_player)
+        assert result == FlipChoice.YES
+
+    def test_get_flip_choice_no(self, input_handler, mock_console, mock_player):
+        """Test get_flip_choice returning NO."""
+        mock_console.input.return_value = "n"
+        result = input_handler.get_flip_choice(mock_player)
+        assert result == FlipChoice.NO
+
+    def test_validate_card_index_out_of_range(self, input_handler):
+        """Test that out-of-range indices raise ValueError."""
+        with pytest.raises(ValueError, match="Card index must be between"):
+            input_handler._validate_card_index("0")
+        with pytest.raises(ValueError, match="Card index must be between"):
+            input_handler._validate_card_index("7")
+        with pytest.raises(ValueError, match="invalid literal"):
+            input_handler._validate_card_index("not_a_number")

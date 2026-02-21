@@ -103,9 +103,8 @@ class CLIRenderer(GameRenderer):
                     text_color, background_color, mode=ModulationMode.FOREGROUND
                 )[:2]
             )
-        style = Style(color=text_color, bgcolor=background_color, bold=True)
-
         try:
+            style = Style(color=text_color, bgcolor=background_color, bold=True)
             return Text(text, style=style)
         except ColorParseError as e:
             msg = f"Invalid color '{text_color}' or '{background_color}': {e}"
