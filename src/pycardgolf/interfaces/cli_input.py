@@ -1,9 +1,8 @@
 """Module containing the CLI input handler implementation."""
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, TypeVar
+from __future__ import annotations
 
-from rich.console import Console
+from typing import TYPE_CHECKING, TypeVar
 
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import (
@@ -15,11 +14,14 @@ from pycardgolf.interfaces.base import (
 from pycardgolf.utils.constants import HAND_SIZE
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from rich.console import Console
     from rich.text import Text
 
     from pycardgolf.core.hand import Hand
     from pycardgolf.interfaces.cli_renderer import CLIRenderer
-    from pycardgolf.players import Player
+    from pycardgolf.players import BasePlayer
     from pycardgolf.utils.card import Card
 
 
@@ -29,17 +31,17 @@ T = TypeVar("T")
 class CLIInputHandler(GameInput):
     """Input handler for the CLI interface."""
 
-    def __init__(self, console: Console, renderer: "CLIRenderer") -> None:
+    def __init__(self, console: Console, renderer: CLIRenderer) -> None:
         self.console = console
         self.renderer = renderer
 
-    def get_input(self, prompt: "str | Text") -> str:
+    def get_input(self, prompt: str | Text) -> str:
         """Get input from the user."""
         return self.console.input(prompt)
 
     def get_choice(
         self,
-        prompt: "str | Text",
+        prompt: str | Text,
         valid_options: list[str],
         error_msg: str = "Invalid input.",
         capitilization_sensitive: bool = False,
@@ -75,7 +77,7 @@ class CLIInputHandler(GameInput):
 
     def get_validated_input(
         self,
-        prompt: "str | Text",
+        prompt: str | Text,
         validation_func: Callable[[str], T],
         error_msg: str = "Invalid input.",
     ) -> T:
@@ -106,7 +108,7 @@ class CLIInputHandler(GameInput):
                 self.console.print(error_msg)
 
     def get_draw_choice(
-        self, deck_card: "Card | None", discard_card: "Card | None"
+        self, deck_card: Card | None, discard_card: Card | None
     ) -> DrawSource:
         """Get the user's choice to draw from the deck or discard pile."""
         prompt = self.renderer.create_draw_choice_prompt(deck_card, discard_card)
@@ -166,7 +168,7 @@ class CLIInputHandler(GameInput):
         )
 
     def get_initial_cards_to_flip(
-        self, player: "Player", num_to_flip: int
+        self, player: BasePlayer, num_to_flip: int
     ) -> list[int]:
         """Get the indices of cards to flip at the start of the round."""
         self.renderer.display_initial_flip_prompt(player, num_to_flip)
@@ -192,7 +194,7 @@ class CLIInputHandler(GameInput):
 
         return selected_indices
 
-    def get_valid_flip_index(self, hand: "Hand") -> int:
+    def get_valid_flip_index(self, hand: Hand) -> int:
         """Get a valid index of a face-down card to flip."""
         face_down_indices = [
             str(i + 1) for i, card in enumerate(hand) if not card.face_up
@@ -206,7 +208,7 @@ class CLIInputHandler(GameInput):
         )
         return int(choice) - 1
 
-    def display_hand(self, player: "Player", display_indices: bool = False) -> None:
+    def display_hand(self, player: BasePlayer, display_indices: bool = False) -> None:
         """Display a player's hand via the renderer."""
         self.renderer.display_hand(player, display_indices)
 

@@ -17,6 +17,7 @@ from pycardgolf.core.phases import RoundPhase
 
 if TYPE_CHECKING:
     from pycardgolf.core.observation import Observation
+
 from pycardgolf.interfaces.base import (
     ActionChoice,
     DrawSource,

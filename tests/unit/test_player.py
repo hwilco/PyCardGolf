@@ -1,4 +1,4 @@
-"""Tests for the abstract Player class."""
+"""Tests for the abstract BasePlayer class."""
 
 import pytest
 

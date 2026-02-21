@@ -7,7 +7,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.phases import PhaseHandler, RoundPhase
+from pycardgolf.core.phases import RoundPhase, get_valid_actions, handle_step
 from pycardgolf.core.scoring import calculate_score
 
 if TYPE_CHECKING:
@@ -42,7 +42,6 @@ class Round:
         self.discard_pile: CardStack = CardStack(seed=discard_seed)
 
         self.current_player_idx: int = 0
-        self.round_over: bool = False
         self.last_turn_player_idx: int | None = None
         self.turn_count: int = 1
 
@@ -74,7 +73,7 @@ class Round:
 
     def get_valid_actions(self, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
-        return PhaseHandler.get_valid_actions(self, player_idx)
+        return get_valid_actions(self, player_idx)
 
     @classmethod
     def validate_config(cls, num_players: int, deck_size: int = 52) -> None:
@@ -99,7 +98,7 @@ class Round:
 
     def step(self, action: Action) -> list[GameEvent]:
         """Advance the game state by one step based on the action."""
-        return PhaseHandler.handle_step(self, action)
+        return handle_step(self, action)
 
     def reveal_hands(self) -> None:
         """Reveal all cards for all players."""

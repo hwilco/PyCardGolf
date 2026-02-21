@@ -18,7 +18,7 @@ from pycardgolf.players.bots.random_bot import RandomBot
 from pycardgolf.players.human import HumanPlayer
 
 if TYPE_CHECKING:
-    from pycardgolf.players import Player
+    from pycardgolf.players import BasePlayer
 
 
 def _display_rules() -> None:
@@ -71,7 +71,7 @@ def main() -> None:
     # Instantiate renderer (for Game) and input handler (for HumanPlayer).
     renderer = CLIRenderer(Console(), delay=args.delay)
     input_handler = CLIInputHandler(renderer.console, renderer)
-    players: list[Player] = []
+    players: list[BasePlayer] = []
 
     for i in range(args.humans):
         name = input_handler.get_input(f"Enter name for Human {i + 1}: ")

@@ -110,7 +110,7 @@ def test_calculate_score_valid_hands(card_values, expected_score):
 
 def test_calculate_score_none_hand():
     """Test that a None hand raises ValueError."""
-    with pytest.raises(ValueError, match="Hand must not be None"):
+    with pytest.raises(ValueError, match="Hand must be a list of"):
         calculate_score(None)
 
 

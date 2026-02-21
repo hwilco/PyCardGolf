@@ -18,10 +18,6 @@ def calculate_score(hand: Hand) -> int:
     - King: 0
     """
     # Validate hand
-    if hand is None:
-        msg = "Hand must not be None"
-        raise ValueError(msg)
-
     if hand is None or len(hand) != HAND_SIZE:
         msg = f"Hand must be a list of {HAND_SIZE} cards. Received: {hand}"
         raise ValueError(msg)

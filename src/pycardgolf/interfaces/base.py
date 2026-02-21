@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.stats import PlayerStats
-    from pycardgolf.players import Player
+    from pycardgolf.players.player import BasePlayer
     from pycardgolf.utils.card import Card
 
 
@@ -76,7 +76,7 @@ class GameRenderer(ABC):
         """Display a message indicating the start of a new round."""
 
     @abstractmethod
-    def display_scores(self, scores: dict[Player, int]) -> None:
+    def display_scores(self, scores: dict[BasePlayer, int]) -> None:
         """Display scores.  ``scores`` maps each player to their total score."""
 
     @abstractmethod
@@ -84,48 +84,126 @@ class GameRenderer(ABC):
         """Display a game-over message."""
 
     @abstractmethod
-    def display_standings(self, standings: list[tuple[Player, int]]) -> None:
+    def display_standings(self, standings: list[tuple[BasePlayer, int]]) -> None:
         """Display standings as a ``(player, score)`` list sorted by rank."""
 
     @abstractmethod
-    def display_winner(self, winner: Player, score: int) -> None:
+    def display_winner(self, winner: BasePlayer, score: int) -> None:
         """Display the winner of the game."""
 
     @abstractmethod
-    def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
+    def display_game_stats(self, stats: dict[BasePlayer, PlayerStats]) -> None:
         """Display per-player game statistics."""
 
     @abstractmethod
-    def display_final_turn_notification(self, player: Player) -> None:
+    def display_final_turn_notification(self, player: BasePlayer) -> None:
         """Notify that ``player`` triggered the final turn."""
 
     @abstractmethod
-    def display_drawn_card(self, player: Player, card: Card) -> None:
+    def display_drawn_card(self, player: BasePlayer, card: Card) -> None:
         """Display the card ``player`` drew from the deck."""
 
     @abstractmethod
-    def display_discard_draw(self, player: Player, card: Card) -> None:
+    def display_discard_draw(self, player: BasePlayer, card: Card) -> None:
         """Display the card ``player`` drew from the discard pile."""
 
     @abstractmethod
     def display_replace_action(
-        self, player: Player, index: int, new_card: Card, old_card: Card
+        self, player: BasePlayer, index: int, new_card: Card, old_card: Card
     ) -> None:
         """Display the action of replacing a card in hand."""
 
     @abstractmethod
-    def display_flip_action(self, player: Player, index: int, card: Card) -> None:
+    def display_flip_action(self, player: BasePlayer, index: int, card: Card) -> None:
         """Display the action of flipping a card face-up."""
 
     @abstractmethod
     def display_turn_start(
-        self, player: Player, players: list[Player], current_idx: int
+        self, player: BasePlayer, players: list[BasePlayer], current_idx: int
     ) -> None:
         """Display the start of ``player``'s turn."""
 
     @abstractmethod
-    def display_discard_action(self, player: Player, card: Card) -> None:
+    def display_discard_action(self, player: BasePlayer, card: Card) -> None:
         """Display the action of discarding a drawn card."""
+
+
+# ---------------------------------------------------------------------------
+# NullGameRenderer — no-op base for testing and stub implementations
+# ---------------------------------------------------------------------------
+
+
+class NullGameRenderer(GameRenderer):
+    """GameRenderer that silently discards all output.
+
+    Suitable as a base class for test doubles or partial implementations
+    where only a subset of display methods needs to be overridden.
+    """
+
+    def display_state(self, game: Game) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_round_end(self, game: Game) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_round_start(self, round_num: int) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_scores(self, scores: dict[BasePlayer, int]) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_game_over(self) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_standings(
+        self, standings: list[tuple[BasePlayer, int]]
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_winner(
+        self, winner: BasePlayer, score: int
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_game_stats(
+        self, stats: dict[BasePlayer, PlayerStats]
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_final_turn_notification(
+        self, player: BasePlayer
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_drawn_card(
+        self, player: BasePlayer, card: Card
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_discard_draw(
+        self, player: BasePlayer, card: Card
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_replace_action(
+        self, player: BasePlayer, index: int, new_card: Card, old_card: Card
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_flip_action(
+        self, player: BasePlayer, index: int, card: Card
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_turn_start(
+        self, player: BasePlayer, players: list[BasePlayer], current_idx: int
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_discard_action(
+        self, player: BasePlayer, card: Card
+    ) -> None:  # pragma: no cover
+        """No-op."""
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +276,9 @@ class GameInput(ABC):
         """
 
     @abstractmethod
-    def get_initial_cards_to_flip(self, player: Player, num_to_flip: int) -> list[int]:
+    def get_initial_cards_to_flip(
+        self, player: BasePlayer, num_to_flip: int
+    ) -> list[int]:
         """Ask the player to select cards for the initial flip at round start.
 
         Args:
@@ -220,7 +300,7 @@ class GameInput(ABC):
         """
 
     @abstractmethod
-    def display_hand(self, player: Player, display_indices: bool = False) -> None:
+    def display_hand(self, player: BasePlayer, display_indices: bool = False) -> None:
         """Display a player's hand as part of an interactive input decision.
 
         Placed on ``GameInput`` (rather than ``GameRenderer``) because

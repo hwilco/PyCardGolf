@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from pycardgolf.interfaces.base import GameRenderer
-    from pycardgolf.players import Player
+    from pycardgolf.players import BasePlayer
 
 
 class Game:
@@ -34,14 +34,14 @@ class Game:
 
     def __init__(
         self,
-        players: list[Player],
+        players: list[BasePlayer],
         renderer: GameRenderer,
         num_rounds: int = 9,
         seed: int = random.randrange(sys.maxsize),
     ) -> None:
-        self.players: list[Player] = players
-        self.scores: dict[Player, int] = dict.fromkeys(players, 0)
-        self.round_history: dict[Player, list[int]] = {p: [] for p in players}
+        self.players: list[BasePlayer] = players
+        self.scores: dict[BasePlayer, int] = dict.fromkeys(players, 0)
+        self.round_history: dict[BasePlayer, list[int]] = {p: [] for p in players}
         self.renderer: GameRenderer = renderer
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
@@ -99,10 +99,7 @@ class Game:
 
         round_instance = self.current_round
 
-        while (
-            not round_instance.round_over
-            and round_instance.phase != RoundPhase.FINISHED
-        ):
+        while round_instance.phase != RoundPhase.FINISHED:
             current_player_idx = round_instance.get_current_player_idx()
             current_player = self.players[current_player_idx]
 
@@ -154,15 +151,15 @@ class Game:
         """Display current scores for all players."""
         self.renderer.display_scores(self.scores)
 
-    def get_standings(self) -> list[Player]:
+    def get_standings(self) -> list[BasePlayer]:
         """Return players sorted by score (ascending — lowest score wins)."""
         return sorted(self.players, key=lambda p: self.scores[p])
 
-    def get_winner(self) -> Player:
+    def get_winner(self) -> BasePlayer:
         """Return the player with the lowest score."""
         return self.get_standings()[0]
 
-    def get_stats(self) -> dict[Player, PlayerStats]:
+    def get_stats(self) -> dict[BasePlayer, PlayerStats]:
         """Calculate game statistics for each player."""
         return {
             player: PlayerStats(self.round_history[player]) for player in self.players

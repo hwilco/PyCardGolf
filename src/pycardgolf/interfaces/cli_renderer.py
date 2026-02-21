@@ -1,25 +1,30 @@
 """Module containing the CLI renderer implementation."""
 
+from __future__ import annotations
+
 import dataclasses
 import sys
 import time
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from color_contrast import ModulationMode, modulate
 from rich.color import Color, ColorParseError
-from rich.console import Console
 from rich.panel import Panel
 from rich.text import Style, Text
 
-from pycardgolf.core.game import Game
-from pycardgolf.core.round import Round
 from pycardgolf.core.scoring import calculate_score, calculate_visible_score
-from pycardgolf.core.stats import PlayerStats
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameRenderer
-from pycardgolf.players import Player
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
+
+if TYPE_CHECKING:
+    from rich.console import Console
+
+    from pycardgolf.core.game import Game
+    from pycardgolf.core.round import Round
+    from pycardgolf.core.stats import PlayerStats
+    from pycardgolf.players import BasePlayer
 
 try:
     import msvcrt
@@ -162,7 +167,7 @@ class CLIRenderer(GameRenderer):
         self.console.print(card_text)
         self.console.print("-" * line_len)
 
-    def display_hand(self, player: Player, display_indices: bool = False) -> None:
+    def display_hand(self, player: BasePlayer, display_indices: bool = False) -> None:
         """Display a player's hand."""
         # Display hand in 2 rows with position indicators
         cols = HAND_SIZE // 2
@@ -238,12 +243,12 @@ class CLIRenderer(GameRenderer):
         prompt.append("? (d/p) ")
         return prompt
 
-    def display_drawn_card(self, player: Player, card: Card) -> None:
+    def display_drawn_card(self, player: BasePlayer, card: Card) -> None:
         """Display the card drawn from the deck."""
         self.print_card_message([f"{player.name} drew: ", card])
         self.wait_for_enter()
 
-    def display_discard_draw(self, player: Player, card: Card) -> None:
+    def display_discard_draw(self, player: BasePlayer, card: Card) -> None:
         """Display the card drawn from the discard pile."""
         self.print_card_message(
             [
@@ -255,7 +260,7 @@ class CLIRenderer(GameRenderer):
         self.wait_for_enter()
 
     def display_replace_action(
-        self, player: Player, index: int, new_card: Card, old_card: Card
+        self, player: BasePlayer, index: int, new_card: Card, old_card: Card
     ) -> None:
         """Display the action of replacing a card in hand."""
         self.print_card_message(
@@ -269,7 +274,7 @@ class CLIRenderer(GameRenderer):
         )
         self.wait_for_enter()
 
-    def display_flip_action(self, player: Player, index: int, card: Card) -> None:
+    def display_flip_action(self, player: BasePlayer, index: int, card: Card) -> None:
         """Display the action of flipping a card in hand."""
         self.print_card_message(
             [f"{player.name} flipped card at position {index + 1}: ", card]
@@ -277,7 +282,7 @@ class CLIRenderer(GameRenderer):
         self.wait_for_enter()
 
     def display_turn_start(
-        self, player: Player, players: list[Player], current_idx: int
+        self, player: BasePlayer, players: list[BasePlayer], current_idx: int
     ) -> None:
         """Display the start of a player's turn."""
         self.console.print(f"It's {player.name}'s turn.")
@@ -293,7 +298,7 @@ class CLIRenderer(GameRenderer):
             self.display_hand(next_player, display_indices=False)
         self.wait_for_enter()
 
-    def display_discard_action(self, player: Player, card: Card) -> None:
+    def display_discard_action(self, player: BasePlayer, card: Card) -> None:
         """Display the action of discarding a card."""
         self.print_card_message([f"{player.name} discarded ", card, "."])
         self.wait_for_enter()
@@ -305,7 +310,7 @@ class CLIRenderer(GameRenderer):
         )
         self.wait_for_enter()
 
-    def display_scores(self, scores: dict[Player, int]) -> None:
+    def display_scores(self, scores: dict[BasePlayer, int]) -> None:
         """Display scores. scores is a map of player -> score."""
         self.console.print("\n[bold]Current Scores:[/bold]")
         for player, score in scores.items():
@@ -316,20 +321,20 @@ class CLIRenderer(GameRenderer):
         """Display game over message."""
         self.console.print(Panel("[bold red]--- Game Over ---[/bold red]"))
 
-    def display_standings(self, standings: list[tuple[Player, int]]) -> None:
+    def display_standings(self, standings: list[tuple[BasePlayer, int]]) -> None:
         """Display standings. List of (player, score) tuples, sorted by rank."""
         self.console.print("[bold]Final Standings:[/bold]")
         for i, (player, score) in enumerate(standings):
             color = "green" if i == 0 else "white"
             self.console.print(f"[{color}]{i + 1}. {player.name}: {score}[/{color}]")
 
-    def display_winner(self, winner: Player, score: int) -> None:
+    def display_winner(self, winner: BasePlayer, score: int) -> None:
         """Display the winner."""
         self.console.print(
             Panel(f"[bold gold1]Winner: {winner.name} with score {score}![/bold gold1]")
         )
 
-    def display_initial_flip_prompt(self, player: Player, num_to_flip: int) -> None:
+    def display_initial_flip_prompt(self, player: BasePlayer, num_to_flip: int) -> None:
         """Prompt player to select initial cards to flip."""
         msg = (
             f"[bold]{player.name}, draw start! "
@@ -350,7 +355,7 @@ class CLIRenderer(GameRenderer):
             "Please choose another one.[/bold red]"
         )
 
-    def display_final_turn_notification(self, player: Player) -> None:
+    def display_final_turn_notification(self, player: BasePlayer) -> None:
         """Notify that a player triggered the final turn."""
         self.console.print(
             Panel(
@@ -368,7 +373,7 @@ class CLIRenderer(GameRenderer):
             msg = f"Invalid color '{color}': {e}"
             raise GameConfigError(msg) from e
 
-    def display_game_stats(self, stats: dict[Player, PlayerStats]) -> None:
+    def display_game_stats(self, stats: dict[BasePlayer, PlayerStats]) -> None:
         """Display game statistics.
 
         Args:
@@ -390,7 +395,9 @@ class CLIRenderer(GameRenderer):
                 else:
                     self.console.print(f"  {name}: {value}")
 
-    def display_initial_flip_choices(self, player: Player, choices: list[int]) -> None:
+    def display_initial_flip_choices(
+        self, player: BasePlayer, choices: list[int]
+    ) -> None:
         """Display the choices made for initial cards to flip."""
         cards = [player.hand[i] for i in choices]
         msg_parts: list[str | Card] = [f"{player.name} flipped initial cards: "]
