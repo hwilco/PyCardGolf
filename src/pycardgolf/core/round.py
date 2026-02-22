@@ -52,21 +52,7 @@ class Round:
         self.cards_flipped_in_setup: dict[int, int] = dict.fromkeys(
             range(self.num_players), 0
         )
-        self.hands: list[Hand] = []
-
-        # Validate configuration
-        self.validate_config(self.num_players, self.deck.num_cards)
-
-        # Initialize hands immediately
-        self.deck.shuffle()
-        for _ in range(self.num_players):
-            cards = [self.deck.draw() for _ in range(HAND_SIZE)]
-            self.hands.append(Hand(cards))
-
-        # Start discard pile
-        card = self.deck.draw()
-        card.face_up = True
-        self.discard_pile.add_card(card)
+        self.hands: list[Hand] = [Hand([]) for _ in range(self.num_players)]
 
     def clone(self, preserve_rng: bool = False) -> Round:
         """Create a deep copy of the round for tree search simulation.
@@ -147,3 +133,31 @@ class Round:
 
     def __repr__(self) -> str:
         return f"Round(phase={self.phase}, num_players={self.num_players})"
+
+
+class RoundFactory:
+    """Factory for creating and setting up rounds."""
+
+    @staticmethod
+    def create_standard_round(
+        player_names: list[str],
+        seed: int | None = None,
+    ) -> Round:
+        """Create a standard round, including dealing cards to players."""
+        round_obj = Round(player_names=player_names, seed=seed)
+
+        # Validate configuration
+        Round.validate_config(round_obj.num_players, round_obj.deck.num_cards)
+
+        # Initialize hands immediately
+        round_obj.deck.shuffle()
+        for i in range(round_obj.num_players):
+            cards = [round_obj.deck.draw() for _ in range(HAND_SIZE)]
+            round_obj.hands[i] = Hand(cards)
+
+        # Start discard pile
+        card = round_obj.deck.draw()
+        card.face_up = True
+        round_obj.discard_pile.add_card(card)
+
+        return round_obj

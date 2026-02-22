@@ -17,7 +17,7 @@ from pycardgolf.core.events import (
 )
 from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.core.phases import RoundPhase
-from pycardgolf.core.round import Round
+from pycardgolf.core.round import Round, RoundFactory
 from pycardgolf.core.stats import PlayerStats
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ class Game:
             round_seed = self._rng.randrange(sys.maxsize)
 
             player_names = [p.name for p in self.players]
-            self.current_round = Round(
+            self.current_round = RoundFactory.create_standard_round(
                 player_names=player_names,
                 seed=round_seed,
             )

@@ -23,14 +23,14 @@ from pycardgolf.core.phases import (
     get_valid_actions,
     handle_step,
 )
-from pycardgolf.core.round import Round
+from pycardgolf.core.round import Round, RoundFactory
 from pycardgolf.exceptions import IllegalActionError
 
 
 @pytest.fixture
 def round_state():
     """Create a 2-player round state."""
-    return Round(player_names=["Player1", "Player2"])
+    return RoundFactory.create_standard_round(player_names=["Player1", "Player2"])
 
 
 def test_get_valid_actions_setup(round_state):

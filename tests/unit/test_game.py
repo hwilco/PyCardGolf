@@ -44,17 +44,17 @@ def test_game_start_and_loop_flow(players, mock_event_bus, mocker):
     """Test the full game loop calls Round and display methods."""
     game = Game(players, mock_event_bus, num_rounds=2)
 
-    mock_round_cls = mocker.patch("pycardgolf.core.game.Round")
+    mock_factory = mocker.patch("pycardgolf.core.game.RoundFactory")
     mock_round_instance = MagicMock(spec=Round)
     mock_round_instance.get_scores.return_value = {0: 10, 1: 5}
     mock_round_instance.hands = [MagicMock(), MagicMock()]
-    mock_round_cls.return_value = mock_round_instance
+    mock_factory.create_standard_round.return_value = mock_round_instance
 
     mock_run_loop = mocker.patch.object(game, "_run_round_loop")
 
     game.start()
 
-    assert mock_round_cls.call_count == 2
+    assert mock_factory.create_standard_round.call_count == 2
     assert mock_run_loop.call_count == 2
 
     # P1 (index 0) gets 10 per round * 2 = 20

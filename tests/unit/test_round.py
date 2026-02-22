@@ -15,7 +15,7 @@ from pycardgolf.core.events import (
     TurnStartEvent,
 )
 from pycardgolf.core.phases import RoundPhase
-from pycardgolf.core.round import Round
+from pycardgolf.core.round import Round, RoundFactory
 from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.constants import HAND_SIZE
@@ -38,7 +38,7 @@ def test_validate_config_failure():
 def test_round_initialization():
     player_names = ["P1", "P2"]
 
-    round_instance = Round(player_names=player_names)
+    round_instance = RoundFactory.create_standard_round(player_names=player_names)
 
     assert round_instance.phase == RoundPhase.SETUP
     assert len(round_instance.hands) == 2
@@ -54,9 +54,9 @@ def test_rounds_have_unique_default_seeds(mocker):
     mock_randrange = mocker.patch("pycardgolf.core.round.random.randrange")
     mock_randrange.side_effect = [100, 200, 300]
 
-    r1 = Round(["P1", "P2"])
-    r2 = Round(["P1", "P2"])
-    r3 = Round(["P1", "P2"])
+    r1 = RoundFactory.create_standard_round(["P1", "P2"])
+    r2 = RoundFactory.create_standard_round(["P1", "P2"])
+    r3 = RoundFactory.create_standard_round(["P1", "P2"])
 
     assert r1.seed == 100
     assert r2.seed == 200
@@ -65,7 +65,7 @@ def test_rounds_have_unique_default_seeds(mocker):
 
 def test_round_step_setup_phase():
     player_names = ["P1"]
-    round_instance = Round(player_names=player_names)
+    round_instance = RoundFactory.create_standard_round(player_names=player_names)
 
     # Needs to flip 2 cards to finish setup
     assert round_instance.phase == RoundPhase.SETUP
@@ -89,14 +89,14 @@ def test_round_step_setup_phase():
 
 
 def test_round_step_illegal_setup_action():
-    round_instance = Round(player_names=["P1"])
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
 
     with pytest.raises(IllegalActionError):
         round_instance.step(ActionPass())  # Pass is not valid in SETUP
 
 
 def test_round_step_draw_phase():
-    round_instance = Round(player_names=["P1"])
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
 
     # Skip setup
     round_instance.phase = RoundPhase.DRAW
@@ -110,7 +110,7 @@ def test_round_step_draw_phase():
 
 
 def test_round_step_action_phase_swap():
-    round_instance = Round(player_names=["P1"])
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
     round_instance.phase = RoundPhase.ACTION
     drawn = Card(Rank.ACE, Suit.SPADES, "blue")
     round_instance.drawn_card = drawn
@@ -129,7 +129,7 @@ def test_round_step_action_phase_swap():
 
 
 def test_round_step_action_phase_discard_drawn():
-    round_instance = Round(player_names=["P1"])
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
     round_instance.phase = RoundPhase.ACTION
     drawn = Card(Rank.ACE, Suit.SPADES, "blue")
     round_instance.drawn_card = drawn
@@ -145,7 +145,7 @@ def test_round_step_action_phase_discard_drawn():
 
 
 def test_round_step_flip_phase():
-    round_instance = Round(player_names=["P1"])
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
     round_instance.phase = RoundPhase.FLIP
 
     # Flip index 2
