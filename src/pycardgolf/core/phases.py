@@ -51,7 +51,7 @@ class PhaseState(ABC):
     @abstractmethod
     def handle_step(
         self, round_state: Round, player_idx: int, action: Action
-    ) -> list[GameEvent]:
+    ) -> tuple[list[GameEvent], RoundPhase]:
         """Advance the round state based on the action and return events."""
 
 
@@ -68,7 +68,7 @@ class SetupPhaseState(PhaseState):
 
     def handle_step(
         self, round_state: Round, player_idx: int, action: Action
-    ) -> list[GameEvent]:
+    ) -> tuple[list[GameEvent], RoundPhase]:
         """Advance the round state based on the action and return events."""
         match action:
             case ActionFlipCard(hand_index=idx):
@@ -96,7 +96,6 @@ class SetupPhaseState(PhaseState):
                     if round_state.current_player_idx >= round_state.num_players:
                         # All players done setup
                         round_state.current_player_idx = 0
-                        round_state.phase = RoundPhase.DRAW
                         events.append(
                             TurnStartEvent(
                                 player_idx=0,
@@ -106,8 +105,9 @@ class SetupPhaseState(PhaseState):
                                 },
                             )
                         )
+                        return events, RoundPhase.DRAW
 
-                return events
+                return events, round_state.phase
             case _:
                 msg = "Must flip a card in setup phase."
                 raise IllegalActionError(msg)
@@ -125,7 +125,7 @@ class DrawPhaseState(PhaseState):
 
     def handle_step(
         self, round_state: Round, player_idx: int, action: Action
-    ) -> list[GameEvent]:
+    ) -> tuple[list[GameEvent], RoundPhase]:
         """Advance the round state based on the action and return events."""
         events: list[GameEvent] = []
         match action:
@@ -134,8 +134,8 @@ class DrawPhaseState(PhaseState):
                 card.face_up = True
                 round_state.drawn_card = card
                 round_state.drawn_from_deck = True
-                round_state.phase = RoundPhase.ACTION
                 events.append(CardDrawnDeckEvent(player_idx=player_idx, card=card))
+                return events, RoundPhase.ACTION
             case ActionDrawDiscard():
                 if round_state.discard_pile.num_cards == 0:
                     msg = "Discard pile is empty."
@@ -143,13 +143,11 @@ class DrawPhaseState(PhaseState):
                 card = round_state.discard_pile.draw()
                 round_state.drawn_card = card
                 round_state.drawn_from_deck = False
-                round_state.phase = RoundPhase.ACTION
                 events.append(CardDrawnDiscardEvent(player_idx=player_idx, card=card))
+                return events, RoundPhase.ACTION
             case _:
                 msg = f"Invalid action for DRAW phase: {action}"
                 raise IllegalActionError(msg)
-
-        return events
 
 
 class ActionPhaseState(PhaseState):
@@ -164,7 +162,7 @@ class ActionPhaseState(PhaseState):
 
     def handle_step(
         self, round_state: Round, player_idx: int, action: Action
-    ) -> list[GameEvent]:
+    ) -> tuple[list[GameEvent], RoundPhase]:
         """Advance the round state based on the action and return events."""
         events: list[GameEvent] = []
         if round_state.drawn_card is None:
@@ -187,7 +185,7 @@ class ActionPhaseState(PhaseState):
                     )
                 )
                 round_state.drawn_card = None
-                _end_turn(round_state, events)
+                return _end_turn(round_state, events)
             case ActionDiscardDrawn():
                 round_state.discard_pile.add_card(round_state.drawn_card)
                 events.append(
@@ -196,12 +194,10 @@ class ActionPhaseState(PhaseState):
                     )
                 )
                 round_state.drawn_card = None
-                round_state.phase = RoundPhase.FLIP
+                return events, RoundPhase.FLIP
             case _:
                 msg = f"Invalid action for ACTION phase: {action}"
                 raise IllegalActionError(msg)
-
-        return events
 
 
 class FlipPhaseState(PhaseState):
@@ -221,7 +217,7 @@ class FlipPhaseState(PhaseState):
 
     def handle_step(
         self, round_state: Round, player_idx: int, action: Action
-    ) -> list[GameEvent]:
+    ) -> tuple[list[GameEvent], RoundPhase]:
         """Advance the round state based on the action and return events."""
         events: list[GameEvent] = []
         hand = round_state.hands[player_idx]
@@ -238,13 +234,12 @@ class FlipPhaseState(PhaseState):
                         card=hand[idx],
                     )
                 )
-                _end_turn(round_state, events)
+                return _end_turn(round_state, events)
             case ActionPass():
-                _end_turn(round_state, events)
+                return _end_turn(round_state, events)
             case _:
                 msg = f"Invalid action for FLIP phase: {action}"
                 raise IllegalActionError(msg)
-        return events
 
 
 class FinishedPhaseState(PhaseState):
@@ -259,9 +254,9 @@ class FinishedPhaseState(PhaseState):
         round_state: Round,  # noqa: ARG002
         player_idx: int,  # noqa: ARG002
         action: Action,  # noqa: ARG002
-    ) -> list[GameEvent]:
+    ) -> tuple[list[GameEvent], RoundPhase]:
         """Advance the round state based on the action and return events."""
-        return []
+        return [], RoundPhase.FINISHED
 
 
 _PHASE_STATES: dict[RoundPhase, PhaseState] = {
@@ -292,10 +287,14 @@ def handle_step(round_state: Round, action: Action) -> list[GameEvent]:
     if not state:
         msg = f"Unknown round phase: {round_state.phase}"
         raise RuntimeError(msg)
-    return state.handle_step(round_state, player_idx, action)
+    events, next_phase = state.handle_step(round_state, player_idx, action)
+    round_state.phase = next_phase
+    return events
 
 
-def _end_turn(round_state: Round, events: list[GameEvent]) -> None:
+def _end_turn(
+    round_state: Round, events: list[GameEvent]
+) -> tuple[list[GameEvent], RoundPhase]:
     """Finalize turn, check end conditions, and advance."""
     player_idx = round_state.current_player_idx
 
@@ -318,13 +317,13 @@ def _end_turn(round_state: Round, events: list[GameEvent]) -> None:
         round_state.last_turn_player_idx is not None
         and round_state.current_player_idx == round_state.last_turn_player_idx
     ):
-        round_state.phase = RoundPhase.FINISHED
         round_state.reveal_hands()  # Reveal hidden cards
-    else:
-        round_state.phase = RoundPhase.DRAW
-        events.append(
-            TurnStartEvent(
-                player_idx=round_state.current_player_idx,
-                hands={i: round_state.hands[i] for i in range(round_state.num_players)},
-            )
+        return events, RoundPhase.FINISHED
+
+    events.append(
+        TurnStartEvent(
+            player_idx=round_state.current_player_idx,
+            hands={i: round_state.hands[i] for i in range(round_state.num_players)},
         )
+    )
+    return events, RoundPhase.DRAW

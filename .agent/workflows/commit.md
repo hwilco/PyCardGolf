@@ -32,8 +32,8 @@ description: Generate a commit message from staged changes and optionally commit
    **Rules:**
    - The summary line must be lowercase, imperative mood, no period.
    - Bullet points should explain *what* and *why*, not just restate the diff.
-   - Reference specific files/classes using relatiive paths when helpful.
-   - Use escaped backticks to format code references.
+   - Reference specific files/classes using relatiive paths when helpful (don't include absolute references that include the User path).
+   - Use backslash-escaped backticks to format code references.
    - Keep the full message concise — typically 3–6 bullet points, though don't leave out necessary details. When in doubt, check with the user.
    - If it's not in the diff, it doesn't belong in the message. (Purpose - avoid explaining internal decisions that don't impact the commit in its final form)
 

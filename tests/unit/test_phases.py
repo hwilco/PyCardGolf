@@ -221,8 +221,9 @@ def test_finished_phase_handle_step(round_state: Round) -> None:
     """Test FinishedPhaseState returns empty list for handle_step."""
     round_state.phase = RoundPhase.FINISHED
     state = _PHASE_STATES[RoundPhase.FINISHED]
-    events = state.handle_step(round_state, 0, ActionPass())
+    events, next_phase = state.handle_step(round_state, 0, ActionPass())
     assert not events
+    assert next_phase == RoundPhase.FINISHED
 
 
 def test_get_valid_actions_unknown_phase(round_state: Round) -> None:
