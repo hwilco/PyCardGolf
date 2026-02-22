@@ -1,9 +1,13 @@
 """Module containing the Hand class."""
 
-from collections.abc import Iterator
-from typing import overload
+from __future__ import annotations
 
-from pycardgolf.utils.card import Card
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from pycardgolf.utils.card import Card
 
 
 class Hand:
@@ -46,6 +50,10 @@ class Hand:
         """Reveal all cards in the hand (set face_up to True)."""
         for card in self._cards:
             card.face_up = True
+
+    def clone(self) -> Hand:
+        """Return a deep copy of the hand."""
+        return Hand([c.clone() for c in self._cards])
 
     def __repr__(self) -> str:
         return f"Hand(cards={self._cards})"

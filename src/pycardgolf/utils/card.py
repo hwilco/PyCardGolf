@@ -106,6 +106,16 @@ class Card:
         """
         self.face_up = not self.face_up
 
+    def clone(self) -> Card:
+        """Return a deep copy of the card."""
+        return Card(
+            rank=self.rank,
+            suit=self.suit,
+            back_color=self.back_color,
+            face_color=self.face_color,
+            face_up=self.face_up,
+        )
+
     @property
     def __rank_str(self) -> str:
         """Human-readable representation of the rank of the card."""

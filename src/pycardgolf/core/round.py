@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import random
 import sys
 from typing import TYPE_CHECKING
@@ -66,6 +67,41 @@ class Round:
         card = self.deck.draw()
         card.face_up = True
         self.discard_pile.add_card(card)
+
+    def clone(self, preserve_rng: bool = False) -> Round:
+        """Create a deep copy of the round for tree search simulation.
+
+        Args:
+            preserve_rng: If True, copies the exact random number generator state.
+                If False (default), creates a new randomized seed for the clone.
+
+        """
+        # Bypass __init__ to avoid expensive setup (deck creation/shuffling)
+        cloned = Round.__new__(Round)
+
+        cloned.player_names = self.player_names.copy()
+        cloned.num_players = self.num_players
+
+        if preserve_rng:
+            cloned.seed = self.seed
+            cloned._rng = copy.deepcopy(self._rng)  # noqa: SLF001
+        else:
+            cloned.seed = random.randrange(sys.maxsize)
+            cloned._rng = random.Random(cloned.seed)  # noqa: SLF001
+
+        cloned.deck = self.deck.clone(preserve_rng=preserve_rng)
+        cloned.discard_pile = self.discard_pile.clone(preserve_rng=preserve_rng)
+        cloned.hands = [h.clone() for h in self.hands]
+
+        cloned.phase = self.phase
+        cloned.current_player_idx = self.current_player_idx
+        cloned.turn_count = self.turn_count
+        cloned.last_turn_player_idx = self.last_turn_player_idx
+        cloned.drawn_card = self.drawn_card.clone() if self.drawn_card else None
+        cloned.drawn_from_deck = self.drawn_from_deck
+        cloned.cards_flipped_in_setup = self.cards_flipped_in_setup.copy()
+
+        return cloned
 
     def get_current_player_idx(self) -> int:
         """Return the index of the player whose turn it is."""

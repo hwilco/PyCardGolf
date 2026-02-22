@@ -115,6 +115,22 @@ class CardStack:
         """Randomly order the cards remaining in the stack."""
         self.rand.shuffle(self._cards)
 
+    def clone(self, preserve_rng: bool = False) -> CardStack:
+        """Return a deep copy of the CardStack.
+
+        Args:
+            preserve_rng: If True, copies the exact random number generator state.
+                If False (default), creates a new randomized seed for the clone.
+
+        """
+        cloned_stack = CardStack(
+            cards=[c.clone() for c in self._cards],
+            seed=self.seed if preserve_rng else None,
+        )
+        if preserve_rng and "rand" in self.__dict__:
+            cloned_stack.rand.setstate(self.rand.getstate())
+        return cloned_stack
+
     def __eq__(self, other: object) -> bool:
         """Check equality with another object."""
         if not isinstance(other, CardStack):
@@ -235,6 +251,24 @@ class Deck(CardStack):
             for suit in Suit
             if suit != Suit.HIDDEN
         ]
+
+    def clone(self, preserve_rng: bool = False) -> Deck:
+        """Return a deep copy of the Deck.
+
+        Args:
+            preserve_rng: If True, copies the exact random number generator state.
+                If False (default), creates a new randomized seed for the clone.
+
+        """
+        cloned_deck = Deck(
+            back_color=self.back_color,
+            suit_colors=self.suit_colors.copy(),
+            seed=self.seed if preserve_rng else None,
+        )
+        cloned_deck._cards = [c.clone() for c in self._cards]
+        if preserve_rng and "rand" in self.__dict__:
+            cloned_deck.rand.setstate(self.rand.getstate())
+        return cloned_deck
 
     def __repr__(self) -> str:
         """Return string representation of the Deck."""
