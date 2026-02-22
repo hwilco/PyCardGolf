@@ -367,6 +367,34 @@ def test_deck_color_case_conversion(input_color, expected_color):
     assert deck.back_color == expected_color
 
 
+def test_deck_clone(red_deck: Deck) -> None:
+    """Test that a deck clones."""
+    # Ensure clone gives identical output when RNG identical
+    red_deck.shuffle()
+    clone1 = red_deck.clone(preserve_rng=True)
+    assert red_deck.draw() == clone1.draw()
+
+
+def test_cardstack_clone_preserve_rng_no_rand() -> None:
+    """Test CardStack cloning with preserve_rng=True but rand not initialized."""
+    stack = CardStack([Card(Rank.ACE, Suit.SPADES, "blue")])
+    # clone without calling stack.rand
+    cloned = stack.clone(preserve_rng=True)
+    assert "rand" not in cloned.__dict__
+
+
+def test_cardstack_clone_preserve_rng_with_rand() -> None:
+    """Test CardStack cloning with preserve_rng=True and rand initialized."""
+    stack = CardStack(
+        [Card(Rank.ACE, Suit.SPADES, "blue"), Card(Rank.TWO, Suit.SPADES, "blue")],
+        seed=42,
+    )
+    stack.shuffle()
+    cloned = stack.clone(preserve_rng=True)
+    assert "rand" in cloned.__dict__
+    assert stack.draw() == cloned.draw()
+
+
 def test_deck_initialization():
     # Test that a new deck has exactly 52 cards in expected order
     deck = Deck("red", seed=1)

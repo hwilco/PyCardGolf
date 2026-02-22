@@ -18,6 +18,7 @@ from pycardgolf.core.events import (
     TurnStartEvent,
 )
 from pycardgolf.core.phases import (
+    _PHASE_STATES,
     RoundPhase,
     get_valid_actions,
     handle_step,
@@ -216,6 +217,28 @@ def test_flip_invalid_action_raises(round_state):
         handle_step(round_state, ActionDrawDeck())
 
 
+def test_finished_phase_handle_step(round_state: Round) -> None:
+    """Test FinishedPhaseState returns empty list for handle_step."""
+    round_state.phase = RoundPhase.FINISHED
+    state = _PHASE_STATES[RoundPhase.FINISHED]
+    events = state.handle_step(round_state, 0, ActionPass())
+    assert not events
+
+
+def test_get_valid_actions_unknown_phase(round_state: Round) -> None:
+    """Test get_valid_actions raises RuntimeError for an unknown phase."""
+    round_state.phase = "INVALID_PHASE"  # type: ignore[assignment]
+    with pytest.raises(RuntimeError, match="Unknown round phase: INVALID_PHASE"):
+        get_valid_actions(round_state, 0)
+
+
+def test_handle_step_unknown_phase(round_state: Round) -> None:
+    """Test handle_step raises RuntimeError for an unknown phase."""
+    round_state.phase = "INVALID_PHASE"  # type: ignore[assignment]
+    with pytest.raises(RuntimeError, match="Unknown round phase: INVALID_PHASE"):
+        handle_step(round_state, ActionPass())
+
+
 def test_get_valid_actions_finished(round_state):
     """Test that FINISHED phase returns no valid actions."""
     round_state.phase = RoundPhase.FINISHED
@@ -235,11 +258,3 @@ def test_get_valid_actions_draw_empty_discard(round_state):
     assert isinstance(actions[0], ActionDrawDeck)
     # ActionDrawDiscard should NOT be in actions
     assert not any(isinstance(a, ActionDrawDiscard) for a in actions)
-
-
-def test_handle_step_invalid_phase(round_state):
-    """Test handle_step with an invalid phase to hit fallthrough."""
-    # Using a string to bypass enum-only typing and hit the return [] fallthrough
-    round_state.phase = "INVALID_PHASE"  # type: ignore[assignment]
-    events = handle_step(round_state, ActionPass())
-    assert events == []

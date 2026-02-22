@@ -40,12 +40,12 @@ if TYPE_CHECKING:
 
 try:
     import msvcrt
-except ImportError:
+except ImportError:  # pragma: no cover
     msvcrt = None  # type: ignore[assignment]
 
 try:
     import select
-except ImportError:
+except ImportError:  # pragma: no cover
     select = None  # type: ignore[assignment]
 
 
@@ -77,12 +77,12 @@ class CLIRenderer(GameRenderer):
         if msvcrt:
             # Windows
             while time.time() < end_time:
-                if msvcrt.kbhit():
-                    msvcrt.getch()
-                    break
+                if msvcrt.kbhit():  # pragma: no cover
+                    msvcrt.getch()  # pragma: no cover
+                    break  # pragma: no cover
                 time.sleep(0.05)
 
-        elif select:
+        elif select:  # pragma: no cover
             # Unix / Linux / macOS
             while time.time() < end_time:
                 # Check for input availability (non-blocking)
@@ -93,7 +93,7 @@ class CLIRenderer(GameRenderer):
                     break
                 time.sleep(0.05)
 
-        else:
+        else:  # pragma: no cover
             # Fallback
             time.sleep(self.delay)
 

@@ -14,6 +14,7 @@ from pycardgolf.core.events import (
     CardFlippedEvent,
     CardSwappedEvent,
     GameOverEvent,
+    GameStartedEvent,
     GameStatsEvent,
     RoundEndEvent,
     RoundStartEvent,
@@ -286,6 +287,18 @@ class TestColorValidation:
         """Test that valid colors pass validation."""
         renderer, _ = captured_renderer
         renderer.validate_color(valid_color)
+
+    def test_handle_game_started(self, captured_renderer, mocker):
+        """Test handle_game_started stores the list of players on the base class."""
+        renderer, _ = captured_renderer
+        player1 = mocker.Mock(spec=BasePlayer)
+        player1.name = "Player 1"
+        player2 = mocker.Mock(spec=BasePlayer)
+        player2.name = "Player 2"
+        event = GameStartedEvent(players=[player1, player2])
+
+        renderer.handle_game_started(event)
+        assert renderer.players == [player1, player2]
 
     def test_validate_color_invalid(self, captured_renderer):
         """Test that invalid colors raise GameConfigError."""

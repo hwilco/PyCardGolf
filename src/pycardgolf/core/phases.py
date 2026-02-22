@@ -268,9 +268,10 @@ _PHASE_STATES: dict[RoundPhase, PhaseState] = {
 def get_valid_actions(round_state: Round, player_idx: int) -> list[Action]:
     """Return a list of valid actions for the given player."""
     state = _PHASE_STATES.get(round_state.phase)
-    if state:
-        return state.get_valid_actions(round_state, player_idx)
-    return []
+    if not state:
+        msg = f"Unknown round phase: {round_state.phase}"
+        raise RuntimeError(msg)
+    return state.get_valid_actions(round_state, player_idx)
 
 
 def handle_step(round_state: Round, action: Action) -> list[GameEvent]:
@@ -280,9 +281,10 @@ def handle_step(round_state: Round, action: Action) -> list[GameEvent]:
 
     player_idx = round_state.current_player_idx
     state = _PHASE_STATES.get(round_state.phase)
-    if state:
-        return state.handle_step(round_state, player_idx, action)
-    return []
+    if not state:
+        msg = f"Unknown round phase: {round_state.phase}"
+        raise RuntimeError(msg)
+    return state.handle_step(round_state, player_idx, action)
 
 
 def _end_turn(round_state: Round, events: list[GameEvent]) -> None:
