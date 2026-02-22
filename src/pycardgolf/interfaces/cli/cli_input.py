@@ -4,10 +4,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
+from pycardgolf.core.actions import (
+    Action,
+    ActionDiscardDrawn,
+    ActionDrawDeck,
+    ActionDrawDiscard,
+    ActionFlipCard,
+    ActionPass,
+    ActionSwapCard,
+)
+from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import GameInput
 from pycardgolf.utils.constants import HAND_SIZE
-from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -15,9 +24,9 @@ if TYPE_CHECKING:
     from rich.console import Console
     from rich.text import Text
 
+    from pycardgolf.core.observation import Observation
     from pycardgolf.interfaces.cli.cli_renderer import CLIRenderer
     from pycardgolf.players import BasePlayer
-    from pycardgolf.utils.card import Card
 
 
 T = TypeVar("T")
@@ -102,11 +111,29 @@ class CLIInputHandler(GameInput):
             except ValueError:
                 self.console.print(error_msg)
 
-    def get_draw_choice(
-        self, player: BasePlayer, deck_card: Card | None, discard_card: Card | None
-    ) -> DrawSourceChoice:
-        """Get the user's choice to draw from the deck or discard pile."""
-        prompt = self.renderer.create_draw_choice_prompt(deck_card, discard_card)
+    def get_action(self, player: BasePlayer, observation: Observation) -> Action:
+        """Get the user's action based on the current phase."""
+        if observation.phase == RoundPhase.SETUP:
+            return self._handle_setup_phase(player)
+        if observation.phase == RoundPhase.DRAW:
+            return self._handle_draw_phase(player, observation)
+        if observation.phase == RoundPhase.ACTION:
+            return self._handle_action_phase(player, observation)
+        if observation.phase == RoundPhase.FLIP:
+            return self._handle_flip_phase(player)
+
+        return ActionPass()
+
+    def _handle_setup_phase(self, player: BasePlayer) -> Action:
+        idx = self._get_valid_flip_index(player)
+        return ActionFlipCard(hand_index=idx)
+
+    def _handle_draw_phase(
+        self, player: BasePlayer, observation: Observation
+    ) -> Action:
+        prompt = self.renderer.create_draw_choice_prompt(
+            observation.deck_top, observation.discard_top
+        )
         self.console.print(f"{player.name}'s turn:")
         choice = self.get_choice(
             prompt,
@@ -114,58 +141,56 @@ class CLIInputHandler(GameInput):
             error_msg="Invalid input. Please enter 'd' or 'p'.",
         )
         if choice == "d":
-            return DrawSourceChoice.DECK
-        return DrawSourceChoice.DISCARD_PILE
+            return ActionDrawDeck()
+        return ActionDrawDiscard()
 
-    def get_keep_or_discard_choice(self, player: BasePlayer) -> KeepOrDiscardChoice:
-        """Get the user's choice to keep the drawn card or discard it."""
-        choice = self.get_choice(
-            f"{player.name}, (k)eep or (d)iscard? (k/d) ",
-            valid_options=["k", "d"],
-            error_msg="Invalid input. Please enter 'k' or 'd'.",
-            capitilization_sensitive=False,
+    def _handle_action_phase(
+        self, player: BasePlayer, observation: Observation
+    ) -> Action:
+        if observation.can_discard_drawn:
+            choice = self.get_choice(
+                f"{player.name}, (k)eep or (d)iscard? (k/d) ",
+                valid_options=["k", "d"],
+                error_msg="Invalid input. Please enter 'k' or 'd'.",
+                capitilization_sensitive=False,
+            )
+            if choice == "d":
+                return ActionDiscardDrawn()
+
+        self.renderer.display_hand(player, display_indices=True)
+        idx = self.get_validated_input(
+            "Select which card to replace (1-6): ",
+            validation_func=self._validate_card_index,
+            error_msg="Invalid input. Please enter a number between 1 and 6.",
         )
-        if choice == "k":
-            return KeepOrDiscardChoice.KEEP
-        return KeepOrDiscardChoice.DISCARD
+        return ActionSwapCard(hand_index=idx)
 
-    def get_flip_choice(self, player: BasePlayer) -> bool:
-        """Get the user's choice to flip a card."""
+    def _handle_flip_phase(self, player: BasePlayer) -> Action:
         choice = self.get_choice(
             f"{player.name}, flip a card? (y/n) ",
             valid_options=["y", "n"],
             error_msg="Invalid input. Please enter 'y' or 'n'.",
             capitilization_sensitive=False,
         )
-        return choice == "y"
+        if choice == "y":
+            idx = self._get_valid_flip_index(player)
+            return ActionFlipCard(hand_index=idx)
+        return ActionPass()
 
     def _validate_card_index(self, s: str) -> int:
         """Validate input is a valid card index mapping to 0-based index."""
-        idx = int(s)
+        try:
+            idx = int(s)
+        except (ValueError, TypeError) as e:
+            msg = f"Not a valid number: {s}"
+            raise ValueError(msg) from e
+
         if 1 <= idx <= HAND_SIZE:
             return idx - 1
         msg = f"Card index must be between 1 and {HAND_SIZE}. Got: {s}"
         raise ValueError(msg)
 
-    def get_index_to_replace(self, player: BasePlayer) -> int:
-        """Get the index of the card to replace in the hand."""
-        self.renderer.display_hand(player, display_indices=True)
-        return self.get_validated_input(
-            "Select which card to replace (1-6): ",
-            validation_func=self._validate_card_index,
-            error_msg="Invalid input. Please enter a number between 1 and 6.",
-        )
-
-    def get_index_to_flip(self, player: BasePlayer) -> int:
-        """Get the index of the card to flip in the hand."""
-        self.renderer.display_hand(player, display_indices=True)
-        return self.get_validated_input(
-            "Select which card to flip (1-6): ",
-            validation_func=self._validate_card_index,
-            error_msg="Invalid input. Please enter a number between 1 and 6.",
-        )
-
-    def get_valid_flip_index(self, player: BasePlayer) -> int:
+    def _get_valid_flip_index(self, player: BasePlayer) -> int:
         """Get a valid index of a face-down card to flip."""
         # Show hand for context (especially critical in setup phase)
         self.renderer.display_hand(player, display_indices=True)

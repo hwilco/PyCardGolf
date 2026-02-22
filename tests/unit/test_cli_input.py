@@ -3,9 +3,18 @@
 import pytest
 from rich.console import Console
 
+from pycardgolf.core.actions import (
+    ActionDiscardDrawn,
+    ActionDrawDeck,
+    ActionFlipCard,
+    ActionPass,
+    ActionSwapCard,
+)
+from pycardgolf.core.observation import Observation
+from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
-from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
+from pycardgolf.utils.card import Card, Rank, Suit
 
 
 @pytest.fixture
@@ -32,7 +41,24 @@ def mock_player(mocker):
     player = mocker.Mock()
     player.name = "Test Player"
     player.hand = [mocker.Mock() for _ in range(6)]
+    for card in player.hand:
+        card.face_up = False
     return player
+
+
+@pytest.fixture
+def base_obs():
+    """Create a base observation fixture."""
+    return Observation(
+        my_hand=[Card(Rank.ACE, Suit.SPADES, "blue") for _ in range(6)],
+        other_hands={},
+        discard_top=None,
+        deck_size=52,
+        deck_top=None,
+        current_player_name="Test Player",
+        phase=RoundPhase.SETUP,
+        valid_actions=[],
+    )
 
 
 class TestInputHandlerValidation:
@@ -81,129 +107,103 @@ class TestInputHandlerValidation:
         with pytest.raises(GameExitError):
             input_handler.get_choice("Choose: ", valid_options=["a", "b"])
 
-    def test_get_validated_input_with_func(self, input_handler, mock_console):
-        """Test input validation with custom validation function."""
-        mock_console.input.return_value = "5"
-
-        def validate_number(s: str) -> int:
-            num = int(s)
-            if 1 <= num <= 6:
-                return num
-            raise ValueError
-
-        result = input_handler.get_validated_input(
-            "Enter number: ",
-            validation_func=validate_number,
-            error_msg="Invalid number",
-        )
-        assert result == 5
-
-    def test_get_validated_input_retries(self, input_handler, mock_console):
-        """Test that validation function failures cause retry."""
-        mock_console.input.side_effect = ["99", "5"]
-
-        def validate_number(s: str) -> int:
-            num = int(s)
-            if 1 <= num <= 6:
-                return num
-            raise ValueError
-
-        result = input_handler.get_validated_input(
-            "Enter number: ",
-            validation_func=validate_number,
-            error_msg="Invalid number",
-        )
-
-        assert result == 5
-        mock_console.print.assert_any_call("Invalid number")
-
-    def test_get_index_to_replace_shows_hand(
-        self, input_handler, mock_console, mock_renderer, mock_player
-    ):
-        """Test that get_index_to_replace shows the hand."""
-        mock_console.input.return_value = "1"
-        result = input_handler.get_index_to_replace(mock_player)
-        assert result == 0
-        mock_renderer.display_hand.assert_called_once_with(
-            mock_player, display_indices=True
-        )
-
-    def test_get_index_to_flip_shows_hand(
-        self, input_handler, mock_console, mock_renderer, mock_player
-    ):
-        """Test that get_index_to_flip shows the hand."""
-        mock_console.input.return_value = "6"
-        result = input_handler.get_index_to_flip(mock_player)
-        assert result == 5
-        mock_renderer.display_hand.assert_called_once_with(
-            mock_player, display_indices=True
-        )
-
-    def test_get_valid_flip_index_shows_hand(
-        self, input_handler, mock_console, mock_renderer, mock_player
-    ):
-        """Test that get_valid_flip_index shows the hand and filters valid indices."""
-        # Setup hand: indices 0, 1 are face up, rest are face down
-        for i in range(2):
-            mock_player.hand[i].face_up = True
-        for i in range(2, 6):
-            mock_player.hand[i].face_up = False
-
-        # Mock input to pick index 3 (human 4)
-        mock_console.input.return_value = "4"
-
-        result = input_handler.get_valid_flip_index(mock_player)
-
-        assert result == 3
-        mock_renderer.display_hand.assert_called_once_with(
-            mock_player, display_indices=True
-        )
-
     def test_get_validated_input_quit(self, input_handler, mock_console):
         """Test that quit input in get_validated_input raises GameExitError."""
         mock_console.input.return_value = "q"
         with pytest.raises(GameExitError):
             input_handler.get_validated_input("Prompt: ", lambda x: x)
 
-    def test_get_draw_choice_deck(self, input_handler, mock_console, mock_player):
-        """Test get_draw_choice returning DECK."""
-        mock_console.input.return_value = "d"
-        result = input_handler.get_draw_choice(mock_player, None, None)
-        assert result == DrawSourceChoice.DECK
 
-    def test_get_draw_choice_discard(self, input_handler, mock_console, mock_player):
-        """Test get_draw_choice returning DISCARD."""
-        mock_console.input.return_value = "p"
-        result = input_handler.get_draw_choice(mock_player, None, None)
-        assert result == DrawSourceChoice.DISCARD_PILE
+class TestInputHandlerGetAction:
+    """Tests for the consolidated get_action method."""
 
-    def test_get_keep_or_discard_choice_keep(
-        self, input_handler, mock_console, mock_player
+    def test_get_action_setup_phase(
+        self, input_handler, mock_console, mock_player, base_obs
     ):
-        """Test get_keep_or_discard_choice returning KEEP."""
-        mock_console.input.return_value = "k"
-        result = input_handler.get_keep_or_discard_choice(mock_player)
-        assert result == KeepOrDiscardChoice.KEEP
+        """Test setup phase routing."""
+        base_obs.phase = RoundPhase.SETUP
+        mock_console.input.return_value = "1"
 
-    def test_get_keep_or_discard_choice_discard(
-        self, input_handler, mock_console, mock_player
+        action = input_handler.get_action(mock_player, base_obs)
+
+        assert isinstance(action, ActionFlipCard)
+        assert action.hand_index == 0
+
+    def test_get_action_draw_phase(
+        self, input_handler, mock_console, mock_player, base_obs
     ):
-        """Test get_keep_or_discard_choice returning DISCARD."""
+        """Test draw phase routing."""
+        base_obs.phase = RoundPhase.DRAW
         mock_console.input.return_value = "d"
-        result = input_handler.get_keep_or_discard_choice(mock_player)
-        assert result == KeepOrDiscardChoice.DISCARD
 
-    def test_get_flip_choice_yes(self, input_handler, mock_console, mock_player):
-        """Test get_flip_choice returning YES."""
-        mock_console.input.return_value = "y"
-        result = input_handler.get_flip_choice(mock_player)
-        assert result is True
+        action = input_handler.get_action(mock_player, base_obs)
 
-    def test_get_flip_choice_no(self, input_handler, mock_console, mock_player):
-        """Test get_flip_choice returning NO."""
+        assert isinstance(action, ActionDrawDeck)
+
+    def test_get_action_action_phase_keep_and_swap(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test action phase: keep and swap."""
+        base_obs.phase = RoundPhase.ACTION
+        base_obs.can_discard_drawn = True
+        # Inputs: 'k' for keep choice, then '2' for replacement index
+        mock_console.input.side_effect = ["k", "2"]
+
+        action = input_handler.get_action(mock_player, base_obs)
+
+        assert isinstance(action, ActionSwapCard)
+        assert action.hand_index == 1
+
+    def test_get_action_action_phase_discard(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test action phase: discard drawn."""
+        base_obs.phase = RoundPhase.ACTION
+        base_obs.can_discard_drawn = True
+        mock_console.input.return_value = "d"
+
+        action = input_handler.get_action(mock_player, base_obs)
+
+        assert isinstance(action, ActionDiscardDrawn)
+
+    def test_get_action_flip_phase_yes(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test flip phase: yes and select index."""
+        base_obs.phase = RoundPhase.FLIP
+        # Inputs: 'y' for flip choice, then '3' for flip index
+        mock_console.input.side_effect = ["y", "3"]
+
+        action = input_handler.get_action(mock_player, base_obs)
+
+        assert isinstance(action, ActionFlipCard)
+        assert action.hand_index == 2
+
+    def test_get_action_flip_phase_no(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test flip phase: no."""
+        base_obs.phase = RoundPhase.FLIP
         mock_console.input.return_value = "n"
-        result = input_handler.get_flip_choice(mock_player)
-        assert result is False
+
+        action = input_handler.get_action(mock_player, base_obs)
+
+        assert isinstance(action, ActionPass)
+
+    def test_get_action_finished_phase(self, input_handler, mock_player, base_obs):
+        """Test finished phase fallback."""
+        base_obs.phase = RoundPhase.FINISHED
+        action = input_handler.get_action(mock_player, base_obs)
+        assert isinstance(action, ActionPass)
+
+
+class TestInputHandlerHelpers:
+    """Tests for private helper methods and card index validation."""
+
+    def test_validate_card_index_valid(self, input_handler):
+        """Test valid card index strings."""
+        assert input_handler._validate_card_index("1") == 0
+        assert input_handler._validate_card_index("6") == 5
 
     def test_validate_card_index_out_of_range(self, input_handler):
         """Test that out-of-range indices raise ValueError."""
@@ -211,5 +211,24 @@ class TestInputHandlerValidation:
             input_handler._validate_card_index("0")
         with pytest.raises(ValueError, match="Card index must be between"):
             input_handler._validate_card_index("7")
-        with pytest.raises(ValueError, match="invalid literal"):
-            input_handler._validate_card_index("not_a_number")
+
+    def test_validate_card_index_non_numeric(self, input_handler):
+        """Test that non-numeric strings raise ValueError."""
+        with pytest.raises(ValueError, match="Not a valid number"):
+            input_handler._validate_card_index("abc")
+
+    def test_get_valid_flip_index_filtering(
+        self, input_handler, mock_console, mock_player
+    ):
+        """Test filtration of face-up cards."""
+        # Index 0, 1 are face up
+        mock_player.hand[0].face_up = True
+        mock_player.hand[1].face_up = True
+        # User tries to pick '1', then picks '3'
+        mock_console.input.side_effect = ["1", "3"]
+
+        result = input_handler._get_valid_flip_index(mock_player)
+
+        assert result == 2
+        # Should have printed error for '1'
+        mock_console.print.assert_called()

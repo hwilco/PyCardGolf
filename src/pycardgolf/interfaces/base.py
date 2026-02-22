@@ -31,10 +31,10 @@ from pycardgolf.core.events import (
 )
 
 if TYPE_CHECKING:
+    from pycardgolf.core.actions import Action
     from pycardgolf.core.event_bus import EventBus
+    from pycardgolf.core.observation import Observation
     from pycardgolf.players.player import BasePlayer
-    from pycardgolf.utils.card import Card
-    from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
 
 
 # ---------------------------------------------------------------------------
@@ -192,57 +192,14 @@ class GameInput(ABC):
         """Return a raw string response to an arbitrary prompt."""
 
     @abstractmethod
-    def get_draw_choice(
-        self, player: BasePlayer, deck_card: Card | None, discard_card: Card | None
-    ) -> DrawSourceChoice:
-        """Ask the player whether to draw from the deck or the discard pile.
+    def get_action(self, player: BasePlayer, observation: Observation) -> Action:
+        """Ask the player to choose an action based on the current observation.
+
+        Args:
+            player: The player making the move.
+            observation: The current view of the game state.
 
         Returns:
-            ``DrawSourceChoice.DECK`` or ``DrawSourceChoice.DISCARD_PILE``.
-
-        """
-
-    @abstractmethod
-    def get_keep_or_discard_choice(self, player: BasePlayer) -> KeepOrDiscardChoice:
-        """Ask the player whether to keep the drawn card or discard it.
-
-        Returns:
-            ``KeepOrDiscardChoice.KEEP`` or ``KeepOrDiscardChoice.DISCARD``.
-
-        """
-
-    @abstractmethod
-    def get_flip_choice(self, player: BasePlayer) -> bool:
-        """Ask the player whether they want to flip a card this turn.
-
-        Returns:
-            ``True`` if flipping a card, otherwise ``False``.
-
-        """
-
-    @abstractmethod
-    def get_index_to_replace(self, player: BasePlayer) -> int:
-        """Ask the player which card in their hand to replace.
-
-        Returns:
-            Zero-based index of the card to replace.
-
-        """
-
-    @abstractmethod
-    def get_index_to_flip(self, player: BasePlayer) -> int:
-        """Ask the player which card in their hand to flip.
-
-        Returns:
-            Zero-based index of the card to flip.
-
-        """
-
-    @abstractmethod
-    def get_valid_flip_index(self, player: BasePlayer) -> int:
-        """Ask the player to choose a face-down card in their hand to flip.
-
-        Returns:
-            Zero-based index of a face-down card.
+            The selected Action.
 
         """
