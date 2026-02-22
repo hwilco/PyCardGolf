@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+from pycardgolf.core.hand import Hand
 from pycardgolf.utils.card import Card
 
 if TYPE_CHECKING:
@@ -53,6 +54,7 @@ class TurnStartEvent(GameEvent):
     """Event triggered when a player's turn starts."""
 
     player_idx: int
+    hands: dict[int, Hand]
     event_type: EventType = "TURN_START"
 
 
@@ -110,6 +112,7 @@ class RoundEndEvent(GameEvent):
 
     round_num: int
     scores: dict["BasePlayer", int]
+    hands: dict["BasePlayer", "Hand"]
     event_type: EventType = "ROUND_END"
 
 

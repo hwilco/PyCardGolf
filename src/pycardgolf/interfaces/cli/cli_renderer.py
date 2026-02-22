@@ -35,6 +35,7 @@ if TYPE_CHECKING:
         ScoreBoardEvent,
         TurnStartEvent,
     )
+    from pycardgolf.core.hand import Hand
     from pycardgolf.core.round import Round
     from pycardgolf.players import BasePlayer
 
@@ -133,7 +134,8 @@ class CLIRenderer(GameRenderer):
 
         for player, score in event.scores.items():
             self.console.print(f"Player: {player.name} (Round Score: {score})")
-            self.display_hand(player, display_indices=False)
+            hand = event.hands[player]
+            self.display_hand(hand, display_indices=False)
 
     def _display_discard_pile(self, game_round: Round) -> None:
         """Display the discard pile."""
@@ -146,14 +148,14 @@ class CLIRenderer(GameRenderer):
         self.console.print(card_text)
         self.console.print("-" * line_len)
 
-    def display_hand(self, player: BasePlayer, display_indices: bool = False) -> None:
-        """Display a player's hand."""
+    def display_hand(self, hand: Hand, display_indices: bool = False) -> None:
+        """Display a hand."""
         # Display hand in 2 rows with position indicators
         cols = HAND_SIZE // 2
 
         # Prepare card strings
-        row1_cards = player.hand[0:cols]
-        row2_cards = player.hand[cols:HAND_SIZE]
+        row1_cards = hand[0:cols]
+        row2_cards = hand[cols:HAND_SIZE]
 
         indices_str_2 = ""
         indices_str_1 = ""
@@ -294,12 +296,13 @@ class CLIRenderer(GameRenderer):
             for i in reversed(range(1, num_to_display + 1)):
                 opp_idx = (event.player_idx + i) % num_players
                 opp_player = self.players[opp_idx]
+                opp_hand = event.hands[opp_idx]
                 label = "Next Player" if i == 1 else f"Opponent {i}"
                 self.console.print(f"{opp_player.name}'s Hand ({label}):")
-                self.display_hand(opp_player, display_indices=False)
+                self.display_hand(opp_hand, display_indices=False)
 
             self.console.print(f"{player.name}'s Hand (Current Player):")
-            self.display_hand(player, display_indices=True)
+            self.display_hand(event.hands[event.player_idx], display_indices=True)
         else:
             self.console.print(f"It's Player {event.player_idx}'s turn.")
         self.wait_for_enter()
@@ -406,11 +409,11 @@ class CLIRenderer(GameRenderer):
                     self.console.print(f"  {name}: {value}")
 
     def display_initial_flip_choices(
-        self, player: BasePlayer, choices: list[int]
+        self, player_name: str, hand: Hand, choices: list[int]
     ) -> None:
         """Display the choices made for initial cards to flip."""
-        cards = [player.hand[i] for i in choices]
-        msg_parts: list[str | Card] = [f"{player.name} flipped initial cards: "]
+        cards = [hand[i] for i in choices]
+        msg_parts: list[str | Card] = [f"{player_name} flipped initial cards: "]
         for i, card in enumerate(cards):
             msg_parts.append(card)
             if i < len(cards) - 1:

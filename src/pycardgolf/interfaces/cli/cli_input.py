@@ -114,18 +114,20 @@ class CLIInputHandler(GameInput):
     def get_action(self, player: BasePlayer, observation: Observation) -> Action:
         """Get the user's action based on the current phase."""
         if observation.phase == RoundPhase.SETUP:
-            return self._handle_setup_phase(player)
+            return self._handle_setup_phase(player, observation)
         if observation.phase == RoundPhase.DRAW:
             return self._handle_draw_phase(player, observation)
         if observation.phase == RoundPhase.ACTION:
             return self._handle_action_phase(player, observation)
         if observation.phase == RoundPhase.FLIP:
-            return self._handle_flip_phase(player)
+            return self._handle_flip_phase(player, observation)
 
         return ActionPass()
 
-    def _handle_setup_phase(self, player: BasePlayer) -> Action:
-        idx = self._get_valid_flip_index(player)
+    def _handle_setup_phase(
+        self, player: BasePlayer, observation: Observation
+    ) -> Action:
+        idx = self._get_valid_flip_index(player, observation)
         return ActionFlipCard(hand_index=idx)
 
     def _handle_draw_phase(
@@ -157,7 +159,7 @@ class CLIInputHandler(GameInput):
             if choice == "d":
                 return ActionDiscardDrawn()
 
-        self.renderer.display_hand(player, display_indices=True)
+        self.renderer.display_hand(observation.my_hand, display_indices=True)
         idx = self.get_validated_input(
             "Select which card to replace (1-6): ",
             validation_func=self._validate_card_index,
@@ -165,7 +167,9 @@ class CLIInputHandler(GameInput):
         )
         return ActionSwapCard(hand_index=idx)
 
-    def _handle_flip_phase(self, player: BasePlayer) -> Action:
+    def _handle_flip_phase(
+        self, player: BasePlayer, observation: Observation
+    ) -> Action:
         choice = self.get_choice(
             f"{player.name}, flip a card? (y/n) ",
             valid_options=["y", "n"],
@@ -173,7 +177,7 @@ class CLIInputHandler(GameInput):
             capitilization_sensitive=False,
         )
         if choice == "y":
-            idx = self._get_valid_flip_index(player)
+            idx = self._get_valid_flip_index(player, observation)
             return ActionFlipCard(hand_index=idx)
         return ActionPass()
 
@@ -190,13 +194,17 @@ class CLIInputHandler(GameInput):
         msg = f"Card index must be between 1 and {HAND_SIZE}. Got: {s}"
         raise ValueError(msg)
 
-    def _get_valid_flip_index(self, player: BasePlayer) -> int:
+    def _get_valid_flip_index(
+        self, player: BasePlayer, observation: Observation
+    ) -> int:
         """Get a valid index of a face-down card to flip."""
         # Show hand for context (especially critical in setup phase)
-        self.renderer.display_hand(player, display_indices=True)
+        # player name is used in other contexts, but here we just need observation
+        _ = player  # Explicitly mark as unused
+        self.renderer.display_hand(observation.my_hand, display_indices=True)
 
         face_down_indices = [
-            str(i + 1) for i, card in enumerate(player.hand) if not card.face_up
+            str(i + 1) for i, card in enumerate(observation.my_hand) if not card.face_up
         ]
         choice = self.get_choice(
             f"Select which card to flip (1-{HAND_SIZE}): ",

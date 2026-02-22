@@ -211,7 +211,7 @@ class TestRendererDisplay:
     def test_display_hand_output(self, captured_renderer, mock_player):
         """Test that display_hand produces output with borders."""
         renderer, output = captured_renderer
-        renderer.display_hand(mock_player, display_indices=True)
+        renderer.display_hand(mock_player.hand, display_indices=True)
 
         result = output.getvalue()
         assert "+" in result
@@ -222,7 +222,7 @@ class TestRendererDisplay:
     def test_display_hand_without_indices(self, captured_renderer, mock_player):
         """Test display_hand without indices."""
         renderer, output = captured_renderer
-        renderer.display_hand(mock_player, display_indices=False)
+        renderer.display_hand(mock_player.hand, display_indices=False)
 
         result = output.getvalue()
         assert "+" in result
@@ -316,7 +316,8 @@ class TestRendererGameFlow:
         for card in mock_player.hand:
             card.face_up = True
         scores = {mock_player: 10}
-        event = RoundEndEvent(scores=scores, round_num=1)
+        hands = {mock_player: mock_player.hand}
+        event = RoundEndEvent(scores=scores, hands=hands, round_num=1)
         renderer.display_round_end(event)
         result = output.getvalue()
         assert "Round 1 End" in result
@@ -331,7 +332,7 @@ class TestRendererGameFlow:
 
     def test_display_turn_start(self, captured_renderer, mock_player):
         renderer, output = captured_renderer
-        event = TurnStartEvent(player_idx=0)
+        event = TurnStartEvent(player_idx=0, hands={0: mock_player.hand})
         renderer.display_turn_start(event)
         result = output.getvalue()
         assert "It's Player 0's turn" in result
@@ -345,7 +346,9 @@ class TestRendererGameFlow:
 
         renderer.players = [mock_player, mock_player2]
 
-        event = TurnStartEvent(player_idx=0)
+        event = TurnStartEvent(
+            player_idx=0, hands={0: mock_player.hand, 1: mock_player2.hand}
+        )
         renderer.display_turn_start(event)
 
         result = output.getvalue()
@@ -411,7 +414,10 @@ class TestRendererGameFlow:
         assert "TestPlayer has revealed all their cards!" in result
 
     def test_display_initial_flip_choices(self, captured_renderer, mock_player):
+        """Test display_initial_flip_choices method."""
         renderer, output = captured_renderer
-        renderer.display_initial_flip_choices(mock_player, [0, 1])
+        renderer.display_initial_flip_choices(
+            mock_player.name, mock_player.hand, [0, 1]
+        )
         result = output.getvalue()
         assert "TestPlayer flipped initial cards:" in result

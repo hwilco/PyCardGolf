@@ -10,6 +10,7 @@ from pycardgolf.core.actions import (
     ActionPass,
     ActionSwapCard,
 )
+from pycardgolf.core.hand import Hand
 from pycardgolf.core.observation import Observation
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
@@ -50,7 +51,7 @@ def mock_player(mocker):
 def base_obs():
     """Create a base observation fixture."""
     return Observation(
-        my_hand=[Card(Rank.ACE, Suit.SPADES, "blue") for _ in range(6)],
+        my_hand=Hand([Card(Rank.ACE, Suit.SPADES, "blue") for _ in range(6)]),
         other_hands={},
         discard_top=None,
         deck_size=52,
@@ -218,16 +219,16 @@ class TestInputHandlerHelpers:
             input_handler._validate_card_index("abc")
 
     def test_get_valid_flip_index_filtering(
-        self, input_handler, mock_console, mock_player
+        self, input_handler, mock_console, mock_player, base_obs
     ):
         """Test filtration of face-up cards."""
         # Index 0, 1 are face up
-        mock_player.hand[0].face_up = True
-        mock_player.hand[1].face_up = True
+        base_obs.my_hand[0].face_up = True
+        base_obs.my_hand[1].face_up = True
         # User tries to pick '1', then picks '3'
         mock_console.input.side_effect = ["1", "3"]
 
-        result = input_handler._get_valid_flip_index(mock_player)
+        result = input_handler._get_valid_flip_index(mock_player, base_obs)
 
         assert result == 2
         # Should have printed error for '1'

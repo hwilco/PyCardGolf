@@ -33,6 +33,7 @@ from pycardgolf.core.events import (
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
     from pycardgolf.core.event_bus import EventBus
+    from pycardgolf.core.hand import Hand
     from pycardgolf.core.observation import Observation
     from pycardgolf.players.player import BasePlayer
 
@@ -112,12 +113,22 @@ class GameRenderer(ABC):
         """Display the action of flipping a card face-up."""
 
     @abstractmethod
+    def display_initial_flip_choices(
+        self, player_name: str, hand: Hand, choices: list[int]
+    ) -> None:
+        """Display the choices made for initial cards to flip."""
+
+    @abstractmethod
     def display_turn_start(self, event: TurnStartEvent) -> None:
         """Display the start of a turn."""
 
     @abstractmethod
     def display_discard_action(self, event: CardDiscardedEvent) -> None:
         """Display the action of discarding a drawn card."""
+
+    @abstractmethod
+    def display_hand(self, hand: Hand, display_indices: bool = False) -> None:
+        """Display a hand."""
 
 
 # ---------------------------------------------------------------------------
@@ -163,11 +174,21 @@ class NullGameRenderer(GameRenderer):
     def display_flip_action(self, event: CardFlippedEvent) -> None:  # pragma: no cover
         """No-op."""
 
+    def display_initial_flip_choices(
+        self, player_name: str, hand: Hand, choices: list[int]
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
     def display_turn_start(self, event: TurnStartEvent) -> None:  # pragma: no cover
         """No-op."""
 
     def display_discard_action(
         self, event: CardDiscardedEvent
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_hand(
+        self, hand: Hand, display_indices: bool = False
     ) -> None:  # pragma: no cover
         """No-op."""
 

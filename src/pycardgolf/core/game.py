@@ -60,16 +60,18 @@ class Game:
                 seed=round_seed,
             )
 
-            # Sync hands to players so they have the correct state
-            for idx, player in enumerate(self.players):
-                player.hand = self.current_round.hands[idx]
-
+            # Syncing hands to players is no longer needed as they access it via
+            # Observation
             self._run_round_loop()
 
             # Map round scores (by index) back to players
             round_scores_indices = self.current_round.get_scores()
             round_scores = {
                 self.players[idx]: score for idx, score in round_scores_indices.items()
+            }
+            round_hands = {
+                self.players[idx]: self.current_round.hands[idx]
+                for idx in range(len(self.players))
             }
 
             for player, score in round_scores.items():
@@ -78,7 +80,9 @@ class Game:
 
             self.event_bus.publish(
                 RoundEndEvent(
-                    scores=round_scores.copy(), round_num=self.current_round_num
+                    scores=round_scores.copy(),
+                    hands=round_hands,
+                    round_num=self.current_round_num,
                 )
             )
 

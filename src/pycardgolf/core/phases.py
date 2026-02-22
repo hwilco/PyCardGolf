@@ -97,7 +97,15 @@ class SetupPhaseState(PhaseState):
                         # All players done setup
                         round_state.current_player_idx = 0
                         round_state.phase = RoundPhase.DRAW
-                        events.append(TurnStartEvent(player_idx=0))
+                        events.append(
+                            TurnStartEvent(
+                                player_idx=0,
+                                hands={
+                                    i: round_state.hands[i]
+                                    for i in range(round_state.num_players)
+                                },
+                            )
+                        )
 
                 return events
             case _:
@@ -314,4 +322,9 @@ def _end_turn(round_state: Round, events: list[GameEvent]) -> None:
         round_state.reveal_hands()  # Reveal hidden cards
     else:
         round_state.phase = RoundPhase.DRAW
-        events.append(TurnStartEvent(player_idx=round_state.current_player_idx))
+        events.append(
+            TurnStartEvent(
+                player_idx=round_state.current_player_idx,
+                hands={i: round_state.hands[i] for i in range(round_state.num_players)},
+            )
+        )

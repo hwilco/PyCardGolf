@@ -6,6 +6,7 @@ import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from pycardgolf.core.hand import Hand
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
 
@@ -19,8 +20,8 @@ if TYPE_CHECKING:
 class Observation:
     """A sanitized view of the game state for a player."""
 
-    my_hand: list[Card]  # Face down cards object with face_up=False
-    other_hands: dict[str, list[Card]]
+    my_hand: Hand
+    other_hands: dict[str, Hand]
     discard_top: Card | None
     deck_size: int
     deck_top: Card | None  # Top card of deck (sanitized/dummy if strictly face down)
@@ -43,13 +44,15 @@ class ObservationBuilder:
         unseen cards which are returned as dummy objects).
         """
         # Current player's hand: sanitized copy
-        my_hand_view = cls._sanitize_cards(list(round_state.hands[player_idx]))
+        my_hand_view = Hand(cls._sanitize_cards(list(round_state.hands[player_idx])))
 
         # Other players' hands: sanitized copies
         other_hands_view = {}
         for i, name in enumerate(round_state.player_names):
             if i != player_idx:
-                other_hands_view[name] = cls._sanitize_cards(list(round_state.hands[i]))
+                other_hands_view[name] = Hand(
+                    cls._sanitize_cards(list(round_state.hands[i]))
+                )
 
         # Deck top: dummy/hidden if available
         deck_top = None
