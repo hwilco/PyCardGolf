@@ -4,12 +4,8 @@ import pytest
 from rich.console import Console
 
 from pycardgolf.exceptions import GameExitError
-from pycardgolf.interfaces.base import (
-    ActionChoice,
-    DrawSource,
-    FlipChoice,
-)
 from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
+from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
 
 
 @pytest.fixture
@@ -173,13 +169,13 @@ class TestInputHandlerValidation:
         """Test get_draw_choice returning DECK."""
         mock_console.input.return_value = "d"
         result = input_handler.get_draw_choice(mock_player, None, None)
-        assert result == DrawSource.DECK
+        assert result == DrawSourceChoice.DECK
 
     def test_get_draw_choice_discard(self, input_handler, mock_console, mock_player):
         """Test get_draw_choice returning DISCARD."""
         mock_console.input.return_value = "p"
         result = input_handler.get_draw_choice(mock_player, None, None)
-        assert result == DrawSource.DISCARD
+        assert result == DrawSourceChoice.DISCARD_PILE
 
     def test_get_keep_or_discard_choice_keep(
         self, input_handler, mock_console, mock_player
@@ -187,7 +183,7 @@ class TestInputHandlerValidation:
         """Test get_keep_or_discard_choice returning KEEP."""
         mock_console.input.return_value = "k"
         result = input_handler.get_keep_or_discard_choice(mock_player)
-        assert result == ActionChoice.KEEP
+        assert result == KeepOrDiscardChoice.KEEP
 
     def test_get_keep_or_discard_choice_discard(
         self, input_handler, mock_console, mock_player
@@ -195,19 +191,19 @@ class TestInputHandlerValidation:
         """Test get_keep_or_discard_choice returning DISCARD."""
         mock_console.input.return_value = "d"
         result = input_handler.get_keep_or_discard_choice(mock_player)
-        assert result == ActionChoice.DISCARD
+        assert result == KeepOrDiscardChoice.DISCARD
 
     def test_get_flip_choice_yes(self, input_handler, mock_console, mock_player):
         """Test get_flip_choice returning YES."""
         mock_console.input.return_value = "y"
         result = input_handler.get_flip_choice(mock_player)
-        assert result == FlipChoice.YES
+        assert result is True
 
     def test_get_flip_choice_no(self, input_handler, mock_console, mock_player):
         """Test get_flip_choice returning NO."""
         mock_console.input.return_value = "n"
         result = input_handler.get_flip_choice(mock_player)
-        assert result == FlipChoice.NO
+        assert result is False
 
     def test_validate_card_index_out_of_range(self, input_handler):
         """Test that out-of-range indices raise ValueError."""

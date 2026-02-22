@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum, EnumMeta
+from enum import Enum, EnumMeta, auto
 
 
 class _ContainsEnumMeta(EnumMeta):
@@ -49,3 +49,17 @@ class Rank(Enum, metaclass=_ContainsEnumMeta):
     def __str__(self) -> str:
         """Return the string representation of the rank for display."""
         return self.value[1]
+
+
+class DrawSourceChoice(Enum):
+    """Source to draw a card from."""
+
+    DECK = auto()
+    DISCARD_PILE = auto()
+
+
+class KeepOrDiscardChoice(Enum):
+    """Choice to keep or discard a drawn card."""
+
+    KEEP = auto()
+    DISCARD = auto()

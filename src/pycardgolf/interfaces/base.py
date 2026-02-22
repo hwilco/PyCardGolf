@@ -13,7 +13,6 @@ the latter.  ``HumanPlayer`` accepts a ``GameInput``; ``Game`` accepts a
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 from pycardgolf.core.events import (
@@ -35,32 +34,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.event_bus import EventBus
     from pycardgolf.players.player import BasePlayer
     from pycardgolf.utils.card import Card
-
-
-# ---------------------------------------------------------------------------
-# Choice enums (shared by GameInput implementations and callers)
-# ---------------------------------------------------------------------------
-
-
-class DrawSource(Enum):
-    """Source to draw a card from."""
-
-    DECK = auto()
-    DISCARD = auto()
-
-
-class ActionChoice(Enum):
-    """Choice to keep or discard a drawn card."""
-
-    KEEP = auto()
-    DISCARD = auto()
-
-
-class FlipChoice(Enum):
-    """Choice to flip a card or not."""
-
-    YES = auto()
-    NO = auto()
+    from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
 
 
 # ---------------------------------------------------------------------------
@@ -220,29 +194,29 @@ class GameInput(ABC):
     @abstractmethod
     def get_draw_choice(
         self, player: BasePlayer, deck_card: Card | None, discard_card: Card | None
-    ) -> DrawSource:
+    ) -> DrawSourceChoice:
         """Ask the player whether to draw from the deck or the discard pile.
 
         Returns:
-            ``DrawSource.DECK`` or ``DrawSource.DISCARD``.
+            ``DrawSourceChoice.DECK`` or ``DrawSourceChoice.DISCARD_PILE``.
 
         """
 
     @abstractmethod
-    def get_keep_or_discard_choice(self, player: BasePlayer) -> ActionChoice:
+    def get_keep_or_discard_choice(self, player: BasePlayer) -> KeepOrDiscardChoice:
         """Ask the player whether to keep the drawn card or discard it.
 
         Returns:
-            ``ActionChoice.KEEP`` or ``ActionChoice.DISCARD``.
+            ``KeepOrDiscardChoice.KEEP`` or ``KeepOrDiscardChoice.DISCARD``.
 
         """
 
     @abstractmethod
-    def get_flip_choice(self, player: BasePlayer) -> FlipChoice:
+    def get_flip_choice(self, player: BasePlayer) -> bool:
         """Ask the player whether they want to flip a card this turn.
 
         Returns:
-            ``FlipChoice.YES`` or ``FlipChoice.NO``.
+            ``True`` if flipping a card, otherwise ``False``.
 
         """
 

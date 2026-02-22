@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from pycardgolf.core.observation import Observation
+    from pycardgolf.interfaces.base import GameInput
+
 from pycardgolf.core.actions import (
     Action,
     ActionDiscardDrawn,
@@ -14,17 +18,8 @@ from pycardgolf.core.actions import (
     ActionSwapCard,
 )
 from pycardgolf.core.phases import RoundPhase
-
-if TYPE_CHECKING:
-    from pycardgolf.core.observation import Observation
-
-from pycardgolf.interfaces.base import (
-    ActionChoice,
-    DrawSource,
-    FlipChoice,
-    GameInput,
-)
 from pycardgolf.players.player import BasePlayer
+from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
 
 
 class HumanPlayer(BasePlayer):
@@ -61,7 +56,7 @@ class HumanPlayer(BasePlayer):
         deck_card = observation.deck_top
         discard_card = observation.discard_top
         choice = self.input_handler.get_draw_choice(self, deck_card, discard_card)
-        if choice == DrawSource.DISCARD:
+        if choice == DrawSourceChoice.DISCARD_PILE:
             return ActionDrawDiscard()
         return ActionDrawDeck()
 
@@ -69,14 +64,14 @@ class HumanPlayer(BasePlayer):
         can_discard = observation.can_discard_drawn
         if can_discard:
             choice = self.input_handler.get_keep_or_discard_choice(self)
-            if choice == ActionChoice.DISCARD:
+            if choice == KeepOrDiscardChoice.DISCARD:
                 return ActionDiscardDrawn()
         idx = self.input_handler.get_index_to_replace(self)
         return ActionSwapCard(hand_index=idx)
 
     def _handle_flip_phase(self, _: Observation) -> Action:
-        choice = self.input_handler.get_flip_choice(self)
-        if choice == FlipChoice.YES:
+        wants_flip = self.input_handler.get_flip_choice(self)
+        if wants_flip:
             idx = self.input_handler.get_valid_flip_index(self)
             return ActionFlipCard(hand_index=idx)
         return ActionPass()

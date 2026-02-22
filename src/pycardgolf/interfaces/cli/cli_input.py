@@ -5,13 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeVar
 
 from pycardgolf.exceptions import GameExitError
-from pycardgolf.interfaces.base import (
-    ActionChoice,
-    DrawSource,
-    FlipChoice,
-    GameInput,
-)
+from pycardgolf.interfaces.base import GameInput
 from pycardgolf.utils.constants import HAND_SIZE
+from pycardgolf.utils.enums import DrawSourceChoice, KeepOrDiscardChoice
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -108,7 +104,7 @@ class CLIInputHandler(GameInput):
 
     def get_draw_choice(
         self, player: BasePlayer, deck_card: Card | None, discard_card: Card | None
-    ) -> DrawSource:
+    ) -> DrawSourceChoice:
         """Get the user's choice to draw from the deck or discard pile."""
         prompt = self.renderer.create_draw_choice_prompt(deck_card, discard_card)
         self.console.print(f"{player.name}'s turn:")
@@ -118,10 +114,10 @@ class CLIInputHandler(GameInput):
             error_msg="Invalid input. Please enter 'd' or 'p'.",
         )
         if choice == "d":
-            return DrawSource.DECK
-        return DrawSource.DISCARD
+            return DrawSourceChoice.DECK
+        return DrawSourceChoice.DISCARD_PILE
 
-    def get_keep_or_discard_choice(self, player: BasePlayer) -> ActionChoice:
+    def get_keep_or_discard_choice(self, player: BasePlayer) -> KeepOrDiscardChoice:
         """Get the user's choice to keep the drawn card or discard it."""
         choice = self.get_choice(
             f"{player.name}, (k)eep or (d)iscard? (k/d) ",
@@ -130,19 +126,18 @@ class CLIInputHandler(GameInput):
             capitilization_sensitive=False,
         )
         if choice == "k":
-            return ActionChoice.KEEP
-        return ActionChoice.DISCARD
+            return KeepOrDiscardChoice.KEEP
+        return KeepOrDiscardChoice.DISCARD
 
-    def get_flip_choice(self, player: BasePlayer) -> FlipChoice:
+    def get_flip_choice(self, player: BasePlayer) -> bool:
         """Get the user's choice to flip a card."""
         choice = self.get_choice(
             f"{player.name}, flip a card? (y/n) ",
             valid_options=["y", "n"],
             error_msg="Invalid input. Please enter 'y' or 'n'.",
+            capitilization_sensitive=False,
         )
-        if choice == "y":
-            return FlipChoice.YES
-        return FlipChoice.NO
+        return choice == "y"
 
     def _validate_card_index(self, s: str) -> int:
         """Validate input is a valid card index mapping to 0-based index."""
