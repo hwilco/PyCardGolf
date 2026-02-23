@@ -31,3 +31,5 @@ COPY . /app/
 
 # Fast install of the local package itself
 RUN poetry install --no-interaction
+
+CMD ["/bin/bash"]
