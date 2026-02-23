@@ -9,7 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Install Git
 RUN apt-get update && \
-    apt-get install -y git procps wget && \
+    apt-get install -y git procps wget libatomic1 && \
     rm -rf /var/lib/apt/lists/*
 
 # Bake the Git config into the image

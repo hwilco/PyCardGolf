@@ -78,8 +78,8 @@ class CLIRenderer(GameRenderer):
         if msvcrt:
             # Windows
             while time.time() < end_time:
-                if msvcrt.kbhit():  # pragma: no cover
-                    msvcrt.getch()  # pragma: no cover
+                if msvcrt.kbhit():  # type: ignore[missing-attribute] # pragma: no cover
+                    msvcrt.getch()  # type: ignore[missing-attribute] # pragma: no cover
                     break  # pragma: no cover
                 time.sleep(0.05)
 
