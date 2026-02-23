@@ -6,14 +6,6 @@ import random
 import sys
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.hand import Hand
-from pycardgolf.core.phases import RoundPhase, get_valid_actions, handle_step
-from pycardgolf.core.scoring import calculate_score
-
-if TYPE_CHECKING:
-    from pycardgolf.core.actions import Action
-    from pycardgolf.core.events import GameEvent
-    from pycardgolf.utils.card import Card
 from pycardgolf.core.events import (
     CardDiscardedEvent,
     CardDrawnDeckEvent,
@@ -21,10 +13,18 @@ from pycardgolf.core.events import (
     CardFlippedEvent,
     CardSwappedEvent,
 )
+from pycardgolf.core.hand import Hand
+from pycardgolf.core.phases import RoundPhase, get_phase_actions, handle_phase_step
+from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import CardStack, Deck
 from pycardgolf.utils.mixins import RNGMixin
+
+if TYPE_CHECKING:
+    from pycardgolf.core.actions import Action
+    from pycardgolf.core.events import GameEvent
+    from pycardgolf.utils.card import Card
 
 
 class Round(RNGMixin):
@@ -101,7 +101,7 @@ class Round(RNGMixin):
 
     def get_valid_actions(self, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
-        return get_valid_actions(self, player_idx)
+        return get_phase_actions(self, player_idx)
 
     @classmethod
     def validate_config(cls, num_players: int, deck_size: int = 52) -> None:
@@ -126,7 +126,7 @@ class Round(RNGMixin):
 
     def step(self, action: Action) -> list[GameEvent]:
         """Advance the game state by one step based on the action."""
-        return handle_step(self, action)
+        return handle_phase_step(self, action)
 
     def draw_from_deck(self, player_idx: int) -> CardDrawnDeckEvent:
         """Draw a card from the deck."""
@@ -200,7 +200,7 @@ class Round(RNGMixin):
         return {i: calculate_score(hand) for i, hand in enumerate(self.hands)}
 
     def __repr__(self) -> str:
-        return f"Round(phase={self.phase}, num_players={self.num_players})"
+        return f"Round(phase={self.phase.name}, num_players={self.num_players})"
 
 
 class RoundFactory:
