@@ -149,12 +149,13 @@ If running `ssh-add -l` inside the Antigravity/VS Code terminal returns "No such
 **Windows 10/11 Fix:**
 Windows doesn't always set the `SSH_AUTH_SOCK` environment variable by default. You must set it on your **host machine** so the IDE knows where the "pipe" is located.
 
-1. Run this in PowerShell as **Administrator**:
+1. (Host) Run this in PowerShell as **Administrator**:
    ```powershell
    $env:SSH_AUTH_SOCK = [System.Environment]::GetEnvironmentVariable("SSH_AUTH_SOCK", "User")
    ```
-2. **Restart your IDE completely** (ensure all background processes are killed) to pick up the new variable.
-3. Rebuild your Dev Container.
+2. (Host) Restart Docker Desktop and rebuild container.
+3. (Host) **Restart your IDE completely** (ensure all background processes are killed).
+4. (Container) Run `ssh-add -l` to verify your key is loaded.
 
 ---
 *Note for Mac/Linux Users: This setup typically works out of the box as the `SSH_AUTH_SOCK` variable is natively defined.*
