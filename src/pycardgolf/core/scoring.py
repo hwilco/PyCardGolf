@@ -1,9 +1,15 @@
 """Module containing scoring logic."""
 
-from pycardgolf.core.hand import Hand
-from pycardgolf.utils.card import Card
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.enums import Rank
+
+if TYPE_CHECKING:
+    from pycardgolf.core.hand import Hand
+    from pycardgolf.utils.card import Card
 
 
 def calculate_score(hand: Hand) -> int:

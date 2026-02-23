@@ -14,7 +14,14 @@ if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
     from pycardgolf.core.events import GameEvent
     from pycardgolf.utils.card import Card
-from pycardgolf.exceptions import GameConfigError
+from pycardgolf.core.events import (
+    CardDiscardedEvent,
+    CardDrawnDeckEvent,
+    CardDrawnDiscardEvent,
+    CardFlippedEvent,
+    CardSwappedEvent,
+)
+from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import CardStack, Deck
 from pycardgolf.utils.mixins import RNGMixin
@@ -120,6 +127,68 @@ class Round(RNGMixin):
     def step(self, action: Action) -> list[GameEvent]:
         """Advance the game state by one step based on the action."""
         return handle_step(self, action)
+
+    def draw_from_deck(self, player_idx: int) -> CardDrawnDeckEvent:
+        """Draw a card from the deck."""
+        card = self.deck.draw()
+        card.face_up = True
+        self.drawn_card = card
+        self.drawn_from_deck = True
+        return CardDrawnDeckEvent(player_idx=player_idx, card=card)
+
+    def draw_from_discard(self, player_idx: int) -> CardDrawnDiscardEvent:
+        """Draw a card from the discard pile."""
+        if self.discard_pile.num_cards == 0:
+            msg = "Discard pile is empty."
+            raise IllegalActionError(msg)
+        card = self.discard_pile.draw()
+        self.drawn_card = card
+        self.drawn_from_deck = False
+        return CardDrawnDiscardEvent(player_idx=player_idx, card=card)
+
+    def swap_drawn_card(self, player_idx: int, hand_index: int) -> CardSwappedEvent:
+        """Swap the drawn card with a card in hand."""
+        if self.drawn_card is None:
+            msg = "No card drawn."
+            raise IllegalActionError(msg)
+
+        hand = self.hands[player_idx]
+        old_card = hand.replace(hand_index, self.drawn_card)
+        old_card.face_up = True
+        self.discard_pile.add_card(old_card)
+        event = CardSwappedEvent(
+            player_idx=player_idx,
+            hand_index=hand_index,
+            new_card=self.drawn_card,
+            old_card=old_card,
+        )
+        self.drawn_card = None
+        return event
+
+    def discard_drawn_card(self, player_idx: int) -> CardDiscardedEvent:
+        """Discard the previously drawn card."""
+        if self.drawn_card is None:
+            msg = "No card drawn."
+            raise IllegalActionError(msg)
+
+        self.discard_pile.add_card(self.drawn_card)
+        event = CardDiscardedEvent(player_idx=player_idx, card=self.drawn_card)
+        self.drawn_card = None
+        return event
+
+    def flip_card_in_hand(self, player_idx: int, hand_index: int) -> CardFlippedEvent:
+        """Flip a card in hand face up."""
+        hand = self.hands[player_idx]
+        if hand[hand_index].face_up:
+            msg = "Card already face up."
+            raise IllegalActionError(msg)
+
+        hand.flip_card(hand_index)
+        return CardFlippedEvent(
+            player_idx=player_idx,
+            hand_index=hand_index,
+            card=hand[hand_index],
+        )
 
     def reveal_hands(self) -> None:
         """Reveal all cards for all players."""

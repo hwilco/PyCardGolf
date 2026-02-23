@@ -1,5 +1,7 @@
 """Module containing the RNGMixin class."""
 
+from __future__ import annotations
+
 import functools
 import random
 import sys
@@ -16,7 +18,7 @@ class RNGMixin:
         """Returns the random number generator, lazily initialized."""
         return random.Random(self.seed)
 
-    def copy_rng_state(self, target: "RNGMixin") -> None:
+    def copy_rng_state(self, target: RNGMixin) -> None:
         """Copy the exact RNG state from this instance to the target instance."""
         target.seed = self.seed
         if "rng" in self.__dict__:
