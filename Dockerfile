@@ -12,10 +12,7 @@ RUN apt-get update && \
     apt-get install -y git procps wget libatomic1 && \
     rm -rf /var/lib/apt/lists/*
 
-# Bake the Git config into the image
-RUN git config --global user.email "agent@antigravity.local" && \
-    git config --global user.name "Antigravity Agent" && \
-    git config --global --add safe.directory /app
+RUN git config --global --add safe.directory /app
 
 # Install Poetry
 RUN pip install --no-cache-dir poetry
