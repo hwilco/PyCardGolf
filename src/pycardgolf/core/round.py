@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import random
 import sys
 from typing import TYPE_CHECKING
@@ -18,9 +17,10 @@ if TYPE_CHECKING:
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.utils.constants import HAND_SIZE
 from pycardgolf.utils.deck import CardStack, Deck
+from pycardgolf.utils.mixins import RNGMixin
 
 
-class Round:
+class Round(RNGMixin):
     """Class representing a single round of Golf (Engine Version)."""
 
     def __init__(
@@ -29,17 +29,16 @@ class Round:
         seed: int | None = None,
     ) -> None:
         """Initialize a round with players."""
+        super().__init__(seed=seed)
         self.player_names: list[str] = player_names
         self.num_players: int = len(player_names)
-        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
-        self._rng: random.Random = random.Random(self.seed)
 
         # Game State
         deck_color = "blue"
-        deck_seed = self._rng.randrange(sys.maxsize)
+        deck_seed = self.rng.randrange(sys.maxsize)
         self.deck: Deck = Deck(back_color=deck_color, seed=deck_seed)
 
-        discard_seed = self._rng.randrange(sys.maxsize)
+        discard_seed = self.rng.randrange(sys.maxsize)
         self.discard_pile: CardStack = CardStack(seed=discard_seed)
 
         self.current_player_idx: int = 0
@@ -68,12 +67,12 @@ class Round:
         cloned.player_names = self.player_names.copy()
         cloned.num_players = self.num_players
 
+        cloned.rng = random.Random()
         if preserve_rng:
-            cloned.seed = self.seed
-            cloned._rng = copy.deepcopy(self._rng)  # noqa: SLF001
+            self.copy_rng_state(cloned)
         else:
             cloned.seed = random.randrange(sys.maxsize)
-            cloned._rng = random.Random(cloned.seed)  # noqa: SLF001
+            cloned.rng = random.Random(cloned.seed)
 
         cloned.deck = self.deck.clone(preserve_rng=preserve_rng)
         cloned.discard_pile = self.discard_pile.clone(preserve_rng=preserve_rng)

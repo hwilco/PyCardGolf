@@ -47,9 +47,9 @@ def test_add_card_stack_no_clear(cards_5, cards_3):
 def test_add_card_stack_shuffle(cards_5, cards_3, mocker):
     card_stack = CardStack(cards=cards_5.copy())
     other_card_stack = CardStack(cards=cards_3.copy())
-    card_stack.rand = mocker.MagicMock()
+    card_stack.rng = mocker.MagicMock()
     card_stack.add_card_stack(other_card_stack, shuffle=True)
-    card_stack.rand.shuffle.assert_called_once_with(cards_5 + cards_3)
+    card_stack.rng.shuffle.assert_called_once_with(cards_5 + cards_3)
     assert card_stack._cards == cards_5 + cards_3
     assert other_card_stack.num_cards == 0
 
@@ -95,19 +95,9 @@ def test_clear(cards_5):
     assert card_stack.num_cards == 0
 
 
-def test_lazy_rng():
-    """Test that CardStack initializes its random object lazily."""
-    stack = CardStack()
-    assert "rand" not in stack.__dict__
-
-    # Accessing rand triggers cached_property
-    _ = stack.rand
-    assert "rand" in stack.__dict__
-
-
 def test_cardstack_unique_default_seed(mocker):
     """Test that multiple CardStacks without seeds get unique seeds."""
-    mock_randrange = mocker.patch("pycardgolf.utils.deck.random.randrange")
+    mock_randrange = mocker.patch("pycardgolf.utils.mixins.random.randrange")
     mock_randrange.side_effect = [100, 200, 300]
 
     s1 = CardStack()
@@ -121,7 +111,7 @@ def test_cardstack_unique_default_seed(mocker):
 
 def test_deck_unique_default_seed(mocker):
     """Test that multiple Decks without seeds get unique seeds."""
-    mock_randrange = mocker.patch("pycardgolf.utils.deck.random.randrange")
+    mock_randrange = mocker.patch("pycardgolf.utils.mixins.random.randrange")
     mock_randrange.side_effect = [100, 200, 300]
 
     d1 = Deck("red")
@@ -278,9 +268,9 @@ def test_add_card_stack_shuffle_deck(red_deck, mocker):
     other_cards = red_deck._cards[:3].copy()
     del red_deck._cards[:3]
     other_card_stack = CardStack(cards=other_cards.copy())
-    red_deck.rand = mocker.MagicMock()
+    red_deck.rng = mocker.MagicMock()
     red_deck.add_card_stack(other_card_stack, shuffle=True)
-    red_deck.rand.shuffle.assert_called_once()
+    red_deck.rng.shuffle.assert_called_once()
     # Re-run test_cards logic
     assert all(
         Card(rank, suit, "red", face_color=red_deck.suit_colors[suit])
@@ -375,23 +365,14 @@ def test_deck_clone(red_deck: Deck) -> None:
     assert red_deck.draw() == clone1.draw()
 
 
-def test_cardstack_clone_preserve_rng_no_rand() -> None:
-    """Test CardStack cloning with preserve_rng=True but rand not initialized."""
-    stack = CardStack([Card(Rank.ACE, Suit.SPADES, "blue")])
-    # clone without calling stack.rand
-    cloned = stack.clone(preserve_rng=True)
-    assert "rand" not in cloned.__dict__
-
-
-def test_cardstack_clone_preserve_rng_with_rand() -> None:
-    """Test CardStack cloning with preserve_rng=True and rand initialized."""
+def test_cardstack_clone_preserve_rng() -> None:
+    """Test CardStack cloning with preserve_rng=True."""
     stack = CardStack(
         [Card(Rank.ACE, Suit.SPADES, "blue"), Card(Rank.TWO, Suit.SPADES, "blue")],
         seed=42,
     )
     stack.shuffle()
     cloned = stack.clone(preserve_rng=True)
-    assert "rand" in cloned.__dict__
     assert stack.draw() == cloned.draw()
 
 

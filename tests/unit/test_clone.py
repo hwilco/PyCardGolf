@@ -40,9 +40,9 @@ def test_round_clone_preserve_rng(mocker):
     # (Deck uses the same RNG implementation logic for shuffling)
 
     # The underlying Round _rng should be different for the default clone
-    val1 = r._rng.random()
-    val2 = cloned_random._rng.random()
-    val3 = cloned_preserved._rng.random()
+    val1 = r.rng.random()
+    val2 = cloned_random.rng.random()
+    val3 = cloned_preserved.rng.random()
 
     assert val1 != val2, "Default clone should have a new RNG state/seed"
     assert val1 == val3, "Preserved clone should produce identical RNG output"

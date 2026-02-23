@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import random
-import sys
 from typing import TYPE_CHECKING
 
 from pycardgolf.players.player import BasePlayer
+from pycardgolf.utils.mixins import RNGMixin
 
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
     from pycardgolf.core.observation import Observation
 
 
-class RandomBot(BasePlayer):
+class RandomBot(BasePlayer, RNGMixin):
     """A bot player that makes random moves.
 
     ``RandomBot`` requires no interface — it selects uniformly at random
@@ -26,9 +25,8 @@ class RandomBot(BasePlayer):
         seed: int | None = None,
     ) -> None:
         """Initialize the bot with a name and an optional RNG seed."""
-        super().__init__(name)
-        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
-        self._random: random.Random = random.Random(self.seed)
+        BasePlayer.__init__(self, name)
+        RNGMixin.__init__(self, seed=seed)
 
     def get_action(self, observation: Observation) -> Action:
         """Decide on an action given the current observation."""
@@ -36,4 +34,4 @@ class RandomBot(BasePlayer):
             # Should not occur in a valid game state unless the game is over
             msg = "No valid actions found."
             raise RuntimeError(msg)
-        return self._random.choice(observation.valid_actions)
+        return self.rng.choice(observation.valid_actions)

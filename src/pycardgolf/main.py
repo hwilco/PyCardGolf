@@ -61,6 +61,12 @@ def main() -> None:
         default=0.0,
         help="Delay in seconds between actions (for animations)",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for deterministic gameplay",
+    )
 
     args = parser.parse_args()
 
@@ -79,7 +85,7 @@ def main() -> None:
 
     players.extend(RandomBot(f"Bot {i + 1}") for i in range(args.bots))
 
-    game = Game(players, event_bus, num_rounds=args.rounds)
+    game = Game(players, event_bus, num_rounds=args.rounds, seed=args.seed)
     try:
         game.start()
     except GameExitError:

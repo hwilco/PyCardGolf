@@ -23,7 +23,7 @@ description: Generate a commit message from staged changes and optionally commit
      - **Summary Line:** Lowercase, imperative mood, no trailing period, and ideally under 50 characters.
      - **Content:** Explain *what* and *why*, not just a restatement of the diff.
      - **Paths:** Use relative paths for files/classes; never include absolute paths (e.g., `/Users/...`).
-     - **Formatting:** Use backslash-escaped backticks (\`code\`) for code references.
+     - **Formatting:** Use backticks (`code`) for code references.
      - **Scope:** Typically 3–6 bullets. If it isn't in the diff, it doesn't belong in the message (no internal reasoning that didn't make the final commit).
 
 3. **User Approval**

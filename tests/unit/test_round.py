@@ -51,7 +51,7 @@ def test_round_initialization():
 
 def test_rounds_have_unique_default_seeds(mocker):
     """Test that multiple rounds instantiated without seeds get unique seeds."""
-    mock_randrange = mocker.patch("pycardgolf.core.round.random.randrange")
+    mock_randrange = mocker.patch("pycardgolf.utils.mixins.random.randrange")
     mock_randrange.side_effect = [100, 200, 300]
 
     r1 = RoundFactory.create_standard_round(["P1", "P2"])

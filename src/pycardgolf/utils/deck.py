@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import functools
-import random
-import sys
 from typing import ClassVar
 
 from pycardgolf.utils.card import Card
 from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.mixins import RNGMixin
 
 
-class CardStack:
+class CardStack(RNGMixin):
     """A class to represent a stack of cards."""
 
     def __init__(
@@ -26,13 +24,8 @@ class CardStack:
             seed (optional): Seed for the random number generator.
 
         """
+        super().__init__(seed=seed)
         self._cards: list[Card] = [] if cards is None else cards
-        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
-
-    @functools.cached_property
-    def rand(self) -> random.Random:
-        """Returns the random number generator, lazily initialized."""
-        return random.Random(self.seed)
 
     @property
     def num_cards(self) -> int:
@@ -113,7 +106,7 @@ class CardStack:
 
     def shuffle(self) -> None:
         """Randomly order the cards remaining in the stack."""
-        self.rand.shuffle(self._cards)
+        self.rng.shuffle(self._cards)
 
     def clone(self, preserve_rng: bool = False) -> CardStack:
         """Return a deep copy of the CardStack.
@@ -127,8 +120,8 @@ class CardStack:
             cards=[c.clone() for c in self._cards],
             seed=self.seed if preserve_rng else None,
         )
-        if preserve_rng and "rand" in self.__dict__:
-            cloned_stack.rand.setstate(self.rand.getstate())
+        if preserve_rng:
+            self.copy_rng_state(cloned_stack)
         return cloned_stack
 
     def __eq__(self, other: object) -> bool:
@@ -266,8 +259,8 @@ class Deck(CardStack):
             seed=self.seed if preserve_rng else None,
         )
         cloned_deck._cards = [c.clone() for c in self._cards]
-        if preserve_rng and "rand" in self.__dict__:
-            cloned_deck.rand.setstate(self.rand.getstate())
+        if preserve_rng:
+            self.copy_rng_state(cloned_deck)
         return cloned_deck
 
     def __repr__(self) -> str:

@@ -29,7 +29,7 @@ def test_random_bot_no_actions(mocker):
 
 def test_bots_have_unique_default_seeds(mocker):
     """Test that multiple bots instantiated without seeds get unique seeds."""
-    mock_randrange = mocker.patch("pycardgolf.players.bots.random_bot.random.randrange")
+    mock_randrange = mocker.patch("pycardgolf.utils.mixins.random.randrange")
     mock_randrange.side_effect = [100, 200, 300]
 
     bot1 = RandomBot("Bot 1")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import random
 import sys
 from typing import TYPE_CHECKING
 
@@ -19,13 +18,14 @@ from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.core.round import Round, RoundFactory
 from pycardgolf.core.stats import PlayerStats
+from pycardgolf.utils.mixins import RNGMixin
 
 if TYPE_CHECKING:
     from pycardgolf.core.event_bus import EventBus
     from pycardgolf.players import BasePlayer
 
 
-class Game:
+class Game(RNGMixin):
     """Class representing the card game."""
 
     def __init__(
@@ -42,8 +42,13 @@ class Game:
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
         self.current_round: Round | None = None
-        self.seed: int = seed if seed is not None else random.randrange(sys.maxsize)
-        self._rng: random.Random = random.Random(self.seed)
+        super().__init__(seed=seed)
+
+        # Re-initialize player RNG if they support it
+        for player in self.players:
+            if isinstance(player, RNGMixin):
+                new_seed = self.rng.randrange(sys.maxsize)
+                player.reseed(new_seed)
 
     def start(self) -> None:
         """Start the game loop."""
@@ -52,7 +57,7 @@ class Game:
         for i in range(self.num_rounds):
             self.current_round_num = i + 1
             self.event_bus.publish(RoundStartEvent(round_num=self.current_round_num))
-            round_seed = self._rng.randrange(sys.maxsize)
+            round_seed = self.rng.randrange(sys.maxsize)
 
             player_names = [p.name for p in self.players]
             self.current_round = RoundFactory.create_standard_round(
