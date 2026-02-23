@@ -13,7 +13,7 @@
 6. [Testing](#testing)
 
 ## Rules
-PyCardGolf follows the standard [rules of Card Golf](file:///c:/Users/hwilco/Documents/GitHub/PyCardGolf/src/pycardgolf/RULES.md).
+PyCardGolf follows the standard [rules of Card Golf](src/pycardgolf/RULES.md).
 The goal is to have the lowest score after a set number of rounds.
 
 You can also view the rules directly in the CLI by running with the `--rules` flag:
@@ -62,99 +62,92 @@ The library is designed to be easily extended:
 - **New Interfaces**: Implement `GameRenderer` (for output) and `GameInput` (for human-driven decisions).
 - **Custom Bots**: Create a bot that analyzes the `Observation` to return the optimal `Action`.
 
-## Rules
-> [TIP]
-> For a formatted version of these rules in your terminal, run: `poetry run pycardgolf --rules`
->
-> The rules are maintained in [`src/pycardgolf/RULES.md`](src/pycardgolf/RULES.md).
-
 ## Playing the Game
 
 ### Prerequisites
-
 - [Poetry](https://python-poetry.org/docs/) (>=2.2.1)
-- [Python](https://www.python.org/downloads/) (>=3.13)
+- [Python](https://www.python.org/downloads/) (3.13.x)
 
 ### Installation
-
 Install the game without development dependencies:
-
 ```bash
 poetry install --without dev
 ```
 
 ### Running the Game
-
 Run a quick game with 1 human player, 1 bot, and 1 round:
-
 ```bash
 poetry run pycardgolf --humans 1 --bots 1 --rounds 1
 ```
 
-You can customize the game with the following options:
+Customization options:
 - `--humans N`: Number of human players (default: 1)
 - `--bots N`: Number of bot players (default: 1)
 - `--rounds N`: Number of rounds to play (default: 9)
 
-Example with 2 humans and 3 rounds:
-
+Example (2 humans, 3 rounds):
 ```bash
 poetry run pycardgolf --humans 2 --bots 0 --rounds 3
 ```
 
 ## Development Setup
 
-### Prerequisites
+We use a **Container-First** development workflow. This ensures a consistent environment for all developers and AI agents.
 
-- [Poetry](https://python-poetry.org/docs/) (>=2.2.1)
-- [Python](https://www.python.org/downloads/) (>=3.13)
+### 🐳 Recommended: VS Code Dev Containers
+The fastest way to develop is using the VS Code **Dev Containers** extension.
 
-### Installing Dependencies
+1. **Prerequisites**: Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and the VS Code [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+2. **Launch**: Open this repository in VS Code. When prompted with *"Reopen in Container"*, select **Yes**.
+3. **Result**: Your terminal, debugger, and linting (Pyrefly/Ruff) will run inside the Linux container using the internal Python 3.13 interpreter.
 
-```bash
-poetry install
-```
+### 🛠️ Alternative: Manual Docker Setup
+If you prefer using a different IDE or a raw terminal:
+
+1. **Build and Start**:
+   ```bash
+   docker-compose up -d --build
+   ```
+2. **Access the Environment**:
+   ```bash
+   docker exec -it pycardgolf-dev-container bash
+   ```
+3. **Run Commands**:
+   Once inside the container, use Poetry normally:
+   ```bash
+   poetry run pytest
+   poetry run pycardgolf --humans 1
+   ```
+
+### ⚠️ Local Development (Not Recommended)
+If you must develop natively without Docker:
+
+1. **Prerequisites**: [Poetry](https://python-poetry.org/docs/) (>=2.2.1) and [Python](https://www.python.org/downloads/) (3.13.x).
+2. **Install**: `poetry install`
+3. **Note**: You may encounter pathing or binary issues if switching between local and containerized environments due to `.venv` conflicts.
 
 ### Pre-commit Hooks
-
-This project uses `pre-commit` hooks to ensure code quality. The hooks include:
-- **Ruff**: Code formatting
-- **Trailing whitespace removal**
-- **End of file fixer**
-- **YAML validation**
-
-To install the pre-commit hooks:
-
+Install the pre-commit hooks to ensure code quality (already handled if using VS Code Dev Containers):
 ```bash
 poetry run pre-commit install
 ```
-
-The hooks will now run automatically on every commit. To run them manually:
-
+Run manually:
 ```bash
 poetry run pre-commit run --all-files
 ```
 
-### Running Tests
+## Testing
 
+### Running Tests
 ```bash
 poetry run pytest
 ```
 
-Run tests with coverage:
-
+### Coverage Report
 ```bash
 poetry run pytest --cov=pycardgolf --cov-report=term-missing --cov-branch
 ```
 
-Run only unit tests:
-
-```bash
-poetry run pytest tests/unit
-```
-
-Run only integration tests:
-
-```bash
-poetry run pytest tests/integration
-```
+### Focused Testing
+- **Unit tests only**: `poetry run pytest tests/unit`
+- **Integration tests only**: `poetry run pytest tests/integration`

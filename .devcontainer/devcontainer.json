@@ -1,0 +1,24 @@
+{
+    "name": "PyCardGolf Sandbox",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "agent-sandbox",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/app/.venv/bin/python",
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                // Disable Pylance's internal checking to let Pyrefly take the lead
+                "python.analysis.typeCheckingMode": "off"
+            },
+            "extensions": [
+                "ms-python.python",
+                "charliermarsh.ruff",
+                "pyrefly.pyrefly-vscode"
+            ]
+        }
+    },
+    "remoteUser": "root",
+    "postCreateCommand": "poetry run pre-commit install"
+}
