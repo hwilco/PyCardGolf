@@ -101,6 +101,8 @@ The fastest way to develop is using the VS Code **Dev Containers** extension.
 2. **Launch**: Open this repository in VS Code. When prompted with *"Reopen in Container"*, select **Yes**.
 3. **Result**: Your terminal, debugger, and linting (Pyrefly/Ruff) will run inside the Linux container using the internal Python 3.13 interpreter.
 
+*Note: There is currently (as of 2/23/2026) an issue with the VS Code Dev Container extension when used with Antigravity. Please manually build and start the container using `docker-compose up -d --build`, then you can access it in Antigravity by using `Reopen in Container`.
+
 ### 🛠️ Alternative: Manual Docker Setup
 If you prefer using a different IDE or a raw terminal:
 
@@ -126,8 +128,39 @@ If you must develop natively without Docker:
 2. **Install**: `poetry install`
 3. **Note**: You may encounter pathing or binary issues if switching between local and containerized environments due to `.venv` conflicts.
 
+## 🛠 Contributor Setup: SSH & Git
+
+To push/pull from within the Dev Container, this project uses **SSH Agent Forwarding**. This allows the container to securely "borrow" your host machine's identity without copying private keys into the Docker image.
+
+### 1. Ensure your SSH Agent is running
+**Windows (PowerShell):**
+```powershell
+# Set the service to automatic and start it
+Get-Service ssh-agent | Set-Service -StartupType Automatic
+Start-Service ssh-agent
+
+# Load your key into the agent
+ssh-add ~/.ssh/id_ed25519  # Replace with your specific key path if different
+```
+
+### 2. Troubleshooting "Permission Denied (publickey)"
+If running `ssh-add -l` inside the Antigravity/VS Code terminal returns "No such file or directory," the bridge between your host and the container is broken.
+
+**Windows 10/11 Fix:**
+Windows doesn't always set the `SSH_AUTH_SOCK` environment variable by default. You must set it on your **host machine** so the IDE knows where the "pipe" is located.
+
+1. Run this in PowerShell as **Administrator**:
+   ```powershell
+   $env:SSH_AUTH_SOCK = [System.Environment]::GetEnvironmentVariable("SSH_AUTH_SOCK", "User")
+   ```
+2. **Restart your IDE completely** (ensure all background processes are killed) to pick up the new variable.
+3. Rebuild your Dev Container.
+
+---
+*Note for Mac/Linux Users: This setup typically works out of the box as the `SSH_AUTH_SOCK` variable is natively defined.*
+
 ### Pre-commit Hooks
-Install the pre-commit hooks to ensure code quality (already handled if using VS Code Dev Containers):
+Install the pre-commit hooks to ensure code quality:
 ```bash
 poetry run pre-commit install
 ```

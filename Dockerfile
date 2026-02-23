@@ -32,4 +32,7 @@ COPY . /app/
 # Fast install of the local package itself
 RUN poetry install --no-interaction
 
+# Install pre-commit hooks
+RUN poetry run pre-commit install
+
 CMD ["/bin/bash"]
