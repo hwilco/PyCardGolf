@@ -11,7 +11,7 @@
                 "python.defaultInterpreterPath": "/app/.venv/bin/python",
                 "python.testing.pytestEnabled": true,
                 "python.testing.unittestEnabled": false,
-                "python.analysis.typeCheckingMode": "off"
+                "python.analysis.typeCheckingMode": "standard"
             },
             "extensions": [
                 "ms-python.python",
