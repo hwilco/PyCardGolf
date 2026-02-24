@@ -8,6 +8,6 @@ git config --global alias.agent '!git config --local user.name "Antigravity Agen
 
 # Alias: git me
 # Unsets local identity to fallback to global/host defaults
-git config --global alias.me '!git config --local --unset user.name; git config --local --unset user.email; echo "Identity reset to host default"'
+git config --global alias.me '!git config --local --unset user.name && git config --local --unset user.email && echo "Identity reset to host default"'
 
 echo "Git aliases successfully configured!"
