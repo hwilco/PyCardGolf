@@ -45,6 +45,7 @@ def test_main_creates_game(mocker):
     mock_input_handler.return_value.get_input.return_value = "Alice"
 
     mock_game = mocker.patch("pycardgolf.main.Game")
+    mock_game.return_value.tick.return_value = False
     mocker.patch("pycardgolf.main.CLIRenderer")
 
     main()

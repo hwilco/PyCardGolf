@@ -42,22 +42,36 @@ def test_game_init(players, mock_event_bus):
     assert game.scores[players[0]] == 0
 
 
-def test_game_start_and_loop_flow(players, mock_event_bus, mocker):
-    """Test the full game loop calls Round and display methods."""
+def test_game_full_flow(players, mock_event_bus, mocker):
+    """Test the full game loop by calling tick() until game over."""
     game = Game(players, mock_event_bus, num_rounds=2)
 
     mock_factory = mocker.patch("pycardgolf.core.game.RoundFactory")
-    mock_round_instance = MagicMock(spec=Round)
-    mock_round_instance.get_scores.return_value = {0: 10, 1: 5}
-    mock_round_instance.hands = [MagicMock(), MagicMock()]
-    mock_factory.create_standard_round.return_value = mock_round_instance
 
-    mock_run_loop = mocker.patch.object(game, "_run_round_loop")
+    # We need to mock Round instance carefully to avoid infinite tick loops
+    mock_round_1 = MagicMock(spec=Round)
+    mock_round_1.phase = RoundPhase.FINISHED
+    mock_round_1.get_scores.return_value = {0: 10, 1: 5}
+    mock_round_1.hands = [MagicMock(), MagicMock()]
 
-    game.start()
+    mock_round_2 = MagicMock(spec=Round)
+    mock_round_2.phase = RoundPhase.FINISHED
+    mock_round_2.get_scores.return_value = {0: 10, 1: 5}
+    mock_round_2.hands = [MagicMock(), MagicMock()]
 
-    assert mock_factory.create_standard_round.call_count == 2
-    assert mock_run_loop.call_count == 2
+    mock_factory.create_standard_round.side_effect = [mock_round_1, mock_round_2]
+
+    # First tick: initializes game (round 1)
+    assert game.tick() is True
+    assert game.current_round_num == 1
+
+    # Second tick: round 1 is finished, so it handles round end and starts round 2
+    assert game.tick() is True
+    assert game.current_round_num == 2
+
+    # Third tick: round 2 is finished, game over
+    assert game.tick() is False
+    assert game.is_game_over is True
 
     # P1 (index 0) gets 10 per round * 2 = 20
     assert game.scores[players[0]] == 20
@@ -119,12 +133,15 @@ def test_declare_winner(players, mock_event_bus):
     assert game_over_events[0].winning_score == 5
 
 
-def test_run_round_loop_none_round(players, mock_event_bus):
-    """Test that _run_round_loop returns early if current_round is None."""
+def test_tick_starts_uninitialized_game(players, mock_event_bus):
+    """Test that tick() initializes the game if current_round is None."""
     game = Game(players, mock_event_bus)
     game.current_round = None
-    # Should return early without error
-    game._run_round_loop()
+
+    # Should call start() and return True
+    assert game.tick() is True
+    assert game.current_round is not None
+    assert game.current_round_num == 1
 
 
 def test_get_winner(players, mock_event_bus):
@@ -152,29 +169,41 @@ def test_game_init_reseeds_players(mock_event_bus):
     assert p1.seed != 42  # Should be reseeded
 
 
-def test_run_round_loop_executes_steps(players, mock_event_bus, mocker):
-    """Test that _run_round_loop calls get_action and step until FINISHED."""
+def test_tick_executes_single_step(players, mock_event_bus, mocker):
+    """Test that tick() executes exactly one player action."""
     game = Game(players, mock_event_bus)
     mock_round = MagicMock(spec=Round)
-
-    # Setup side effects for phase to end the loop
-    type(mock_round).phase = mocker.PropertyMock(
-        side_effect=[RoundPhase.SETUP, RoundPhase.FINISHED]
-    )
+    mock_round.phase = RoundPhase.SETUP
     mock_round.get_current_player_idx.return_value = 0
 
     mock_action = MagicMock()
     players[0].get_action.return_value = mock_action
-
     mock_round.step.return_value = [MagicMock()]
 
     # Patch ObservationBuilder to avoid using the MagicMock in build
-    mock_build = mocker.patch("pycardgolf.core.game.ObservationBuilder.build")
-    mock_build.return_value = MagicMock()
+    mocker.patch(
+        "pycardgolf.core.game.ObservationBuilder.build", return_value=MagicMock()
+    )
 
     game.current_round = mock_round
-    game._run_round_loop()
+    result = game.tick()
 
+    assert result is True
     assert players[0].get_action.call_count == 1
     assert mock_round.step.call_count == 1
     assert mock_event_bus.publish.call_count == 1
+
+
+def test_handle_round_end_none_round(players, mock_event_bus):
+    """Test that _handle_round_end returns early if current_round is None."""
+    game = Game(players, mock_event_bus)
+    game.current_round = None
+    # Should return early without error
+    game._handle_round_end()
+
+
+def test_tick_game_over(players, mock_event_bus):
+    """Test that tick() returns False if the game is already over."""
+    game = Game(players, mock_event_bus)
+    game.is_game_over = True
+    assert game.tick() is False

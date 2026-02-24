@@ -11,7 +11,6 @@ def test_full_game_execution(mocker):
 
     bot1 = RandomBot("Bot 1")
     bot2 = RandomBot("Bot 2")
-    # Bots use RNGMixin, we can reseed if needed, or mock _rng
     bot1._rng = mocker.Mock()
     bot1._rng.choice.side_effect = lambda x: x[0]
     bot2._rng = mocker.Mock()
@@ -21,6 +20,11 @@ def test_full_game_execution(mocker):
 
     game = Game(players, event_bus, num_rounds=2)
     game.start()
+
+    # Drive the game to completion
+    running = True
+    while running:
+        running = game.tick()
 
     # Game should have completed both rounds
     assert game.current_round_num == 2

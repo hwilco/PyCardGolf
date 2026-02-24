@@ -86,8 +86,15 @@ def main() -> None:
     players.extend(RandomBot(f"Bot {i + 1}") for i in range(args.bots))
 
     game = Game(players, event_bus, num_rounds=args.rounds, seed=args.seed)
+
     try:
         game.start()
+
+        # Inversion of Control: The UI/CLI drives the engine tick
+        running = True
+        while running:
+            running = game.tick()
+
     except GameExitError:
         console = Console()
         console.print("\n[bold red][ERROR] Game exited by user.[/bold red]\n")
