@@ -3,17 +3,24 @@
 import io
 
 import pytest
+from rich.color import ColorParseError
 from rich.console import Console
 from rich.text import Text
 
 from pycardgolf.core.event_bus import EventBus
 from pycardgolf.core.events import (
+    CardDiscardedEvent,
     CardDrawnDeckEvent,
     CardDrawnDiscardEvent,
     CardFlippedEvent,
     CardSwappedEvent,
+    GameOverEvent,
     GameStartedEvent,
     GameStatsEvent,
+    RoundEndEvent,
+    RoundStartEvent,
+    ScoreBoardEvent,
+    TurnStartEvent,
 )
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.round import Round
@@ -43,6 +50,25 @@ class TestRendererWait:
         renderer = CLIRenderer(event_bus, console, delay=-1.0)
         with pytest.raises(GameConfigError, match="Delay cannot be negative"):
             renderer.wait_for_enter()
+
+    def test_wait_for_enter_windows(self, captured_renderer, mocker):
+        """Test wait_for_enter on Windows (mocked)."""
+        renderer, _ = captured_renderer
+        renderer.delay = 1.0
+
+        mock_msvcrt = mocker.patch("pycardgolf.interfaces.cli.cli_renderer.msvcrt")
+        mock_msvcrt.kbhit.side_effect = [False, True]
+        mock_msvcrt.getch.return_value = b"\r"
+
+        mock_time = mocker.patch("pycardgolf.interfaces.cli.cli_renderer.time.time")
+        mock_time.side_effect = [0, 0.01, 0.06, 0.1, 0.15]
+
+        mock_sleep = mocker.patch("pycardgolf.interfaces.cli.cli_renderer.time.sleep")
+
+        renderer.wait_for_enter()
+        assert mock_msvcrt.kbhit.called
+        assert mock_msvcrt.getch.called
+        assert mock_sleep.called
 
 
 @pytest.fixture
@@ -115,6 +141,18 @@ class TestCardDisplay:
         assert isinstance(card_text, Text)
         assert "??" in str(card_text)
 
+    def test_get_card_text_color_error(self, captured_renderer, mocker):
+        """Test ColorParseError handling in get_card_text."""
+        renderer, _ = captured_renderer
+
+        mocker.patch(
+            "pycardgolf.interfaces.cli.cli_renderer.Style",
+            side_effect=ColorParseError("Invalid color"),
+        )
+
+        with pytest.raises(GameConfigError, match="Invalid color"):
+            renderer.get_card_text(0)
+
 
 class TestRendererDisplay:
     """Tests for display methods using captured output."""
@@ -167,6 +205,7 @@ class TestRendererDisplay:
         assert "+" in result
         assert "|" in result
         assert "1" in result
+        assert "4" in result  # Bottom row indices
 
     def test_display_discard_pile(self, captured_renderer, mock_round):
         """Test _display_discard_pile method."""
@@ -181,12 +220,11 @@ class TestRendererDisplay:
         """Test display_game_stats method formatting."""
         renderer, output = captured_renderer
 
-        player_stats = PlayerStats(round_scores=[])
+        player_stats = PlayerStats(round_scores=[1, 99])
         player_stats.best_score = 42
         player_stats.worst_score = 99
         player_stats.average_score = 12.3456
         player_stats.total_score = 1000
-        player_stats.round_scores = [1, 99]
 
         stats = {mock_player: player_stats}
         event = GameStatsEvent(stats=stats)
@@ -197,6 +235,106 @@ class TestRendererDisplay:
         assert "TestPlayer" in result
         assert "Best Score: 42" in result
         assert "Worst Score: 99" in result
+        assert "Average Score: 12.35" in result
+
+    def test_create_draw_choice_prompt(self, captured_renderer):
+        renderer, _ = captured_renderer
+        prompt = renderer.create_draw_choice_prompt(0, 1)
+        assert isinstance(prompt, Text)
+        assert "Draw from (d)eck" in str(prompt)
+        assert "A♠" in str(prompt)
+        assert "2♠" in str(prompt)
+
+    def test_display_round_start(self, captured_renderer):
+        renderer, output = captured_renderer
+        event = RoundStartEvent(round_num=1)
+        renderer.display_round_start(event)
+        assert "Starting Round 1" in output.getvalue()
+
+    def test_display_round_end(self, captured_renderer, mock_player, sample_hand):
+        renderer, output = captured_renderer
+        event = RoundEndEvent(
+            round_num=1, scores={mock_player: 10}, hands={mock_player: sample_hand}
+        )
+        renderer.display_round_end(event)
+        assert "Round 1 End" in output.getvalue()
+        assert "TestPlayer (Round Score: 10)" in output.getvalue()
+
+    def test_display_scoreboard(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        event = ScoreBoardEvent(scores={mock_player: 50})
+        renderer.display_scoreboard(event)
+        assert "Current Scores:" in output.getvalue()
+        assert "TestPlayer: 50" in output.getvalue()
+
+    def test_display_game_over(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        event = GameOverEvent(winner=mock_player, winning_score=5)
+        renderer.display_game_over(event)
+        assert "Game Over" in output.getvalue()
+        assert "Winner: TestPlayer" in output.getvalue()
+
+    def test_display_standings(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_standings([(mock_player, 5)])
+        assert "Final Standings:" in output.getvalue()
+        assert "1. TestPlayer: 5" in output.getvalue()
+
+    def test_display_initial_flip_prompts(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_initial_flip_prompt(mock_player, 2)
+        assert "TestPlayer, draw start!" in output.getvalue()
+
+        renderer.display_initial_flip_selection_prompt(1, 2)
+        assert "Select card 1 of 2 to flip." in output.getvalue()
+
+        renderer.display_initial_flip_error_already_selected()
+        assert "You already selected that card" in output.getvalue()
+
+    def test_display_final_turn_notification(self, captured_renderer, mock_player):
+        renderer, output = captured_renderer
+        renderer.display_final_turn_notification(mock_player)
+        assert "TestPlayer has revealed all their cards!" in output.getvalue()
+
+    def test_display_initial_flip_choices(self, captured_renderer, sample_hand):
+        renderer, output = captured_renderer
+        renderer.display_initial_flip_choices("TestPlayer", sample_hand, [0, 1])
+        assert "TestPlayer flipped initial cards:" in output.getvalue()
+
+    def test_display_turn_start(
+        self, captured_renderer, mock_player, sample_hand, mocker
+    ):
+        renderer, output = captured_renderer
+        # With multiple players set
+        p2 = mocker.Mock(spec=BasePlayer)
+        p2.name = "OpponentPlayer"
+        renderer.players = [mock_player, p2]
+
+        event = TurnStartEvent(player_idx=0, hands=[sample_hand, sample_hand])
+        renderer.display_turn_start(event)
+
+        result = output.getvalue()
+        assert "It's TestPlayer's turn." in result
+        assert "OpponentPlayer's Hand (Next Player):" in result
+
+        # Test fallback without players
+        # RE-CREATE StringIO to clear buffer
+        renderer.console.file = io.StringIO()
+        renderer.players = []
+        renderer.display_turn_start(event)
+        result_fallback = renderer.console.file.getvalue()
+        assert "It's Player 0's turn." in result_fallback
+
+    def test_display_discard_action(self, captured_renderer):
+        renderer, output = captured_renderer
+        event = CardDiscardedEvent(player_idx=0, card_id=0)
+        renderer.display_discard_action(event)
+        assert "Player 0 discarded" in output.getvalue()
+
+    def test_validate_color_invalid(self, captured_renderer):
+        renderer, _ = captured_renderer
+        with pytest.raises(GameConfigError, match="Invalid color"):
+            renderer.validate_color("not-a-color")
 
 
 class TestColorValidation:

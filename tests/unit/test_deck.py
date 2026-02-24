@@ -67,6 +67,13 @@ def test_draw_empty():
         card_stack.draw()
 
 
+def test_peek_empty():
+    """Test peek on empty stack raises IndexError."""
+    card_stack = CardStack()
+    with pytest.raises(IndexError, match="No cards in card stack"):
+        card_stack.peek()
+
+
 def test_clear(cards_5):
     card_stack = CardStack(card_ids=cards_5.copy())
     assert card_stack.num_cards == len(cards_5)
@@ -107,6 +114,11 @@ def test_eq_stack(cards_5):
         seed=1,
         card_ids=cards_5.copy(),
     )
+
+
+def test_card_stack_eq_other_type():
+    """Test equality with non-CardStack object returns NotImplemented (False)."""
+    assert CardStack() != "not a stack"
 
 
 def test_deck_cards():

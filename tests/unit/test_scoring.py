@@ -78,9 +78,13 @@ def test_calculate_score_none_hand():
         calculate_score(None)
 
 
-def test_calculate_score_invalid_hand_size():
+def test_calculate_score_invalid_hand_size(monkeypatch):
+    mock_hand_size = 4
+    monkeypatch.setattr("pycardgolf.core.scoring.HAND_SIZE", mock_hand_size)
     hand = Hand([1, 2, 3])
-    with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
+    with pytest.raises(
+        ValueError, match=f"Hand must be a list of {mock_hand_size} cards"
+    ):
         calculate_score(hand)
 
 
@@ -111,6 +115,35 @@ def test_calculate_visible_score_valid_hands(face_up_indices, expected_score):
         mask |= 1 << idx
     hand = Hand(card_ids, mask)
     assert calculate_visible_score(hand) == expected_score
+
+
+def test_calculate_visible_score_invalid_hand_size(monkeypatch):
+    """Test calculate_visible_score with invalid hand size raises ValueError."""
+    mock_hand_size = 6
+    monkeypatch.setattr("pycardgolf.core.scoring.HAND_SIZE", mock_hand_size)
+    hand = Hand([1, 2, 3])
+    with pytest.raises(ValueError, match=f"Hand must have {mock_hand_size} cards"):
+        calculate_visible_score(hand)
+
+
+def test_calculate_visible_score_mismatched_ranks():
+    """Test that visible score doesn't cancel if ranks in a column differ."""
+    # Column 0: Ace and Two (both face up)
+    # Expected score: 1 + (-2) = -1
+    card_ids = [_get_card_id(Rank.ACE), _get_card_id(Rank.TWO)] + [0] * (HAND_SIZE - 2)
+    # Indices 0 and 3 are in the same column for rows=2, cols=3
+    # idx 0: col 0, row 0
+    # idx 3: col 0, row 1
+    card_ids = [0] * HAND_SIZE
+    card_ids[0] = _get_card_id(Rank.ACE)
+    card_ids[3] = _get_card_id(Rank.TWO)
+
+    mask = (1 << 0) | (1 << 3)
+    hand = Hand(card_ids, mask)
+
+    # ACE is index 0, TWO is index 3
+    # hand.get_column(0) should return (ACE_id, TWO_id)
+    assert calculate_visible_score(hand) == -1
 
 
 def test_card_value_hidden_rank_raises():

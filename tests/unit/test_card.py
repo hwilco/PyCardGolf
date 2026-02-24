@@ -1,12 +1,14 @@
 import pytest
 
 from pycardgolf.utils.card import (
+    card_to_string,
     get_card_display,
     get_masked_id,
+    get_suit,
     is_face_down,
     is_face_up,
 )
-from pycardgolf.utils.deck import CARDS_PER_DECK
+from pycardgolf.utils.deck import CARDS_PER_DECK, Suit
 
 
 @pytest.mark.parametrize(
@@ -68,3 +70,13 @@ def test_is_face_down(card_id, expected):
 )
 def test_get_mask_id(card_id, expected):
     assert get_masked_id(card_id) == expected
+
+
+def test_card_to_string_hidden():
+    """Test card_to_string with hidden card ID."""
+    assert card_to_string(-1) == "??"
+
+
+def test_get_suit_hidden():
+    """Test get_suit with hidden card ID."""
+    assert get_suit(-1) == Suit.HIDDEN

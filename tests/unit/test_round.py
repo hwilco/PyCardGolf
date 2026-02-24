@@ -3,6 +3,7 @@ import pytest
 from pycardgolf.core.actions import (
     ActionDiscardDrawn,
     ActionDrawDeck,
+    ActionDrawDiscard,
     ActionFlipCard,
     ActionPass,
     ActionSwapCard,
@@ -10,6 +11,7 @@ from pycardgolf.core.actions import (
 from pycardgolf.core.events import (
     CardDiscardedEvent,
     CardDrawnDeckEvent,
+    CardDrawnDiscardEvent,
     CardFlippedEvent,
     CardSwappedEvent,
     TurnStartEvent,
@@ -128,6 +130,81 @@ def test_round_step_flip_phase():
     assert isinstance(events[0], CardFlippedEvent)
     assert round_instance.hands[0].is_face_up(2)
     assert round_instance.phase == RoundPhase.DRAW
+
+
+def test_draw_from_discard():
+    """Test drawing from discard pile."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.discard_pile.clear()
+    round_instance.discard_pile.add_card(42)
+
+    event = round_instance.draw_from_discard(player_idx=0)
+
+    assert event.card_id == 42
+    assert round_instance.drawn_card_id == 42
+    assert round_instance.drawn_from_deck is False
+    assert round_instance.discard_pile.num_cards == 0
+
+
+def test_round_step_draw_discard_phase():
+    """Test drawing from discard pile in DRAW phase."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.phase = RoundPhase.DRAW
+    round_instance.discard_pile.add_card(88)
+
+    events = round_instance.step(ActionDrawDiscard())
+    assert isinstance(events[0], CardDrawnDiscardEvent)
+    assert round_instance.phase == RoundPhase.ACTION
+    assert round_instance.drawn_card_id == 88
+    assert round_instance.drawn_from_deck is False
+
+
+def test_discard_drawn_card_success():
+    """Test discarding a drawn card."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.drawn_card_id = 77
+
+    event = round_instance.discard_drawn_card(0)
+    assert isinstance(event, CardDiscardedEvent)
+    assert event.card_id == 77
+    assert round_instance.discard_pile.peek() == 77
+    assert round_instance.drawn_card_id is None
+
+
+def test_draw_from_discard_empty():
+    """Test drawing from empty discard pile raises IllegalActionError."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.discard_pile.clear()
+    with pytest.raises(IllegalActionError, match="Discard pile is empty"):
+        round_instance.draw_from_discard(player_idx=0)
+
+
+def test_discard_drawn_card_invalid():
+    """Test discarding when no card is drawn raises IllegalActionError."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.drawn_card_id = None
+    with pytest.raises(IllegalActionError, match="No card drawn"):
+        round_instance.discard_drawn_card(player_idx=0)
+
+
+def test_get_valid_actions_delegation(mocker):
+    """Test that get_valid_actions delegates to phases.get_phase_actions."""
+    mock_get_actions = mocker.patch("pycardgolf.core.round.get_phase_actions")
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.get_valid_actions(0)
+    mock_get_actions.assert_called_once_with(round_instance, 0)
+
+
+def test_round_get_scores(mocker):
+    """Test that get_scores correctly maps calculate_score to hands."""
+    mock_calc = mocker.patch(
+        "pycardgolf.core.round.calculate_score", side_effect=[10, 20]
+    )
+    round_instance = RoundFactory.create_standard_round(player_names=["P1", "P2"])
+
+    scores = round_instance.get_scores()
+    assert scores == {0: 10, 1: 20}
+    assert mock_calc.call_count == 2
 
 
 def get_all_slots(obj):

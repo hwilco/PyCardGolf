@@ -47,6 +47,32 @@ def test_get_column_invalid(standard_hand, col_index):
         standard_hand.get_column(col_index)
 
 
+@pytest.mark.parametrize(
+    ("row_index", "expected_ids"),
+    [
+        pytest.param(0, (0, 1, 2), id="row_0"),
+        pytest.param(1, (3, 4, 5), id="row_1"),
+    ],
+)
+def test_get_row_valid(standard_hand, row_index, expected_ids):
+    """Test getting a valid row."""
+    row = standard_hand.get_row(row_index)
+    assert row == expected_ids
+
+
+@pytest.mark.parametrize(
+    "row_index",
+    [
+        pytest.param(-1, id="negative_one"),
+        pytest.param(2, id="two"),
+    ],
+)
+def test_get_row_invalid(standard_hand, row_index):
+    """Test getting an invalid row raises IndexError."""
+    with pytest.raises(IndexError, match=f"Row index out of range: {row_index}"):
+        standard_hand.get_row(row_index)
+
+
 def test_is_face_up(standard_hand):
     assert not standard_hand.is_face_up(0)
     standard_hand.face_up_mask |= 1 << 0
@@ -86,6 +112,12 @@ def test_flip_card(standard_hand):
     assert standard_hand.is_face_up(2)
 
 
+def test_flip_card_invalid(standard_hand):
+    """Test flipping an invalid index raises IndexError."""
+    with pytest.raises(IndexError, match="Card index out of range: 10"):
+        standard_hand.flip_card(10)
+
+
 def test_reveal_all(standard_hand):
     standard_hand.reveal_all()
     assert standard_hand.all_face_up()
@@ -110,3 +142,8 @@ def test_getitem_slice(standard_hand):
 
 def test_iter(standard_hand):
     assert list(standard_hand) == [0, 1, 2, 3, 4, 5]
+
+
+def test_eq_other_type(standard_hand):
+    """Test equality with non-Hand object returns False."""
+    assert standard_hand != "not a hand"

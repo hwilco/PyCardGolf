@@ -12,8 +12,10 @@ from pycardgolf.core.events import (
     ScoreBoardEvent,
 )
 from pycardgolf.core.game import Game
+from pycardgolf.core.phases import RoundPhase
 from pycardgolf.core.round import Round
 from pycardgolf.players.player import BasePlayer
+from pycardgolf.utils.mixins import RNGMixin
 
 
 @pytest.fixture
@@ -131,3 +133,48 @@ def test_get_winner(players, mock_event_bus):
     game.scores[players[0]] = 10
     game.scores[players[1]] = 5
     assert game.get_winner() == players[1]
+
+
+def test_game_init_reseeds_players(mock_event_bus):
+    """Test that Game.__init__ reseeds players that are RNGMixins."""
+
+    class RNGPlayer(BasePlayer, RNGMixin):
+        def get_action(self, observation):
+            return MagicMock()
+
+    p1 = RNGPlayer("P1")
+    p1.reseed(42)  # Initial seed
+    p2 = MagicMock(spec=BasePlayer)
+    p2.name = "P2"
+
+    _ = Game([p1, p2], mock_event_bus, seed=123)
+
+    assert p1.seed != 42  # Should be reseeded
+
+
+def test_run_round_loop_executes_steps(players, mock_event_bus, mocker):
+    """Test that _run_round_loop calls get_action and step until FINISHED."""
+    game = Game(players, mock_event_bus)
+    mock_round = MagicMock(spec=Round)
+
+    # Setup side effects for phase to end the loop
+    type(mock_round).phase = mocker.PropertyMock(
+        side_effect=[RoundPhase.SETUP, RoundPhase.FINISHED]
+    )
+    mock_round.get_current_player_idx.return_value = 0
+
+    mock_action = MagicMock()
+    players[0].get_action.return_value = mock_action
+
+    mock_round.step.return_value = [MagicMock()]
+
+    # Patch ObservationBuilder to avoid using the MagicMock in build
+    mock_build = mocker.patch("pycardgolf.core.game.ObservationBuilder.build")
+    mock_build.return_value = MagicMock()
+
+    game.current_round = mock_round
+    game._run_round_loop()
+
+    assert players[0].get_action.call_count == 1
+    assert mock_round.step.call_count == 1
+    assert mock_event_bus.publish.call_count == 1
