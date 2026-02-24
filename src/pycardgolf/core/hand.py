@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class Hand:
-    """Class representing a player's hand in Golf using primitive types."""
+    """Class representing a player's hand in Golf."""
 
     __slots__ = ("card_ids", "cols", "face_up_mask", "rows")
     __hash__ = None  # type: ignore[assignment]

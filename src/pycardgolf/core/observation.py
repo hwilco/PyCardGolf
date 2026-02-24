@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class Observation:
-    """A sanitized view of the game state for a player using CardID primitives."""
+    """A sanitized (no info on face-down cards) view of the game state for a player."""
 
     my_hand: list[CardID]
     other_hands: dict[str, list[CardID]]

@@ -1,4 +1,4 @@
-"""Module containing the Round class using primitive types."""
+"""Module containing the Round class."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class Round(RNGMixin):
-    """Class representing a single round of Golf (Primitive Engine Version)."""
+    """Class representing a single round of Golf."""
 
     __slots__ = (
         "cards_flipped_in_setup",

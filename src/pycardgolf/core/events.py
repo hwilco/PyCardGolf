@@ -1,4 +1,4 @@
-"""Module containing GameEvent definitions for the game engine using primitives."""
+"""Module containing GameEvent definitions for the game engine."""
 
 from __future__ import annotations
 

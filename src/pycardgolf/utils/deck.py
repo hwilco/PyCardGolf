@@ -1,4 +1,4 @@
-"""Module containing CardStack and Deck classes using primitives."""
+"""Module containing CardStack and Deck classes."""
 
 from __future__ import annotations
 
