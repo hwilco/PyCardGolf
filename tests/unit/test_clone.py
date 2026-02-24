@@ -13,20 +13,21 @@ def test_round_clone_state_independence():
     # Assert state matches
     assert cloned.phase == r.phase
     assert cloned.turn_count == r.turn_count
-    assert cloned.hands[0][0].face_up == r.hands[0][0].face_up
+    assert cloned.hands[0].is_face_up(0) == r.hands[0].is_face_up(0)
 
     # Modify original
     r.step(ActionFlipCard(hand_index=1))
 
     # Assert clone is unaffected
-    assert not cloned.hands[0][1].face_up
-    assert r.hands[0][1].face_up
+    assert not cloned.hands[0].is_face_up(1)
+    assert r.hands[0].is_face_up(1)
 
 
 def test_round_clone_preserve_rng(mocker):
     """Test that preserve_rng correctly maintains or randomized the PRNG state."""
     # Patch randrange so the original and the clone get known, different seeds
-    mock_randrange = mocker.patch("pycardgolf.core.round.random.randrange")
+    # Note: Using mocker.patch on random.randrange in round.py
+    mock_randrange = mocker.patch("pycardgolf.utils.mixins.random.randrange")
     mock_randrange.side_effect = [42, 100, 200, 300, 400, 500]
 
     r = RoundFactory.create_standard_round(["P1", "P2"], seed=42)

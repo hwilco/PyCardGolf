@@ -53,10 +53,11 @@ class SetupPhaseState(PhaseState):
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
+        hand = round_state.hands[player_idx]
         return [
             ActionFlipCard(hand_index=i)
-            for i, card in enumerate(round_state.hands[player_idx])
-            if not card.face_up
+            for i in range(len(hand))
+            if not hand.is_face_up(i)
         ]
 
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
@@ -142,11 +143,12 @@ class FlipPhaseState(PhaseState):
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
         actions: list[Action] = [ActionPass()]
+        hand = round_state.hands[player_idx]
         actions.extend(
             [
                 ActionFlipCard(hand_index=i)
-                for i, card in enumerate(round_state.hands[player_idx])
-                if not card.face_up
+                for i in range(len(hand))
+                if not hand.is_face_up(i)
             ]
         )
         return actions

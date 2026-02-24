@@ -24,15 +24,8 @@
             ]
         }
     },
-    "mounts": [
-        {
-            "source": "${localEnv:SSH_AUTH_SOCK}",
-            "target": "/tmp/vscode-ssh-auth.sock",
-            "type": "bind"
-        }
-    ],
-    "containerEnv": {
-        "SSH_AUTH_SOCK": "/tmp/vscode-ssh-auth.sock"
+    "remoteEnv": {
+        "PYTHONPATH": "/app/src"
     },
     "postCreateCommand": "bash .devcontainer/setup-git-aliases.sh"
 }

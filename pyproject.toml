@@ -16,9 +16,10 @@ color-contrast = "^0.1.1"
 
 [tool.pyrefly]
 project-includes = [
-    "**/*.py*",
+    "src/**/*.py*",
     "**/*.ipynb",
 ]
+search-roots = ["src"]
 project-excludes = [
     "tests/**",
     "**/__pycache__/**",
@@ -112,6 +113,9 @@ ignore = [
 
 [tool.pyright]
 include = ["src"]
+executionEnvironments = [
+  { root = "src" }
+]
 exclude = [
     "**/__pycache__",
     "scripts",

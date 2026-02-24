@@ -1,4 +1,4 @@
-"""Module containing GameEvent definitions for the game engine."""
+"""Module containing GameEvent definitions for the game engine using primitives."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.stats import PlayerStats
     from pycardgolf.players.player import BasePlayer
-    from pycardgolf.utils.card import Card
+    from pycardgolf.utils.types import CardID
 
 EventType = Literal[
     "ROUND_START",
@@ -64,7 +64,7 @@ class CardDrawnDeckEvent(GameEvent):
     """Event triggered when a card is drawn from the deck."""
 
     player_idx: int
-    card: Card
+    card_id: CardID
     event_type: EventType = "CARD_DRAWN_DECK"
 
 
@@ -73,7 +73,7 @@ class CardDrawnDiscardEvent(GameEvent):
     """Event triggered when a card is drawn from the discard pile."""
 
     player_idx: int
-    card: Card
+    card_id: CardID
     event_type: EventType = "CARD_DRAWN_DISCARD"
 
 
@@ -82,7 +82,7 @@ class CardDiscardedEvent(GameEvent):
     """Event triggered when a card is discarded."""
 
     player_idx: int
-    card: Card
+    card_id: CardID
     event_type: EventType = "CARD_DISCARDED"
 
 
@@ -92,8 +92,8 @@ class CardSwappedEvent(GameEvent):
 
     player_idx: int
     hand_index: int
-    new_card: Card
-    old_card: Card
+    new_card_id: CardID
+    old_card_id: CardID
     event_type: EventType = "CARD_SWAPPED"
 
 
@@ -103,7 +103,7 @@ class CardFlippedEvent(GameEvent):
 
     player_idx: int
     hand_index: int
-    card: Card
+    card_id: CardID
     event_type: EventType = "CARD_FLIPPED"
 
 

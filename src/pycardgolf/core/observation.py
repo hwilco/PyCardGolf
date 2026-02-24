@@ -2,35 +2,33 @@
 
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.hand import Hand
-from pycardgolf.utils.card import Card
-from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.card import get_masked_id
 
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
+    from pycardgolf.core.hand import Hand
     from pycardgolf.core.phases import RoundPhase
     from pycardgolf.core.round import Round
+    from pycardgolf.utils.types import CardID
 
 
 @dataclass
 class Observation:
-    """A sanitized view of the game state for a player."""
+    """A sanitized view of the game state for a player using CardID primitives."""
 
-    my_hand: Hand
-    other_hands: dict[str, Hand]
-    discard_top: Card | None
+    my_hand: list[CardID]
+    other_hands: dict[str, list[CardID]]
+    discard_top: CardID | None
     deck_size: int
-    deck_top: Card | None  # Top card of deck (sanitized/dummy if strictly face down)
+    deck_top: CardID | None
     current_player_name: str
     phase: RoundPhase
     valid_actions: list[Action]
-    # Additional info needed for decision making
-    drawn_card: Card | None = None  # Only visible if in ACTION/FLIP phase and drawn
-    can_discard_drawn: bool = False  # True if drawn from Deck
+    drawn_card_id: CardID | None = None
+    can_discard_drawn: bool = False
 
 
 class ObservationBuilder:
@@ -38,26 +36,22 @@ class ObservationBuilder:
 
     @classmethod
     def build(cls, round_state: Round, player_idx: int) -> Observation:
-        """Create a sanitized observation of the round for a specific player.
+        """Create a sanitized observation of the round for a specific player."""
+        # Sanitized hand for player
+        my_hand_view = cls.sanitize_hand(round_state.hands[player_idx])
 
-        This ensures that players only see face-up cards (other than their own
-        unseen cards which are returned as dummy objects).
-        """
-        # Current player's hand: sanitized copy
-        my_hand_view = Hand(cls._sanitize_cards(list(round_state.hands[player_idx])))
-
-        # Other players' hands: sanitized copies
+        # Other players' hands
         other_hands_view = {}
         for i, name in enumerate(round_state.player_names):
             if i != player_idx:
-                other_hands_view[name] = Hand(
-                    cls._sanitize_cards(list(round_state.hands[i]))
-                )
+                other_hands_view[name] = cls.sanitize_hand(round_state.hands[i])
 
-        # Deck top: dummy/hidden if available
+        # Deck top: sanitized
         deck_top = None
         if round_state.deck.num_cards > 0:
-            deck_top = cls._sanitize_card(round_state.deck.peek())
+            # For the deck top, we always treat it as face down in the observation
+            # unless it's explicitly revealed. In Golf, deck top is hidden.
+            deck_top = get_masked_id(round_state.deck.peek())
 
         return Observation(
             my_hand=my_hand_view,
@@ -74,8 +68,8 @@ class ObservationBuilder:
             ],
             phase=round_state.phase,
             valid_actions=round_state.get_valid_actions(player_idx),
-            drawn_card=(
-                round_state.drawn_card
+            drawn_card_id=(
+                round_state.drawn_card_id
                 if round_state.current_player_idx == player_idx
                 else None
             ),
@@ -87,23 +81,12 @@ class ObservationBuilder:
         )
 
     @classmethod
-    def _sanitize_card(cls, card: Card) -> Card:
-        """Return a safe copy of a card.
-
-        If face_up, returns a full copy.
-        If face_down, returns a dummy card with hidden rank/suit.
-        """
-        if card.face_up:
-            return copy.copy(card)
-        return Card(
-            rank=Rank.HIDDEN,
-            suit=Suit.HIDDEN,
-            back_color=card.back_color,
-            face_color="?",
-            face_up=False,
-        )
-
-    @classmethod
-    def _sanitize_cards(cls, cards: list[Card]) -> list[Card]:
-        """Return a list of sanitized cards."""
-        return [cls._sanitize_card(card) for card in cards]
+    def sanitize_hand(cls, hand: Hand) -> list[CardID]:
+        """Return a list of sanitized CardIDs for a hand."""
+        sanitized = []
+        for i, card_id in enumerate(hand):
+            if hand.is_face_up(i):
+                sanitized.append(card_id)
+            else:
+                sanitized.append(get_masked_id(card_id))
+        return sanitized
