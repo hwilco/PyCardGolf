@@ -93,25 +93,25 @@ def mock_round(sample_hand, mocker):
 class TestCardDisplay:
     """Tests for card display functionality."""
 
-    def test_get_card_string_face_up(self, captured_renderer, sample_card_id):
+    def test_get_card_text_face_up(self, captured_renderer, sample_card_id):
         """Test that face-up cards are displayed correctly."""
         renderer, _ = captured_renderer
-        card_text = renderer.get_card_string(sample_card_id)
+        card_text = renderer.get_card_text(sample_card_id)
         assert isinstance(card_text, Text)
         assert "A♠" in str(card_text)
 
-    def test_get_card_string_face_down(self, captured_renderer):
+    def test_get_card_text_face_down(self, captured_renderer):
         """Test that face-down cards show ?? with back color."""
         renderer, _ = captured_renderer
         # Masked ID for deck 0 is -1
-        card_text = renderer.get_card_string(-1)
+        card_text = renderer.get_card_text(-1)
         assert isinstance(card_text, Text)
         assert "??" in str(card_text)
 
-    def test_get_card_string_none_card(self, captured_renderer):
+    def test_get_card_text_none_card(self, captured_renderer):
         """Test that None card shows ??."""
         renderer, _ = captured_renderer
-        card_text = renderer.get_card_string(None)
+        card_text = renderer.get_card_text(None)
         assert isinstance(card_text, Text)
         assert "??" in str(card_text)
 

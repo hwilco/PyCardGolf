@@ -104,7 +104,7 @@ class CLIRenderer(GameRenderer):
             # Fallback
             time.sleep(self.delay)
 
-    def get_card_string(self, sanitized_card_id: CardID | None) -> Text:
+    def get_card_text(self, sanitized_card_id: CardID | None) -> Text:
         """Get a rich Text object for a CardID with appropriate coloring."""
         text: str
         text_color: str
@@ -151,7 +151,7 @@ class CLIRenderer(GameRenderer):
     def _display_discard_pile(self, game_round: Round) -> None:
         """Display the discard pile."""
         top_card_id = game_round.discard_pile.peek()
-        card_text = self.get_card_string(top_card_id)
+        card_text = self.get_card_text(top_card_id)
 
         discard_pile_text = "\nDiscard Pile Top Card: "
         line_len = len(discard_pile_text) + len(card_text)
@@ -189,7 +189,7 @@ class CLIRenderer(GameRenderer):
             self.console.print("| ", end="")
             for i in range(num_cols):
                 sanitized_card_id = sanitized_hand_list[i + row * num_cols]
-                self.console.print(self.get_card_string(sanitized_card_id), end="")
+                self.console.print(self.get_card_text(sanitized_card_id), end="")
                 if i < num_cols - 1:
                     self.console.print(" ", end="")
             self.console.print(" |")
@@ -199,22 +199,23 @@ class CLIRenderer(GameRenderer):
         if display_indices:
             self.console.print(f"  {bottom_indices_str}")
 
-    def print_card_message(self, parts: list[str | CardID]) -> None:
+    def _print_card_message(self, parts: list[str | CardID]) -> None:
         """Print a message composed of strings and CardIDs."""
         msg = Text()
         for part in parts:
-            if isinstance(part, (int, float)):  # CardID is int
-                msg.append(self.get_card_string(int(part)))
+            # Check for int as isinstance(part, CardID) is not supported.
+            if isinstance(part, int):
+                msg.append(self.get_card_text(part))
             else:
-                msg.append(str(part))
+                msg.append(part)
         self.console.print(msg)
 
     def create_draw_choice_prompt(
         self, deck_card_id: CardID | None, discard_card_id: CardID | None
     ) -> Text:
         """Create a prompt for drawing choice."""
-        deck_card_text = self.get_card_string(deck_card_id)
-        discard_card_text = self.get_card_string(discard_card_id)
+        deck_card_text = self.get_card_text(deck_card_id)
+        discard_card_text = self.get_card_text(discard_card_id)
         prompt = Text("Draw from (d)eck ")
         prompt.append(deck_card_text)
         prompt.append(" or (p)ile ")
@@ -229,7 +230,7 @@ class CLIRenderer(GameRenderer):
             if self.players
             else f"Player {event.player_idx}"
         )
-        self.print_card_message([f"{player_name} drew: ", event.card_id])
+        self._print_card_message([f"{player_name} drew: ", event.card_id])
         self.wait_for_enter()
 
     def display_discard_draw(self, event: CardDrawnDiscardEvent) -> None:
@@ -239,7 +240,7 @@ class CLIRenderer(GameRenderer):
             if self.players
             else f"Player {event.player_idx}"
         )
-        self.print_card_message(
+        self._print_card_message(
             [
                 f"{player_name} drew ",
                 event.card_id,
@@ -256,7 +257,7 @@ class CLIRenderer(GameRenderer):
             else f"Player {event.player_idx}"
         )
         msg = f"{player_name} replaced card at position {event.hand_index + 1} with "
-        self.print_card_message(
+        self._print_card_message(
             [
                 msg,
                 event.new_card_id,
@@ -275,7 +276,7 @@ class CLIRenderer(GameRenderer):
             else f"Player {event.player_idx}"
         )
         msg = f"{player_name} flipped card at position {event.hand_index + 1}: "
-        self.print_card_message(
+        self._print_card_message(
             [
                 msg,
                 event.card_id,
@@ -312,7 +313,7 @@ class CLIRenderer(GameRenderer):
             if self.players
             else f"Player {event.player_idx}"
         )
-        self.print_card_message([f"{player_name} discarded ", event.card_id, "."])
+        self._print_card_message([f"{player_name} discarded ", event.card_id, "."])
         self.wait_for_enter()
 
     def display_round_start(self, event: RoundStartEvent) -> None:
@@ -416,4 +417,4 @@ class CLIRenderer(GameRenderer):
             msg_parts.append(card_id)
             if i < len(card_ids) - 1:
                 msg_parts.append(", ")
-        self.print_card_message(msg_parts)
+        self._print_card_message(msg_parts)
