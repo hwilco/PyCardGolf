@@ -16,7 +16,12 @@ from pycardgolf.core.events import (
     CardSwappedEvent,
     TurnStartEvent,
 )
-from pycardgolf.core.phases import RoundPhase
+from pycardgolf.core.phases import (
+    ActionPhaseState,
+    DrawPhaseState,
+    FlipPhaseState,
+    RoundPhase,
+)
 from pycardgolf.core.round import Round, RoundFactory
 from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.constants import HAND_SIZE
@@ -87,17 +92,18 @@ def test_round_step_illegal_setup_action():
 
 def test_round_step_draw_phase():
     round_instance = RoundFactory.create_standard_round(player_names=["P1"])
-    round_instance.phase = RoundPhase.DRAW
+    round_instance.phase_state = DrawPhaseState()
     events = round_instance.step(ActionDrawDeck())
     assert isinstance(events[0], CardDrawnDeckEvent)
     assert round_instance.phase == RoundPhase.ACTION
     assert round_instance.drawn_card_id is not None
-    assert round_instance.drawn_from_deck is True
+    assert isinstance(round_instance.phase_state, ActionPhaseState)
+    assert round_instance.phase_state.drawn_from_deck is True
 
 
 def test_round_step_action_phase_swap():
     round_instance = RoundFactory.create_standard_round(player_names=["P1"])
-    round_instance.phase = RoundPhase.ACTION
+    round_instance.phase_state = ActionPhaseState(drawn_from_deck=False)
     drawn = 99
     round_instance.drawn_card_id = drawn
 
@@ -112,10 +118,9 @@ def test_round_step_action_phase_swap():
 
 def test_round_step_action_phase_discard_drawn():
     round_instance = RoundFactory.create_standard_round(player_names=["P1"])
-    round_instance.phase = RoundPhase.ACTION
+    round_instance.phase_state = ActionPhaseState(drawn_from_deck=True)
     drawn = 99
     round_instance.drawn_card_id = drawn
-    round_instance.drawn_from_deck = True
 
     events = round_instance.step(ActionDiscardDrawn())
     assert isinstance(events[0], CardDiscardedEvent)
@@ -125,7 +130,7 @@ def test_round_step_action_phase_discard_drawn():
 
 def test_round_step_flip_phase():
     round_instance = RoundFactory.create_standard_round(player_names=["P1"])
-    round_instance.phase = RoundPhase.FLIP
+    round_instance.phase_state = FlipPhaseState()
     events = round_instance.step(ActionFlipCard(hand_index=2))
     assert isinstance(events[0], CardFlippedEvent)
     assert round_instance.hands[0].is_face_up(2)
@@ -142,21 +147,19 @@ def test_draw_from_discard():
 
     assert event.card_id == 42
     assert round_instance.drawn_card_id == 42
-    assert round_instance.drawn_from_deck is False
     assert round_instance.discard_pile.num_cards == 0
 
 
 def test_round_step_draw_discard_phase():
     """Test drawing from discard pile in DRAW phase."""
     round_instance = RoundFactory.create_standard_round(player_names=["P1"])
-    round_instance.phase = RoundPhase.DRAW
+    round_instance.phase_state = DrawPhaseState()
     round_instance.discard_pile.add_card(88)
 
     events = round_instance.step(ActionDrawDiscard())
     assert isinstance(events[0], CardDrawnDiscardEvent)
     assert round_instance.phase == RoundPhase.ACTION
     assert round_instance.drawn_card_id == 88
-    assert round_instance.drawn_from_deck is False
 
 
 def test_discard_drawn_card_success():
@@ -188,11 +191,12 @@ def test_discard_drawn_card_invalid():
 
 
 def test_get_valid_actions_delegation(mocker):
-    """Test that get_valid_actions delegates to phases.get_phase_actions."""
-    mock_get_actions = mocker.patch("pycardgolf.core.round.get_phase_actions")
+    """Test that get_valid_actions delegates to phase_state."""
     round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    mock_phase_state = mocker.Mock()
+    round_instance.phase_state = mock_phase_state
     round_instance.get_valid_actions(0)
-    mock_get_actions.assert_called_once_with(round_instance, 0)
+    mock_phase_state.get_valid_actions.assert_called_once_with(round_instance, 0)
 
 
 def test_round_get_scores(mocker):
@@ -225,7 +229,6 @@ def test_round_clone_copies_all_attributes():
     player_names = ["P1", "P2"]
     original = RoundFactory.create_standard_round(player_names=player_names)
     original.drawn_card_id = 42
-    original.drawn_from_deck = True
 
     clone = original.clone(preserve_rng=True)
 

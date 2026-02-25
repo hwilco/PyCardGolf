@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from pycardgolf.core.phases import ActionPhaseState
 from pycardgolf.utils.card import get_masked_id
 
 if TYPE_CHECKING:
@@ -49,9 +50,13 @@ class ObservationBuilder:
         # Deck top: sanitized
         deck_top = None
         if round_state.deck.num_cards > 0:
-            # For the deck top, we always treat it as face down in the observation
-            # unless it's explicitly revealed. In Golf, deck top is hidden.
             deck_top = get_masked_id(round_state.deck.peek())
+
+        can_discard = False
+        if round_state.current_player_idx == player_idx and isinstance(
+            round_state.phase_state, ActionPhaseState
+        ):
+            can_discard = round_state.phase_state.drawn_from_deck
 
         return Observation(
             my_hand=my_hand_view,
@@ -73,11 +78,7 @@ class ObservationBuilder:
                 if round_state.current_player_idx == player_idx
                 else None
             ),
-            can_discard_drawn=(
-                round_state.drawn_from_deck
-                if round_state.current_player_idx == player_idx
-                else False
-            ),
+            can_discard_drawn=can_discard,
         )
 
     @classmethod

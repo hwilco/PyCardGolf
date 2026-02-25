@@ -1,7 +1,8 @@
-"""Module containing the Round class."""
+"""Module containing the Round class using primitive types."""
 
 from __future__ import annotations
 
+import copy
 import random
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,7 @@ from pycardgolf.core.events import (
     CardSwappedEvent,
 )
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.phases import RoundPhase, get_phase_actions, handle_phase_step
+from pycardgolf.core.phases import RoundPhase, SetupPhaseState
 from pycardgolf.core.scoring import calculate_score
 from pycardgolf.exceptions import GameConfigError, IllegalActionError
 from pycardgolf.utils.constants import HAND_SIZE
@@ -23,6 +24,7 @@ from pycardgolf.utils.mixins import RNGMixin
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
     from pycardgolf.core.events import GameEvent
+    from pycardgolf.core.phases import PhaseState
     from pycardgolf.utils.types import CardID
 
 
@@ -35,11 +37,10 @@ class Round(RNGMixin):
         "deck",
         "discard_pile",
         "drawn_card_id",
-        "drawn_from_deck",
         "hands",
         "last_turn_player_idx",
         "num_players",
-        "phase",
+        "phase_state",
         "player_names",
         "turn_count",
     )
@@ -54,9 +55,6 @@ class Round(RNGMixin):
         self.player_names: list[str] = player_names
         self.num_players: int = len(player_names)
 
-        # Game State
-        # In the new version, Deck() just takes num_decks and seed.
-        # Deck color is handled by the translation layer.
         self.deck: Deck = Deck(seed=self.rng.randrange(10**9))
         self.discard_pile: CardStack = CardStack(seed=self.rng.randrange(10**9))
 
@@ -64,13 +62,18 @@ class Round(RNGMixin):
         self.last_turn_player_idx: int | None = None
         self.turn_count: int = 1
 
-        self.phase: RoundPhase = RoundPhase.SETUP
+        self.phase_state: PhaseState = SetupPhaseState()
         self.drawn_card_id: CardID | None = None
-        self.drawn_from_deck: bool = False
+
         self.cards_flipped_in_setup: dict[int, int] = dict.fromkeys(
             range(self.num_players), 0
         )
         self.hands: list[Hand] = [Hand([]) for _ in range(self.num_players)]
+
+    @property
+    def phase(self) -> RoundPhase:
+        """Return the current enum phase for backward compatibility."""
+        return self.phase_state.phase_enum
 
     def clone(self, preserve_rng: bool = False) -> Round:
         """Create a deep copy of the round for tree search simulation."""
@@ -88,12 +91,11 @@ class Round(RNGMixin):
         cloned.discard_pile = self.discard_pile.clone(preserve_rng=preserve_rng)
         cloned.hands = [h.clone() for h in self.hands]
 
-        cloned.phase = self.phase
+        cloned.phase_state = copy.copy(self.phase_state)
         cloned.current_player_idx = self.current_player_idx
         cloned.turn_count = self.turn_count
         cloned.last_turn_player_idx = self.last_turn_player_idx
         cloned.drawn_card_id = self.drawn_card_id
-        cloned.drawn_from_deck = self.drawn_from_deck
         cloned.cards_flipped_in_setup = dict(self.cards_flipped_in_setup)
 
         return cloned
@@ -104,7 +106,7 @@ class Round(RNGMixin):
 
     def get_valid_actions(self, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
-        return get_phase_actions(self, player_idx)
+        return self.phase_state.get_valid_actions(self, player_idx)
 
     @classmethod
     def validate_config(cls, num_players: int) -> None:
@@ -120,13 +122,12 @@ class Round(RNGMixin):
 
     def step(self, action: Action) -> list[GameEvent]:
         """Advance the game state by one step based on the action."""
-        return handle_phase_step(self, action)
+        return self.phase_state.handle_action(self, action)
 
     def draw_from_deck(self, player_idx: int) -> CardDrawnDeckEvent:
         """Draw a card from the deck."""
         card_id = self.deck.draw()
         self.drawn_card_id = card_id
-        self.drawn_from_deck = True
         return CardDrawnDeckEvent(player_idx=player_idx, card_id=card_id)
 
     def draw_from_discard(self, player_idx: int) -> CardDrawnDiscardEvent:
@@ -136,7 +137,6 @@ class Round(RNGMixin):
             raise IllegalActionError(msg)
         card_id = self.discard_pile.draw()
         self.drawn_card_id = card_id
-        self.drawn_from_deck = False
         return CardDrawnDiscardEvent(player_idx=player_idx, card_id=card_id)
 
     def swap_drawn_card(self, player_idx: int, hand_index: int) -> CardSwappedEvent:

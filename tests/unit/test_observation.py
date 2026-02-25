@@ -5,7 +5,7 @@ import pytest
 from pycardgolf.core.actions import ActionDrawDeck
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.observation import ObservationBuilder
-from pycardgolf.core.phases import RoundPhase
+from pycardgolf.core.phases import ActionPhaseState, RoundPhase
 from pycardgolf.core.round import Round
 from pycardgolf.utils.card import get_masked_id
 
@@ -117,3 +117,23 @@ def test_build_observation_empty_deck(mock_round):
     obs = ObservationBuilder.build(mock_round, 0)
     assert obs.deck_size == 0
     assert obs.deck_top is None
+
+
+def test_observation_can_discard_drawn(mock_round):
+    """Test that can_discard_drawn is correctly set in ACTION phase."""
+    mock_round.current_player_idx = 1
+    mock_round.phase_state = ActionPhaseState(drawn_from_deck=True)
+    mock_round.phase = RoundPhase.ACTION
+
+    # Observation for player 1 (current player)
+    obs1 = ObservationBuilder.build(mock_round, 1)
+    assert obs1.can_discard_drawn is True
+
+    # Observation for player 0 (not current player)
+    obs0 = ObservationBuilder.build(mock_round, 0)
+    assert obs0.can_discard_drawn is False
+
+    # ActionPhaseState with drawn_from_deck=False
+    mock_round.phase_state = ActionPhaseState(drawn_from_deck=False)
+    obs1_no_discard = ObservationBuilder.build(mock_round, 1)
+    assert obs1_no_discard.can_discard_drawn is False

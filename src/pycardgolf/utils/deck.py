@@ -16,6 +16,7 @@ class _ContainsEnumMeta(EnumMeta):
         return value in cls.__members__.values()
 
 
+# TODO: determine where Suit and Rank should live
 class Suit(Enum, metaclass=_ContainsEnumMeta):
     """Enum representing card suits."""
 
@@ -58,6 +59,7 @@ class Rank(Enum, metaclass=_ContainsEnumMeta):
 
 
 # Source of truth for logical card mapping
+# TODO: determine if we need this as well as the enums
 _SUIT_ORDER: Final[list[Suit]] = [Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS]
 _RANK_ORDER: Final[list[Rank]] = [
     Rank.ACE,

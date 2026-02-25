@@ -8,8 +8,6 @@ from pycardgolf.core.phases import (
     DrawPhaseState,
     FlipPhaseState,
     SetupPhaseState,
-    get_phase_actions,
-    handle_phase_step,
 )
 from pycardgolf.core.round import Round
 from pycardgolf.exceptions import IllegalActionError
@@ -17,9 +15,8 @@ from pycardgolf.exceptions import IllegalActionError
 
 def test_action_phase_get_valid_actions_drawn_from_discard():
     """Test get_valid_actions in ACTION phase when drawn from discard."""
-    state = ActionPhaseState()
+    state = ActionPhaseState(drawn_from_deck=False)
     round_mock = MagicMock(spec=Round)
-    round_mock.drawn_from_deck = False
 
     actions = state.get_valid_actions(round_mock, 0)
     # Should NOT contain ActionDiscardDrawn
@@ -44,7 +41,7 @@ def test_draw_phase_invalid_action():
 
 def test_action_phase_invalid_action():
     """Test that ActionPhaseState raises IllegalActionError for invalid action."""
-    state = ActionPhaseState()
+    state = ActionPhaseState(drawn_from_deck=True)
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for ACTION phase"):
         state.handle_action(round_mock, ActionDrawDeck())
@@ -58,17 +55,17 @@ def test_flip_phase_invalid_action():
         state.handle_action(round_mock, ActionDrawDeck())
 
 
-def test_handle_phase_step_unknown_phase():
-    """Test that handle_phase_step raises RuntimeError for unknown phase."""
-    round_mock = MagicMock(spec=Round)
-    round_mock.phase = "INVALID_PHASE"
-    with pytest.raises(RuntimeError, match="Unknown round phase"):
-        handle_phase_step(round_mock, ActionPass())
+def test_phase_state_eq_incompatible_type():
+    """Test that PhaseState.__eq__ returns False for incompatible types."""
+    state = SetupPhaseState()
+    assert state != "NOT_A_PHASE_STATE"
+    assert state != 42
+    assert state != None  # noqa: E711
+    # Compare different phase states
+    assert state != DrawPhaseState()
 
 
-def test_get_phase_actions_unknown_phase():
-    """Test that get_phase_actions raises RuntimeError for unknown phase."""
-    round_mock = MagicMock(spec=Round)
-    round_mock.phase = "INVALID_PHASE"
-    with pytest.raises(RuntimeError, match="Unknown round phase"):
-        get_phase_actions(round_mock, 0)
+def test_phase_state_eq_same_type():
+    """Test that PhaseState.__eq__ returns True for same type."""
+    state = SetupPhaseState()
+    assert state == SetupPhaseState()

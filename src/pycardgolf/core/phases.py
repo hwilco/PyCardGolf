@@ -29,15 +29,18 @@ if TYPE_CHECKING:
 class RoundPhase(Enum):
     """Phases of a round."""
 
-    SETUP = auto()  # Initial flipping of cards
-    DRAW = auto()  # Waiting for player to draw
-    ACTION = auto()  # Waiting for player to swap/discard
-    FLIP = auto()  # Waiting for player to flip (optional after discard)
+    SETUP = auto()
+    DRAW = auto()
+    ACTION = auto()
+    FLIP = auto()
     FINISHED = auto()
 
 
 class PhaseState(ABC):
     """Abstract base class for round phase logic."""
+
+    phase_enum: RoundPhase
+    __hash__ = None  # type: ignore[assignment]
 
     @abstractmethod
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:
@@ -47,9 +50,16 @@ class PhaseState(ABC):
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.phase_enum == other.phase_enum
+
 
 class SetupPhaseState(PhaseState):
     """Logic for the SETUP phase."""
+
+    phase_enum = RoundPhase.SETUP
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
@@ -85,7 +95,7 @@ class SetupPhaseState(PhaseState):
                         },
                     )
                 )
-                round_state.phase = RoundPhase.DRAW
+                round_state.phase_state = DrawPhaseState()
                 return events
 
         return events
@@ -93,6 +103,8 @@ class SetupPhaseState(PhaseState):
 
 class DrawPhaseState(PhaseState):
     """Logic for the DRAW phase."""
+
+    phase_enum = RoundPhase.DRAW
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:  # noqa: ARG002
         """Return a list of valid actions for the given player."""
@@ -108,17 +120,26 @@ class DrawPhaseState(PhaseState):
             raise IllegalActionError(msg)
 
         events = action.execute(round_state)
-        round_state.phase = RoundPhase.ACTION
+
+        # Inversion of Control: The phase transition decides the state!
+        is_from_deck = isinstance(action, ActionDrawDeck)
+        round_state.phase_state = ActionPhaseState(drawn_from_deck=is_from_deck)
+
         return events
 
 
 class ActionPhaseState(PhaseState):
     """Logic for the ACTION phase."""
 
+    phase_enum = RoundPhase.ACTION
+
+    def __init__(self, drawn_from_deck: bool) -> None:
+        self.drawn_from_deck = drawn_from_deck
+
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:  # noqa: ARG002
         """Return a list of valid actions for the given player."""
         actions: list[Action] = [ActionSwapCard(hand_index=i) for i in range(HAND_SIZE)]
-        if round_state.drawn_from_deck:
+        if self.drawn_from_deck:
             actions.append(ActionDiscardDrawn())
         return actions
 
@@ -133,12 +154,14 @@ class ActionPhaseState(PhaseState):
         if isinstance(action, ActionSwapCard):
             return _end_turn(round_state, events)
 
-        round_state.phase = RoundPhase.FLIP
+        round_state.phase_state = FlipPhaseState()
         return events
 
 
 class FlipPhaseState(PhaseState):
     """Logic for the FLIP phase."""
+
+    phase_enum = RoundPhase.FLIP
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
@@ -166,6 +189,8 @@ class FlipPhaseState(PhaseState):
 class FinishedPhaseState(PhaseState):
     """Logic for the FINISHED phase."""
 
+    phase_enum = RoundPhase.FINISHED
+
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:  # noqa: ARG002
         """Return a list of valid actions for the given player."""
         return []
@@ -179,27 +204,24 @@ def _end_turn(round_state: Round, events: list[GameEvent]) -> list[GameEvent]:
     """Finalize turn, check end conditions, and advance."""
     player_idx = round_state.current_player_idx
 
-    # Check round end condition
     if (
         round_state.hands[player_idx].all_face_up()
         and round_state.last_turn_player_idx is None
     ):
         round_state.last_turn_player_idx = round_state.current_player_idx
 
-    # Advance to the next player
     round_state.current_player_idx = (
         round_state.current_player_idx + 1
     ) % round_state.num_players
     if round_state.current_player_idx == 0:
         round_state.turn_count += 1
 
-    # Check if round is over
     if (
         round_state.last_turn_player_idx is not None
         and round_state.current_player_idx == round_state.last_turn_player_idx
     ):
-        round_state.reveal_hands()  # Reveal hidden cards
-        round_state.phase = RoundPhase.FINISHED
+        round_state.reveal_hands()
+        round_state.phase_state = FinishedPhaseState()
         return events
 
     events.append(
@@ -208,32 +230,5 @@ def _end_turn(round_state: Round, events: list[GameEvent]) -> list[GameEvent]:
             hands={i: round_state.hands[i] for i in range(round_state.num_players)},
         )
     )
-    round_state.phase = RoundPhase.DRAW
+    round_state.phase_state = DrawPhaseState()
     return events
-
-
-_PHASE_HANDLERS: dict[RoundPhase, PhaseState] = {
-    RoundPhase.SETUP: SetupPhaseState(),
-    RoundPhase.DRAW: DrawPhaseState(),
-    RoundPhase.ACTION: ActionPhaseState(),
-    RoundPhase.FLIP: FlipPhaseState(),
-    RoundPhase.FINISHED: FinishedPhaseState(),
-}
-
-
-def handle_phase_step(round_state: Round, action: Action) -> list[GameEvent]:
-    """Advance the round state based on the action and current enum phase."""
-    handler = _PHASE_HANDLERS.get(round_state.phase)
-    if not handler:
-        msg = f"Unknown round phase: {round_state.phase}"
-        raise RuntimeError(msg)
-    return handler.handle_action(round_state, action)
-
-
-def get_phase_actions(round_state: Round, player_idx: int) -> list[Action]:
-    """Return a list of valid actions for the given player and current enum phase."""
-    handler = _PHASE_HANDLERS.get(round_state.phase)
-    if not handler:
-        msg = f"Unknown round phase: {round_state.phase}"
-        raise RuntimeError(msg)
-    return handler.get_valid_actions(round_state, player_idx)
