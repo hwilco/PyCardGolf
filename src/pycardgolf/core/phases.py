@@ -146,7 +146,10 @@ class ActionPhaseState(PhaseState):
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
         player_idx = round_state.current_player_idx
-        if action.action_type == ActionType.SWAP and action.target_index is not None:
+        if action.action_type == ActionType.SWAP:
+            if action.target_index is None:
+                msg = "Action SWAP requires a valid target_index."
+                raise IllegalActionError(msg)
             event = round_state.swap_drawn_card(player_idx, action.target_index)
             return _end_turn(round_state, [event])
         if action.action_type == ActionType.DISCARD_DRAWN:

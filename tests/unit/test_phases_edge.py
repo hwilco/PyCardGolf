@@ -47,6 +47,29 @@ def test_action_phase_invalid_action():
         state.handle_action(round_mock, Action(action_type=ActionType.DRAW_DECK))
 
 
+def test_action_phase_swap_missing_index():
+    """Test that ActionPhaseState raises IllegalActionError for SWAP without index."""
+    state = ActionPhaseState(drawn_from_deck=True)
+    round_mock = MagicMock(spec=Round)
+    with pytest.raises(
+        IllegalActionError, match="Action SWAP requires a valid target_index"
+    ):
+        state.handle_action(
+            round_mock, Action(action_type=ActionType.SWAP, target_index=None)
+        )
+
+
+def test_action_phase_discard_drawn_invalid():
+    """Test ActionPhaseState raises IllegalActionError for invalid DISCARD_DRAWN."""
+    state = ActionPhaseState(drawn_from_deck=False)
+    round_mock = MagicMock(spec=Round)
+    with pytest.raises(
+        IllegalActionError,
+        match="Cannot discard if the card was not drawn from the deck",
+    ):
+        state.handle_action(round_mock, Action(action_type=ActionType.DISCARD_DRAWN))
+
+
 def test_flip_phase_invalid_action():
     """Test that FlipPhaseState raises IllegalActionError for invalid action."""
     state = FlipPhaseState()
