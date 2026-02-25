@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pycardgolf.core.actions import Action, ActionType
+from pycardgolf.core.actions import Action, ActionSpace, ActionType
 from pycardgolf.core.phases import (
     ActionPhaseState,
     DrawPhaseState,
@@ -28,7 +28,39 @@ def test_setup_phase_invalid_action():
     state = SetupPhaseState()
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Must flip a valid card"):
-        state.handle_action(round_mock, Action(action_type=ActionType.PASS))
+        state.handle_action(round_mock, ActionSpace.PASS)
+
+
+def test_setup_phase_flip_missing_index():
+    """Test that SetupPhaseState raises IllegalActionError for FLIP without index."""
+    state = SetupPhaseState()
+    round_mock = MagicMock(spec=Round)
+
+    try:
+        action = Action(ActionType.FLIP, None)
+    except AssertionError:
+        return  # Success: Validation caught it in debug mode
+
+    with pytest.raises(
+        IllegalActionError, match="Action FLIP requires a valid target_index"
+    ):
+        state.handle_action(round_mock, action)
+
+
+def test_draw_phase_missing_target_index_validation():
+    """Test DrawPhaseState error if target_index is provided."""
+    state = DrawPhaseState()
+    round_mock = MagicMock(spec=Round)
+
+    try:
+        action = Action(ActionType.DRAW_DECK, 0)
+    except AssertionError:
+        return
+
+    with pytest.raises(
+        IllegalActionError, match="Invalid action or parameters for DRAW phase"
+    ):
+        state.handle_action(round_mock, action)
 
 
 def test_draw_phase_invalid_action():
@@ -36,7 +68,7 @@ def test_draw_phase_invalid_action():
     state = DrawPhaseState()
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for DRAW phase"):
-        state.handle_action(round_mock, Action(action_type=ActionType.PASS))
+        state.handle_action(round_mock, ActionSpace.PASS)
 
 
 def test_action_phase_invalid_action():
@@ -44,19 +76,23 @@ def test_action_phase_invalid_action():
     state = ActionPhaseState(drawn_from_deck=True)
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for ACTION phase"):
-        state.handle_action(round_mock, Action(action_type=ActionType.DRAW_DECK))
+        state.handle_action(round_mock, ActionSpace.DRAW_DECK)
 
 
 def test_action_phase_swap_missing_index():
     """Test that ActionPhaseState raises IllegalActionError for SWAP without index."""
     state = ActionPhaseState(drawn_from_deck=True)
     round_mock = MagicMock(spec=Round)
+
+    try:
+        action = Action(ActionType.SWAP, None)
+    except AssertionError:
+        return
+
     with pytest.raises(
         IllegalActionError, match="Action SWAP requires a valid target_index"
     ):
-        state.handle_action(
-            round_mock, Action(action_type=ActionType.SWAP, target_index=None)
-        )
+        state.handle_action(round_mock, action)
 
 
 def test_action_phase_discard_drawn_invalid():
@@ -67,7 +103,23 @@ def test_action_phase_discard_drawn_invalid():
         IllegalActionError,
         match="Cannot discard if the card was not drawn from the deck",
     ):
-        state.handle_action(round_mock, Action(action_type=ActionType.DISCARD_DRAWN))
+        state.handle_action(round_mock, ActionSpace.DISCARD_DRAWN)
+
+
+def test_action_phase_discard_drawn_with_index():
+    """Test ActionPhaseState error for DISCARD_DRAWN with index."""
+    state = ActionPhaseState(drawn_from_deck=True)
+    round_mock = MagicMock(spec=Round)
+
+    try:
+        action = Action(ActionType.DISCARD_DRAWN, 0)
+    except AssertionError:
+        return
+
+    with pytest.raises(
+        IllegalActionError, match="Invalid action or parameters for ACTION phase"
+    ):
+        state.handle_action(round_mock, action)
 
 
 def test_flip_phase_invalid_action():
@@ -75,7 +127,37 @@ def test_flip_phase_invalid_action():
     state = FlipPhaseState()
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for FLIP phase"):
-        state.handle_action(round_mock, Action(action_type=ActionType.DRAW_DECK))
+        state.handle_action(round_mock, ActionSpace.DRAW_DECK)
+
+
+def test_flip_phase_flip_missing_index():
+    """Test that FlipPhaseState raises IllegalActionError for FLIP without index."""
+    state = FlipPhaseState()
+    round_mock = MagicMock(spec=Round)
+
+    try:
+        action = Action(ActionType.FLIP, None)
+    except AssertionError:
+        return
+
+    with pytest.raises(
+        IllegalActionError, match="Action FLIP requires a valid target_index"
+    ):
+        state.handle_action(round_mock, action)
+
+
+def test_flip_phase_pass_with_index():
+    """Test that FlipPhaseState raises IllegalActionError for PASS with index."""
+    state = FlipPhaseState()
+    round_mock = MagicMock(spec=Round)
+
+    try:
+        action = Action(ActionType.PASS, 0)
+    except AssertionError:
+        return
+
+    with pytest.raises(IllegalActionError, match="Invalid parameters for PASS action"):
+        state.handle_action(round_mock, action)
 
 
 def test_phase_state_eq_incompatible_type():

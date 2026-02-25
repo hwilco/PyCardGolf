@@ -2,7 +2,7 @@
 
 import pytest
 
-from pycardgolf.core.actions import Action, ActionType
+from pycardgolf.core.actions import ActionSpace, ActionType
 from pycardgolf.core.observation import Observation
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.players.bots.random_bot import RandomBot
@@ -57,9 +57,7 @@ def empty_obs():
 def test_get_action_setup_phase(bot, empty_obs):
     """Setup phase: bot flips a random face-down card."""
     empty_obs.phase = RoundPhase.SETUP
-    empty_obs.valid_actions = [
-        Action(action_type=ActionType.FLIP, target_index=i) for i in range(HAND_SIZE)
-    ]
+    empty_obs.valid_actions = [ActionSpace.FLIP[i] for i in range(HAND_SIZE)]
 
     action = bot.get_action(empty_obs)
 
@@ -71,8 +69,8 @@ def test_get_action_draw_phase(bot, empty_obs):
     """Draw phase: bot draws from deck or discard pile."""
     empty_obs.phase = RoundPhase.DRAW
     empty_obs.valid_actions = [
-        Action(action_type=ActionType.DRAW_DECK),
-        Action(action_type=ActionType.DRAW_DISCARD),
+        ActionSpace.DRAW_DECK,
+        ActionSpace.DRAW_DISCARD,
     ]
 
     action = bot.get_action(empty_obs)
@@ -86,10 +84,8 @@ def test_get_action_action_phase(bot, empty_obs):
     empty_obs.phase = RoundPhase.ACTION
     empty_obs.drawn_card_id = 99
 
-    actions = [
-        Action(action_type=ActionType.SWAP, target_index=i) for i in range(HAND_SIZE)
-    ]
-    actions.append(Action(action_type=ActionType.DISCARD_DRAWN))
+    actions = [ActionSpace.SWAP[i] for i in range(HAND_SIZE)]
+    actions.append(ActionSpace.DISCARD_DRAWN)
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)
@@ -101,10 +97,8 @@ def test_get_action_flip_phase(bot, empty_obs):
     """Flip phase: bot passes or flips a random face-down card."""
     empty_obs.phase = RoundPhase.FLIP
 
-    actions = [Action(action_type=ActionType.PASS)]
-    actions.extend(
-        Action(action_type=ActionType.FLIP, target_index=i) for i in range(1, HAND_SIZE)
-    )
+    actions = [ActionSpace.PASS]
+    actions.extend(ActionSpace.FLIP[i] for i in range(1, HAND_SIZE))
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)
