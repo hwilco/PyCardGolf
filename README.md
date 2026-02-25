@@ -34,9 +34,13 @@ PyCardGolf is built as an event-driven game engine that strictly decouples game 
 graph TB
     subgraph Core["core/ — Game Engine"]
         Game["Game"]
-        Round["Round"]
-        Phases["phases.py"]
+        EventBus["EventBus"]
         Observation["Observation"]
+
+        subgraph StateMachine["Round State Machine"]
+            Round["Round (Manager)"]
+            Phases["Phases (Current State)"]
+        end
     end
 
     subgraph Interfaces["interfaces/ — I/O"]
@@ -49,11 +53,27 @@ graph TB
         RandomBot["RandomBot"]
     end
 
-    Game --> Round
-    Round --> Phases
-    Game --> Observation
-    Game --> GameRenderer
-    HumanPlayer --> GameInput
+    %% Internal Engine Flow
+    Game -- Starts & Manages --> Round
+    Round -- Transitions through --> Phases
+    Phases -- Updates State & Generates --> Observation
+
+    %% Event-Driven Rendering
+    Game -- Publishes Events --> EventBus
+    EventBus -- Triggers --> GameRenderer
+
+    %% Observation Flow (State to Players)
+    Observation -- Sent to --> HumanPlayer
+    Observation -- Sent to --> RandomBot
+
+    %% Input Flow & Context Rendering
+    HumanPlayer -- Prompts via --> GameInput
+    GameInput -. Uses for prompt context .-> GameRenderer
+    GameInput -- Returns Action --> HumanPlayer
+
+    %% Decisions to Engine (Processed by Current Phase)
+    HumanPlayer -- Sends Action to --> Phases
+    RandomBot -- Sends Action to --> Phases
 ```
 
 ### Extensibility
