@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pycardgolf.core.actions import ActionDiscardDrawn, ActionDrawDeck, ActionPass
+from pycardgolf.core.actions import Action, ActionType
 from pycardgolf.core.phases import (
     ActionPhaseState,
     DrawPhaseState,
@@ -19,16 +19,16 @@ def test_action_phase_get_valid_actions_drawn_from_discard():
     round_mock = MagicMock(spec=Round)
 
     actions = state.get_valid_actions(round_mock, 0)
-    # Should NOT contain ActionDiscardDrawn
-    assert not any(isinstance(a, ActionDiscardDrawn) for a in actions)
+    # Should NOT contain DISCARD_DRAWN
+    assert not any(a.action_type == ActionType.DISCARD_DRAWN for a in actions)
 
 
 def test_setup_phase_invalid_action():
     """Test that SetupPhaseState raises IllegalActionError for non-flip action."""
     state = SetupPhaseState()
     round_mock = MagicMock(spec=Round)
-    with pytest.raises(IllegalActionError, match="Must flip a card"):
-        state.handle_action(round_mock, ActionPass())
+    with pytest.raises(IllegalActionError, match="Must flip a valid card"):
+        state.handle_action(round_mock, Action(action_type=ActionType.PASS))
 
 
 def test_draw_phase_invalid_action():
@@ -36,7 +36,7 @@ def test_draw_phase_invalid_action():
     state = DrawPhaseState()
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for DRAW phase"):
-        state.handle_action(round_mock, ActionPass())
+        state.handle_action(round_mock, Action(action_type=ActionType.PASS))
 
 
 def test_action_phase_invalid_action():
@@ -44,7 +44,7 @@ def test_action_phase_invalid_action():
     state = ActionPhaseState(drawn_from_deck=True)
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for ACTION phase"):
-        state.handle_action(round_mock, ActionDrawDeck())
+        state.handle_action(round_mock, Action(action_type=ActionType.DRAW_DECK))
 
 
 def test_flip_phase_invalid_action():
@@ -52,7 +52,7 @@ def test_flip_phase_invalid_action():
     state = FlipPhaseState()
     round_mock = MagicMock(spec=Round)
     with pytest.raises(IllegalActionError, match="Invalid action for FLIP phase"):
-        state.handle_action(round_mock, ActionDrawDeck())
+        state.handle_action(round_mock, Action(action_type=ActionType.DRAW_DECK))
 
 
 def test_phase_state_eq_incompatible_type():

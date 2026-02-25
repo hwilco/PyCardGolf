@@ -1,4 +1,4 @@
-from pycardgolf.core.actions import ActionFlipCard
+from pycardgolf.core.actions import Action, ActionType
 from pycardgolf.core.round import RoundFactory
 
 
@@ -6,7 +6,7 @@ def test_round_clone_state_independence():
     """Test that cloning a round does not share object references."""
     r = RoundFactory.create_standard_round(["P1", "P2"], seed=42)
     # The first action in SETUP phase is to flip cards
-    r.step(ActionFlipCard(hand_index=0))
+    r.step(Action(action_type=ActionType.FLIP, target_index=0))
 
     cloned = r.clone()
 
@@ -16,7 +16,7 @@ def test_round_clone_state_independence():
     assert cloned.hands[0].is_face_up(0) == r.hands[0].is_face_up(0)
 
     # Modify original
-    r.step(ActionFlipCard(hand_index=1))
+    r.step(Action(action_type=ActionType.FLIP, target_index=1))
 
     # Assert clone is unaffected
     assert not cloned.hands[0].is_face_up(1)

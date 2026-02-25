@@ -2,7 +2,7 @@
 
 import pytest
 
-from pycardgolf.core.actions import ActionPass
+from pycardgolf.core.actions import Action, ActionType
 from pycardgolf.core.observation import Observation
 from pycardgolf.players.player import BasePlayer
 
@@ -10,8 +10,8 @@ from pycardgolf.players.player import BasePlayer
 class ConcretePlayer(BasePlayer):
     """Concrete implementation for testing."""
 
-    def get_action(self, observation: Observation) -> ActionPass:
-        return ActionPass()
+    def get_action(self, observation: Observation) -> Action:
+        return Action(action_type=ActionType.PASS)
 
 
 def test_init() -> None:

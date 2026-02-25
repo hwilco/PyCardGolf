@@ -2,14 +2,7 @@
 
 import pytest
 
-from pycardgolf.core.actions import (
-    ActionDiscardDrawn,
-    ActionDrawDeck,
-    ActionDrawDiscard,
-    ActionFlipCard,
-    ActionPass,
-    ActionSwapCard,
-)
+from pycardgolf.core.actions import Action, ActionType
 from pycardgolf.core.events import (
     CardDiscardedEvent,
     CardDrawnDeckEvent,
@@ -40,37 +33,37 @@ def test_get_valid_actions_setup(round_state):
     round_state.phase_state = SetupPhaseState()
     actions = round_state.get_valid_actions(0)
     assert len(actions) == 6
-    assert all(isinstance(a, ActionFlipCard) for a in actions)
+    assert all(a.action_type == ActionType.FLIP for a in actions)
 
 
 def test_get_valid_actions_draw(round_state):
     """Test valid actions in DRAW phase."""
     round_state.phase_state = DrawPhaseState()
     actions = round_state.get_valid_actions(0)
-    assert any(isinstance(a, ActionDrawDeck) for a in actions)
-    assert any(isinstance(a, ActionDrawDiscard) for a in actions)
+    assert any(a.action_type == ActionType.DRAW_DECK for a in actions)
+    assert any(a.action_type == ActionType.DRAW_DISCARD for a in actions)
 
 
 def test_get_valid_actions_action(round_state):
     """Test valid actions in ACTION phase."""
     round_state.phase_state = ActionPhaseState(drawn_from_deck=True)
     actions = round_state.get_valid_actions(0)
-    assert any(isinstance(a, ActionSwapCard) for a in actions)
-    assert any(isinstance(a, ActionDiscardDrawn) for a in actions)
+    assert any(a.action_type == ActionType.SWAP for a in actions)
+    assert any(a.action_type == ActionType.DISCARD_DRAWN for a in actions)
 
 
 def test_get_valid_actions_flip(round_state):
     """Test valid actions in FLIP phase."""
     round_state.phase_state = FlipPhaseState()
     actions = round_state.get_valid_actions(0)
-    assert any(isinstance(a, ActionPass) for a in actions)
-    assert any(isinstance(a, ActionFlipCard) for a in actions)
+    assert any(a.action_type == ActionType.PASS for a in actions)
+    assert any(a.action_type == ActionType.FLIP for a in actions)
 
 
 def test_handle_setup_phase(round_state):
     """Test that flipping cards in setup advances the round."""
     round_state.phase_state = SetupPhaseState()
-    events = round_state.step(ActionFlipCard(hand_index=0))
+    events = round_state.step(Action(action_type=ActionType.FLIP, target_index=0))
     assert any(isinstance(e, CardFlippedEvent) for e in events)
     assert round_state.cards_flipped_in_setup[0] == 1
 
@@ -79,11 +72,11 @@ def test_setup_to_draw_transition(round_state):
     """Test that finishing setup moves to DRAW phase."""
     round_state.phase_state = SetupPhaseState()
     # Flip 2 cards for Player 1
-    round_state.step(ActionFlipCard(hand_index=0))
-    round_state.step(ActionFlipCard(hand_index=1))
+    round_state.step(Action(action_type=ActionType.FLIP, target_index=0))
+    round_state.step(Action(action_type=ActionType.FLIP, target_index=1))
     # Flip 2 cards for Player 2
-    round_state.step(ActionFlipCard(hand_index=0))
-    events = round_state.step(ActionFlipCard(hand_index=1))
+    round_state.step(Action(action_type=ActionType.FLIP, target_index=0))
+    events = round_state.step(Action(action_type=ActionType.FLIP, target_index=1))
 
     assert round_state.phase == RoundPhase.DRAW
     assert any(isinstance(e, TurnStartEvent) for e in events)
@@ -92,7 +85,7 @@ def test_setup_to_draw_transition(round_state):
 def test_handle_draw_deck(round_state):
     """Test drawing from deck."""
     round_state.phase_state = DrawPhaseState()
-    events = round_state.step(ActionDrawDeck())
+    events = round_state.step(Action(action_type=ActionType.DRAW_DECK))
     assert round_state.phase == RoundPhase.ACTION
     assert round_state.drawn_card_id is not None
     assert isinstance(round_state.phase_state, ActionPhaseState)
@@ -104,7 +97,7 @@ def test_handle_swap_card(round_state):
     """Test swapping a card."""
     round_state.phase_state = ActionPhaseState(drawn_from_deck=False)
     round_state.drawn_card_id = round_state.deck.draw()
-    events = round_state.step(ActionSwapCard(hand_index=0))
+    events = round_state.step(Action(action_type=ActionType.SWAP, target_index=0))
 
     assert round_state.phase == RoundPhase.DRAW  # Moved to next player
     assert round_state.current_player_idx == 1
@@ -116,7 +109,7 @@ def test_handle_discard_drawn(round_state):
     """Test discarding a drawn card."""
     round_state.phase_state = ActionPhaseState(drawn_from_deck=True)
     round_state.drawn_card_id = round_state.deck.draw()
-    events = round_state.step(ActionDiscardDrawn())
+    events = round_state.step(Action(action_type=ActionType.DISCARD_DRAWN))
 
     assert round_state.phase == RoundPhase.FLIP
     assert any(isinstance(e, CardDiscardedEvent) for e in events)
@@ -133,7 +126,7 @@ def test_round_end(round_state):
     round_state.phase_state = FlipPhaseState()
 
     # Player 1 is current player, just finished their turn
-    round_state.step(ActionPass())
+    round_state.step(Action(action_type=ActionType.PASS))
 
     # Should flag last turn
     assert round_state.last_turn_player_idx == 0
@@ -143,7 +136,7 @@ def test_round_end(round_state):
     # Player 2 turn
     round_state.hands[1].flip_card(5)
     round_state.phase_state = FlipPhaseState()
-    round_state.step(ActionPass())
+    round_state.step(Action(action_type=ActionType.PASS))
 
     assert round_state.phase == RoundPhase.FINISHED
 
@@ -151,7 +144,7 @@ def test_round_end(round_state):
 def test_handle_step_finished_phase(round_state):
     """Test that step returns empty list for FINISHED phase."""
     round_state.phase_state = FinishedPhaseState()
-    events = round_state.step(ActionPass())
+    events = round_state.step(Action(action_type=ActionType.PASS))
     assert events == []
 
 
@@ -161,7 +154,7 @@ def test_setup_flip_face_up_card_raises(round_state):
     round_state.hands[0].flip_card(0)
 
     with pytest.raises(IllegalActionError, match="Card already face up"):
-        round_state.step(ActionFlipCard(hand_index=0))
+        round_state.step(Action(action_type=ActionType.FLIP, target_index=0))
 
 
 def test_draw_from_empty_discard_raises(round_state, mocker):
@@ -171,7 +164,7 @@ def test_draw_from_empty_discard_raises(round_state, mocker):
     round_state.discard_pile.num_cards = 0
 
     with pytest.raises(IllegalActionError, match="Discard pile is empty"):
-        round_state.step(ActionDrawDiscard())
+        round_state.step(Action(action_type=ActionType.DRAW_DISCARD))
 
 
 def test_draw_invalid_action_raises(round_state):
@@ -179,7 +172,7 @@ def test_draw_invalid_action_raises(round_state):
     round_state.phase_state = DrawPhaseState()
 
     with pytest.raises(IllegalActionError, match="Invalid action for DRAW phase"):
-        round_state.step(ActionPass())
+        round_state.step(Action(action_type=ActionType.PASS))
 
 
 def test_action_no_drawn_card_raises(round_state):
@@ -188,7 +181,7 @@ def test_action_no_drawn_card_raises(round_state):
     round_state.drawn_card_id = None
 
     with pytest.raises(IllegalActionError, match="No card drawn"):
-        round_state.step(ActionSwapCard(hand_index=0))
+        round_state.step(Action(action_type=ActionType.SWAP, target_index=0))
 
 
 def test_flip_face_up_card_raises(round_state):
@@ -197,7 +190,7 @@ def test_flip_face_up_card_raises(round_state):
     round_state.hands[0].flip_card(0)
 
     with pytest.raises(IllegalActionError, match="Card already face up"):
-        round_state.step(ActionFlipCard(hand_index=0))
+        round_state.step(Action(action_type=ActionType.FLIP, target_index=0))
 
 
 def test_flip_invalid_action_raises(round_state):
@@ -205,13 +198,13 @@ def test_flip_invalid_action_raises(round_state):
     round_state.phase_state = FlipPhaseState()
 
     with pytest.raises(IllegalActionError, match="Invalid action for FLIP phase"):
-        round_state.step(ActionDrawDeck())
+        round_state.step(Action(action_type=ActionType.DRAW_DECK))
 
 
 def test_finished_phase_handle_action(round_state):
     """Test FinishedPhaseState returns empty list for handle_action."""
     round_state.phase_state = FinishedPhaseState()
-    events = round_state.step(ActionPass())
+    events = round_state.step(Action(action_type=ActionType.PASS))
     assert not events
     assert round_state.phase == RoundPhase.FINISHED
 
@@ -232,5 +225,5 @@ def test_get_valid_actions_draw_empty_discard(round_state):
 
     actions = round_state.get_valid_actions(0)
     assert len(actions) == 1
-    assert isinstance(actions[0], ActionDrawDeck)
-    assert not any(isinstance(a, ActionDrawDiscard) for a in actions)
+    assert actions[0].action_type == ActionType.DRAW_DECK
+    assert not any(a.action_type == ActionType.DRAW_DISCARD for a in actions)

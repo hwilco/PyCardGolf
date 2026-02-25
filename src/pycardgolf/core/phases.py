@@ -6,15 +6,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.actions import (
-    Action,
-    ActionDiscardDrawn,
-    ActionDrawDeck,
-    ActionDrawDiscard,
-    ActionFlipCard,
-    ActionPass,
-    ActionSwapCard,
-)
+from pycardgolf.core.actions import Action, ActionType
 from pycardgolf.core.events import (
     GameEvent,
     TurnStartEvent,
@@ -65,19 +57,20 @@ class SetupPhaseState(PhaseState):
         """Return a list of valid actions for the given player."""
         hand = round_state.hands[player_idx]
         return [
-            ActionFlipCard(hand_index=i)
+            Action(action_type=ActionType.FLIP, target_index=i)
             for i in range(len(hand))
             if not hand.is_face_up(i)
         ]
 
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
-        if not isinstance(action, ActionFlipCard):
-            msg = "Must flip a card in setup phase."
+        if action.action_type != ActionType.FLIP or action.target_index is None:
+            msg = "Must flip a valid card in setup phase."
             raise IllegalActionError(msg)
 
         player_idx = round_state.current_player_idx
-        events = action.execute(round_state)
+        event = round_state.flip_card_in_hand(player_idx, action.target_index)
+        events: list[GameEvent] = [event]
         round_state.cards_flipped_in_setup[player_idx] += 1
 
         if round_state.cards_flipped_in_setup[player_idx] >= INITIAL_CARDS_TO_FLIP:
@@ -108,21 +101,25 @@ class DrawPhaseState(PhaseState):
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:  # noqa: ARG002
         """Return a list of valid actions for the given player."""
-        actions: list[Action] = [ActionDrawDeck()]
+        actions: list[Action] = [Action(action_type=ActionType.DRAW_DECK)]
         if round_state.discard_pile.num_cards > 0:
-            actions.append(ActionDrawDiscard())
+            actions.append(Action(action_type=ActionType.DRAW_DISCARD))
         return actions
 
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
-        if not isinstance(action, (ActionDrawDeck, ActionDrawDiscard)):
-            msg = f"Invalid action for DRAW phase: {action}"
+        player_idx = round_state.current_player_idx
+        if action.action_type == ActionType.DRAW_DECK:
+            event = round_state.draw_from_deck(player_idx)
+            is_from_deck = True
+        elif action.action_type == ActionType.DRAW_DISCARD:
+            event = round_state.draw_from_discard(player_idx)
+            is_from_deck = False
+        else:
+            msg = f"Invalid action for DRAW phase: {action.action_type}"
             raise IllegalActionError(msg)
 
-        events = action.execute(round_state)
-
-        # Inversion of Control: The phase transition decides the state!
-        is_from_deck = isinstance(action, ActionDrawDeck)
+        events: list[GameEvent] = [event]
         round_state.phase_state = ActionPhaseState(drawn_from_deck=is_from_deck)
 
         return events
@@ -138,24 +135,29 @@ class ActionPhaseState(PhaseState):
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:  # noqa: ARG002
         """Return a list of valid actions for the given player."""
-        actions: list[Action] = [ActionSwapCard(hand_index=i) for i in range(HAND_SIZE)]
+        actions: list[Action] = [
+            Action(action_type=ActionType.SWAP, target_index=i)
+            for i in range(HAND_SIZE)
+        ]
         if self.drawn_from_deck:
-            actions.append(ActionDiscardDrawn())
+            actions.append(Action(action_type=ActionType.DISCARD_DRAWN))
         return actions
 
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
-        if not isinstance(action, (ActionSwapCard, ActionDiscardDrawn)):
-            msg = f"Invalid action for ACTION phase: {action}"
-            raise IllegalActionError(msg)
-
-        events = action.execute(round_state)
-
-        if isinstance(action, ActionSwapCard):
-            return _end_turn(round_state, events)
-
-        round_state.phase_state = FlipPhaseState()
-        return events
+        player_idx = round_state.current_player_idx
+        if action.action_type == ActionType.SWAP and action.target_index is not None:
+            event = round_state.swap_drawn_card(player_idx, action.target_index)
+            return _end_turn(round_state, [event])
+        if action.action_type == ActionType.DISCARD_DRAWN:
+            if not self.drawn_from_deck:
+                msg = "Cannot discard if the card was not drawn from the deck."
+                raise IllegalActionError(msg)
+            event = round_state.discard_drawn_card(player_idx)
+            round_state.phase_state = FlipPhaseState()
+            return [event]
+        msg = f"Invalid action for ACTION phase: {action.action_type}"
+        raise IllegalActionError(msg)
 
 
 class FlipPhaseState(PhaseState):
@@ -165,11 +167,11 @@ class FlipPhaseState(PhaseState):
 
     def get_valid_actions(self, round_state: Round, player_idx: int) -> list[Action]:
         """Return a list of valid actions for the given player."""
-        actions: list[Action] = [ActionPass()]
+        actions: list[Action] = [Action(action_type=ActionType.PASS)]
         hand = round_state.hands[player_idx]
         actions.extend(
             [
-                ActionFlipCard(hand_index=i)
+                Action(action_type=ActionType.FLIP, target_index=i)
                 for i in range(len(hand))
                 if not hand.is_face_up(i)
             ]
@@ -178,12 +180,14 @@ class FlipPhaseState(PhaseState):
 
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
-        if not isinstance(action, (ActionFlipCard, ActionPass)):
-            msg = f"Invalid action for FLIP phase: {action}"
-            raise IllegalActionError(msg)
-
-        events = action.execute(round_state)
-        return _end_turn(round_state, events)
+        player_idx = round_state.current_player_idx
+        if action.action_type == ActionType.FLIP and action.target_index is not None:
+            event = round_state.flip_card_in_hand(player_idx, action.target_index)
+            return _end_turn(round_state, [event])
+        if action.action_type == ActionType.PASS:
+            return _end_turn(round_state, [])
+        msg = f"Invalid action for FLIP phase: {action.action_type}"
+        raise IllegalActionError(msg)
 
 
 class FinishedPhaseState(PhaseState):
