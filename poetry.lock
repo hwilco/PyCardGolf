@@ -56,6 +56,18 @@ files = [
 test = ["nose"]
 
 [[package]]
+name = "commitlint"
+version = "1.13.3"
+description = "commitlint is a pre-commit hook designed to lint your commit messages according to the Conventional Commits standard."
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "commitlint-1.13.3-py3-none-any.whl", hash = "sha256:330a9aa892b0bca9d671c5cd059755d9d48468f35095efe1be09ba667085b3f7"},
+    {file = "commitlint-1.13.3.tar.gz", hash = "sha256:e92522e064010ae85b825b73923760c0e4ff34954859fec4976f3e86a342ea30"},
+]
+
+[[package]]
 name = "coverage"
 version = "7.12.0"
 description = "Code coverage measurement for Python"
@@ -621,4 +633,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "02e3d87ca56f5a678cd325bc575adc4f9c2a2e81b6cb3bf1580b239f1e29cad9"
+content-hash = "a6b0519bf3e6dcee6ee535122e3f05712350a9042f9c6e4d5c025aad233ada0f"
