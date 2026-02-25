@@ -13,9 +13,14 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 
+from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameRenderer
-from pycardgolf.utils.card import Card
+from pycardgolf.utils.card import (
+    card_to_string,
+    get_card_colors,
+    is_face_up,
+)
 from pycardgolf.utils.constants import HAND_SIZE
 
 if TYPE_CHECKING:
@@ -38,6 +43,7 @@ if TYPE_CHECKING:
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.round import Round
     from pycardgolf.players import BasePlayer
+    from pycardgolf.utils.types import CardID
 
 try:
     import msvcrt
@@ -78,8 +84,8 @@ class CLIRenderer(GameRenderer):
         if msvcrt:
             # Windows
             while time.time() < end_time:
-                if msvcrt.kbhit():  # pragma: no cover
-                    msvcrt.getch()  # pragma: no cover
+                if msvcrt.kbhit():  # type: ignore[missing-attribute] # pragma: no cover
+                    msvcrt.getch()  # type: ignore[missing-attribute] # pragma: no cover
                     break  # pragma: no cover
                 time.sleep(0.05)
 
@@ -98,21 +104,26 @@ class CLIRenderer(GameRenderer):
             # Fallback
             time.sleep(self.delay)
 
-    def get_card_string(self, card: Card | None) -> Text:
-        """Get a rich Text object for a card with appropriate coloring."""
+    def get_card_text(self, sanitized_card_id: CardID | None) -> Text:
+        """Get a rich Text object for a CardID with appropriate coloring."""
         text: str
         text_color: str
         background_color: str
 
-        if card and card.face_up:
-            text = str(card).center(self.CARD_DISPLAY_WIDTH)
-            text_color = card.face_color
+        if sanitized_card_id is not None and is_face_up(sanitized_card_id):
+            # Face up
+            text = card_to_string(sanitized_card_id).center(self.CARD_DISPLAY_WIDTH)
+            text_color, _ = get_card_colors(sanitized_card_id)
             background_color = self.FACE_BACKGROUND_COLOR
         else:
+            # Face down or None
             text = "??".center(self.CARD_DISPLAY_WIDTH)
             text_color = "black"
-            # Default back color if card is None (unseen deck card)
-            background_color = card.back_color if card else "blue"
+            # get_card_colors(card_id) returns back color for negative IDs
+            _, background_color = get_card_colors(
+                sanitized_card_id if sanitized_card_id is not None else -1
+            )
+
             text_color, background_color = (
                 str(color)
                 for color in modulate(
@@ -139,8 +150,8 @@ class CLIRenderer(GameRenderer):
 
     def _display_discard_pile(self, game_round: Round) -> None:
         """Display the discard pile."""
-        top_card = game_round.discard_pile.peek()
-        card_text = self.get_card_string(top_card)
+        top_card_id = game_round.discard_pile.peek()
+        card_text = self.get_card_text(top_card_id)
 
         discard_pile_text = "\nDiscard Pile Top Card: "
         line_len = len(discard_pile_text) + len(card_text)
@@ -150,73 +161,61 @@ class CLIRenderer(GameRenderer):
 
     def display_hand(self, hand: Hand, display_indices: bool = False) -> None:
         """Display a hand."""
-        # Display hand in 2 rows with position indicators
-        cols = HAND_SIZE // 2
+        # Prepare cards and layout
+        num_cols = hand.cols
 
-        # Prepare card strings
-        row1_cards = hand[0:cols]
-        row2_cards = hand[cols:HAND_SIZE]
-
-        indices_str_2 = ""
-        indices_str_1 = ""
+        top_indices_str: str = ""
+        bottom_indices_str: str = ""
         if display_indices:
-            # Prepare indices strings
-            indices_1 = [
-                str(i).center(self.CARD_DISPLAY_WIDTH) for i in range(1, cols + 1)
+            top_indices = [
+                str(i).center(self.CARD_DISPLAY_WIDTH) for i in range(1, num_cols + 1)
             ]
-            indices_2 = [
+            bottom_indices = [
                 str(i).center(self.CARD_DISPLAY_WIDTH)
-                for i in range(cols + 1, HAND_SIZE + 1)
+                for i in range(num_cols + 1, HAND_SIZE + 1)
             ]
 
-            indices_str_1 = " ".join(indices_1)
-            indices_str_2 = " ".join(indices_2)
+            top_indices_str = " ".join(top_indices)
+            bottom_indices_str = " ".join(bottom_indices)
 
-            # Print with indices aligned
-            # Indent indices by 2 spaces to account for the box border "| "
-            self.console.print("  " + indices_str_1)
+            self.console.print(f"  {top_indices_str}")
 
         # Border around cards
-        border = "+" + "-" * (len(row1_cards) * (self.CARD_DISPLAY_WIDTH + 1) + 1) + "+"
+        border = "+" + "-" * (num_cols * (self.CARD_DISPLAY_WIDTH + 1) + 1) + "+"
         self.console.print(border)
+        sanitized_hand_list = ObservationBuilder.sanitize_hand(hand)
 
-        # Row 1
-        self.console.print("| ", end="")
-        for i, card in enumerate(row1_cards):
-            self.console.print(self.get_card_string(card), end="")
-            if i < len(row1_cards) - 1:
-                self.console.print(" ", end="")
-        self.console.print(" |")
-
-        # Row 2
-        self.console.print("| ", end="")
-        for i, card in enumerate(row2_cards):
-            self.console.print(self.get_card_string(card), end="")
-            if i < len(row2_cards) - 1:
-                self.console.print(" ", end="")
-        self.console.print(" |")
+        for row in range(hand.rows):
+            self.console.print("| ", end="")
+            for i in range(num_cols):
+                sanitized_card_id = sanitized_hand_list[i + row * num_cols]
+                self.console.print(self.get_card_text(sanitized_card_id), end="")
+                if i < num_cols - 1:
+                    self.console.print(" ", end="")
+            self.console.print(" |")
 
         self.console.print(border)
 
         if display_indices:
-            self.console.print("  " + indices_str_2)
+            self.console.print(f"  {bottom_indices_str}")
 
-    def print_card_message(self, parts: list[str | Card]) -> None:
-        """Print a message composed of strings and cards."""
+    def _print_card_message(self, parts: list[str | CardID]) -> None:
+        """Print a message composed of strings and CardIDs."""
         msg = Text()
         for part in parts:
-            if isinstance(part, Card):
-                msg.append(self.get_card_string(part))
+            # Check for int as isinstance(part, CardID) is not supported.
+            if isinstance(part, int):
+                msg.append(self.get_card_text(part))
             else:
                 msg.append(part)
         self.console.print(msg)
 
     def create_draw_choice_prompt(
-        self, deck_card: Card | None, discard_card: Card | None
+        self, deck_card_id: CardID | None, discard_card_id: CardID | None
     ) -> Text:
         """Create a prompt for drawing choice."""
-        deck_card_text = self.get_card_string(deck_card)
-        discard_card_text = self.get_card_string(discard_card)
+        deck_card_text = self.get_card_text(deck_card_id)
+        discard_card_text = self.get_card_text(discard_card_id)
         prompt = Text("Draw from (d)eck ")
         prompt.append(deck_card_text)
         prompt.append(" or (p)ile ")
@@ -231,7 +230,7 @@ class CLIRenderer(GameRenderer):
             if self.players
             else f"Player {event.player_idx}"
         )
-        self.print_card_message([f"{player_name} drew: ", event.card])
+        self._print_card_message([f"{player_name} drew: ", event.card_id])
         self.wait_for_enter()
 
     def display_discard_draw(self, event: CardDrawnDiscardEvent) -> None:
@@ -241,10 +240,10 @@ class CLIRenderer(GameRenderer):
             if self.players
             else f"Player {event.player_idx}"
         )
-        self.print_card_message(
+        self._print_card_message(
             [
                 f"{player_name} drew ",
-                event.card,
+                event.card_id,
                 " from the discard pile. They must replace one of their cards with it.",
             ]
         )
@@ -258,12 +257,12 @@ class CLIRenderer(GameRenderer):
             else f"Player {event.player_idx}"
         )
         msg = f"{player_name} replaced card at position {event.hand_index + 1} with "
-        self.print_card_message(
+        self._print_card_message(
             [
                 msg,
-                event.new_card,
+                event.new_card_id,
                 ". Discarded ",
-                event.old_card,
+                event.old_card_id,
                 ".",
             ]
         )
@@ -277,10 +276,10 @@ class CLIRenderer(GameRenderer):
             else f"Player {event.player_idx}"
         )
         msg = f"{player_name} flipped card at position {event.hand_index + 1}: "
-        self.print_card_message(
+        self._print_card_message(
             [
                 msg,
-                event.card,
+                event.card_id,
             ]
         )
         self.wait_for_enter()
@@ -314,7 +313,7 @@ class CLIRenderer(GameRenderer):
             if self.players
             else f"Player {event.player_idx}"
         )
-        self.print_card_message([f"{player_name} discarded ", event.card, "."])
+        self._print_card_message([f"{player_name} discarded ", event.card_id, "."])
         self.wait_for_enter()
 
     def display_round_start(self, event: RoundStartEvent) -> None:
@@ -412,10 +411,10 @@ class CLIRenderer(GameRenderer):
         self, player_name: str, hand: Hand, choices: list[int]
     ) -> None:
         """Display the choices made for initial cards to flip."""
-        cards = [hand[i] for i in choices]
-        msg_parts: list[str | Card] = [f"{player_name} flipped initial cards: "]
-        for i, card in enumerate(cards):
-            msg_parts.append(card)
-            if i < len(cards) - 1:
+        card_ids = [hand[i] for i in choices]
+        msg_parts: list[str | CardID] = [f"{player_name} flipped initial cards: "]
+        for i, card_id in enumerate(card_ids):
+            msg_parts.append(card_id)
+            if i < len(card_ids) - 1:
                 msg_parts.append(", ")
-        self.print_card_message(msg_parts)
+        self._print_card_message(msg_parts)

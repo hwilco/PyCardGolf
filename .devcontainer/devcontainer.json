@@ -1,0 +1,31 @@
+{
+    "name": "PyCardGolf Sandbox",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "agent-sandbox",
+    "workspaceFolder": "/app",
+    "updateRemoteUserUID": false,
+    "overrideCommand": false,
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/app/.venv/bin/python",
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "python.analysis.typeCheckingMode": "standard"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.debugpy",
+                "charliermarsh.ruff",
+                "pyrefly.pyrefly-vscode",
+                "github.vscode-github-actions",
+                "ms-azuretools.vscode-docker",
+                "jlcodes.antigravity-cockpit"
+            ]
+        }
+    },
+    "remoteEnv": {
+        "PYTHONPATH": "/app/src"
+    },
+    "postCreateCommand": "bash .devcontainer/setup-git-aliases.sh"
+}

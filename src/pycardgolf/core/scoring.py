@@ -1,87 +1,86 @@
-"""Module containing scoring logic."""
+"""Module containing scoring logic using CardIDs."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pycardgolf.utils.card import get_rank
 from pycardgolf.utils.constants import HAND_SIZE
-from pycardgolf.utils.enums import Rank
+from pycardgolf.utils.deck import Rank
 
 if TYPE_CHECKING:
     from pycardgolf.core.hand import Hand
-    from pycardgolf.utils.card import Card
+    from pycardgolf.utils.types import CardID
 
 
 def calculate_score(hand: Hand) -> int:
-    """Calculate the score for a hand of cards in Golf.
-
-    Scoring rules:
-    - Pairs in a column cancel out (score 0).
-    - Ace: 1
-    - 2: -2
-    - 3-10: Face value
-    - Jack, Queen: 10
-    - King: 0
-    """
-    # Validate hand
+    """Calculate the score for a hand of cards in Golf."""
     if hand is None or len(hand) != HAND_SIZE:
         msg = f"Hand must be a list of {HAND_SIZE} cards. Received: {hand}"
         raise ValueError(msg)
 
     if not hand.all_face_up():
-        face_up_indices = [i for i, card in enumerate(hand) if not card.face_up]
+        face_down_indices = [i for i in range(len(hand)) if not hand.is_face_up(i)]
         msg = f"All cards must be face up to calculate score. Cards in indices \
-        {face_up_indices} are face down"
+        {face_down_indices} are face down"
         raise ValueError(msg)
 
+    # Score by column
     score = 0
-
-    # Check columns
     for col in range(hand.cols):
-        top_card, bottom_card = hand.get_column(col)
+        col_card_ids = hand.get_column(col)
+        col_score = 0
+        first_rank = get_rank(col_card_ids[0])
+        # If only one row, same rank cards don't cancel
+        all_same_rank = hand.rows > 1
 
-        if top_card.rank == bottom_card.rank:
-            continue  # Pair cancels out
+        for i in range(len(col_card_ids)):
+            if get_rank(col_card_ids[i]) != first_rank:
+                all_same_rank = False
+            col_score += _card_value(col_card_ids[i])
 
-        score += _card_value(top_card)
-        score += _card_value(bottom_card)
+        if all_same_rank:
+            continue  # If all cards are the same rank, the column cancels
 
+        score += col_score
     return score
 
 
 def calculate_visible_score(hand: Hand) -> int:
-    """Calculate the score for a hand based ONLY on face-up cards.
-
-    Pairs only cancel out if both cards in the column are face up.
-    """
-    if len(hand) != HAND_SIZE:
-        msg = f"Hand must be a list of {HAND_SIZE} cards"
+    """Calculate the score for a hand based ONLY on face-up cards."""
+    if hand is None or len(hand) != HAND_SIZE:
+        msg = f"Hand must have {HAND_SIZE} cards. Received: {hand}"
         raise ValueError(msg)
 
     score = 0
-
-    # Check columns
     for col in range(hand.cols):
-        top_card, bottom_card = hand.get_column(col)
+        col_card_ids = hand.get_column(col)
+        col_score = 0
+        all_face_up = True
+        first_rank = get_rank(col_card_ids[0])
+        # If only one row, same rank cards don't cancel
+        all_same_rank = hand.rows > 1
 
-        # Check for visible pair
-        if (
-            top_card.face_up
-            and bottom_card.face_up
-            and top_card.rank == bottom_card.rank
-        ):
-            continue  # Pair cancels out
+        for row in range(hand.rows):
+            idx = col + row * hand.cols
+            if not hand.is_face_up(idx):
+                all_face_up = False
+            else:
+                col_score += _card_value(col_card_ids[row])
 
-        if top_card.face_up:
-            score += _card_value(top_card)
-        if bottom_card.face_up:
-            score += _card_value(bottom_card)
+            if get_rank(col_card_ids[row]) != first_rank:
+                all_same_rank = False
 
+        if all_face_up and all_same_rank:
+            continue  # If all cards are the same rank, the column cancels
+
+        score += col_score
     return score
 
 
-def _card_value(card: Card) -> int:
-    match card.rank:
+def _card_value(card_id: CardID) -> int:
+    rank = get_rank(card_id)
+    match rank:
         case Rank.HIDDEN:
             msg = "Cannot calculate value of face-down card"
             raise ValueError(msg)
@@ -94,4 +93,4 @@ def _card_value(card: Card) -> int:
         case Rank.JACK | Rank.QUEEN:
             return 10
         case _:
-            return card.rank.value[0]
+            return rank.value[0]

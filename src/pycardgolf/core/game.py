@@ -42,6 +42,7 @@ class Game(RNGMixin):
         self.num_rounds: int = num_rounds
         self.current_round_num: int = 0
         self.current_round: Round | None = None
+        self.is_game_over: bool = False
         super().__init__(seed=seed)
 
         # Re-initialize player RNG if they support it
@@ -51,65 +52,87 @@ class Game(RNGMixin):
                 player.reseed(new_seed)
 
     def start(self) -> None:
-        """Start the game loop."""
+        """Initialize the game state and start the first round."""
         self.event_bus.publish(GameStartedEvent(players=self.players))
+        self._start_next_round()
 
-        for i in range(self.num_rounds):
-            self.current_round_num = i + 1
-            self.event_bus.publish(RoundStartEvent(round_num=self.current_round_num))
-            round_seed = self.rng.randrange(sys.maxsize)
+    def _start_next_round(self) -> None:
+        """Prepare and start the next round."""
+        self.current_round_num += 1
+        self.event_bus.publish(RoundStartEvent(round_num=self.current_round_num))
+        round_seed = self.rng.randrange(sys.maxsize)
 
-            player_names = [p.name for p in self.players]
-            self.current_round = RoundFactory.create_standard_round(
-                player_names=player_names,
-                seed=round_seed,
-            )
+        player_names = [p.name for p in self.players]
+        self.current_round = RoundFactory.create_standard_round(
+            player_names=player_names,
+            seed=round_seed,
+        )
 
-            # Syncing hands to players is no longer needed as they access it via
-            # Observation
-            self._run_round_loop()
-
-            # Map round scores (by index) back to players
-            round_scores_indices = self.current_round.get_scores()
-            round_scores = {
-                self.players[idx]: score for idx, score in round_scores_indices.items()
-            }
-            round_hands = {
-                self.players[idx]: self.current_round.hands[idx]
-                for idx in range(len(self.players))
-            }
-
-            for player, score in round_scores.items():
-                self.scores[player] += score
-                self.round_history[player].append(score)
-
-            self.event_bus.publish(
-                RoundEndEvent(
-                    scores=round_scores.copy(),
-                    hands=round_hands,
-                    round_num=self.current_round_num,
-                )
-            )
-
-            self.publish_scores()
-
-        self.declare_winner()
-
-    def _run_round_loop(self) -> None:
-        """Execute the engine loop for the current round."""
+    def _handle_round_end(self) -> None:
+        """Process scoring and events at the end of a round."""
         if self.current_round is None:
             return
 
-        round_instance = self.current_round
+        # Map round scores (by index) back to players
+        round_scores_indices = self.current_round.get_scores()
+        round_scores = {
+            self.players[idx]: score for idx, score in round_scores_indices.items()
+        }
+        round_hands = {
+            self.players[idx]: self.current_round.hands[idx]
+            for idx in range(len(self.players))
+        }
 
-        while round_instance.phase != RoundPhase.FINISHED:
-            current_player_idx = round_instance.get_current_player_idx()
-            current_player = self.players[current_player_idx]
+        for player, score in round_scores.items():
+            self.scores[player] += score
+            self.round_history[player].append(score)
 
-            obs = ObservationBuilder.build(round_instance, current_player_idx)
-            action = current_player.get_action(obs)
-            events = round_instance.step(action)
-            self.publish_events(events)
+        self.event_bus.publish(
+            RoundEndEvent(
+                scores=round_scores.copy(),
+                hands=round_hands,
+                round_num=self.current_round_num,
+            )
+        )
+
+        self.publish_scores()
+
+    def tick(self) -> bool:
+        """Advance the game by a single player action or state transition.
+
+        Returns:
+            bool: True if the game is still active, False if the game is over.
+
+        """
+        if self.is_game_over:
+            return False
+
+        if self.current_round is None:
+            # Game hasn't been started properly; start it now
+            self.start()
+            return True
+
+        if self.current_round.phase == RoundPhase.FINISHED:
+            self._handle_round_end()
+
+            if self.current_round_num >= self.num_rounds:
+                self.declare_winner()
+                self.is_game_over = True
+                return False
+
+            self._start_next_round()
+            return True
+
+        # Process exactly ONE player's turn
+        current_player_idx = self.current_round.get_current_player_idx()
+        current_player = self.players[current_player_idx]
+
+        obs = ObservationBuilder.build(self.current_round, current_player_idx)
+        action = current_player.get_action(obs)
+        events = self.current_round.step(action)
+        self.publish_events(events)
+
+        return True
 
     def publish_events(self, events: list[GameEvent]) -> None:
         """Publish each game event to the event bus."""

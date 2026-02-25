@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
     from pycardgolf.core.events import GameEvent
-
-    # Type variable bound to GameEvent for proper typing of subscriber callbacks
-    E = TypeVar("E", bound=GameEvent)
 
 
 class EventBus:
@@ -21,7 +18,9 @@ class EventBus:
         """Initialize an empty EventBus."""
         self._subscribers: dict[type[GameEvent], list[Callable[[Any], None]]] = {}
 
-    def subscribe(self, event_type: type[E], callback: Callable[[E], None]) -> None:
+    def subscribe[E: GameEvent](
+        self, event_type: type[E], callback: Callable[[E], None]
+    ) -> None:
         """Register a callback to be invoked when a specific GameEvent is published.
 
         Args:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from pycardgolf.core.actions import (
     Action,
@@ -13,6 +13,7 @@ from pycardgolf.core.actions import (
     ActionPass,
     ActionSwapCard,
 )
+from pycardgolf.core.hand import Hand
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import GameInput
@@ -27,9 +28,6 @@ if TYPE_CHECKING:
     from pycardgolf.core.observation import Observation
     from pycardgolf.interfaces.cli.cli_renderer import CLIRenderer
     from pycardgolf.players import BasePlayer
-
-
-T = TypeVar("T")
 
 
 class CLIInputHandler(GameInput):
@@ -79,7 +77,7 @@ class CLIInputHandler(GameInput):
 
             self.console.print(error_msg)
 
-    def get_validated_input(
+    def get_validated_input[T](
         self,
         prompt: str | Text,
         validation_func: Callable[[str], T],
@@ -159,7 +157,8 @@ class CLIInputHandler(GameInput):
             if choice == "d":
                 return ActionDiscardDrawn()
 
-        self.renderer.display_hand(observation.my_hand, display_indices=True)
+        obs_hand = Hand(observation.my_hand, face_up_mask=(1 << HAND_SIZE) - 1)
+        self.renderer.display_hand(obs_hand, display_indices=True)
         idx = self.get_validated_input(
             "Select which card to replace (1-6): ",
             validation_func=self._validate_card_index,
@@ -201,10 +200,11 @@ class CLIInputHandler(GameInput):
         # Show hand for context (especially critical in setup phase)
         # player name is used in other contexts, but here we just need observation
         _ = player  # Explicitly mark as unused
-        self.renderer.display_hand(observation.my_hand, display_indices=True)
+        obs_hand = Hand(observation.my_hand, face_up_mask=(1 << HAND_SIZE) - 1)
+        self.renderer.display_hand(obs_hand, display_indices=True)
 
         face_down_indices = [
-            str(i + 1) for i, card in enumerate(observation.my_hand) if not card.face_up
+            str(i + 1) for i, card_id in enumerate(observation.my_hand) if card_id < 0
         ]
         choice = self.get_choice(
             f"Select which card to flip (1-{HAND_SIZE}): ",

@@ -16,9 +16,10 @@ color-contrast = "^0.1.1"
 
 [tool.pyrefly]
 project-includes = [
-    "**/*.py*",
+    "src/**/*.py*",
     "**/*.ipynb",
 ]
+search-roots = ["src"]
 project-excludes = [
     "tests/**",
     "**/__pycache__/**",
@@ -84,6 +85,7 @@ ignore = [
     "D107",   # Missing docstring in __init__
     "D203",   # 1 blank line required before class docstring (incompatible with D211)
     "D213",   # Multi-line docstring summary at second line (incompatible with D212)
+    "EXE002", # Allow executable files for cross-platform compatibility
     "S311",   # Allow standard pseudo-random generators for game logic
     "TD",     # TODOs
     "FIX",    # Fixmes
@@ -111,6 +113,9 @@ ignore = [
 
 [tool.pyright]
 include = ["src"]
+executionEnvironments = [
+  { root = "src" }
+]
 exclude = [
     "**/__pycache__",
     "scripts",
