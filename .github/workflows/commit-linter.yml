@@ -1,0 +1,21 @@
+name: Lint Commits on Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  commitlint:
+    name: Verify Commit Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # commitlint needs the git history to compare
+
+      - name: Run Commitlint
+        uses: wagoid/commitlint-github-action@v6
+        with:
+          failOnWarnings: false

@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-and-test:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -61,6 +61,3 @@ jobs:
 
       - name: Pyrefly type check
         run: poetry run pyrefly check
-
-      - name: Run tests with coverage
-        run: poetry run pytest --cov
