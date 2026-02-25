@@ -4,9 +4,21 @@ on:
   pull_request:
     branches:
       - '*'
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/coverage.yml"
   push:
     branches:
       - 'main'
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/coverage.yml"
 
 permissions:
   contents: read
