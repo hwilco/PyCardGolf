@@ -4,15 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pycardgolf.core.actions import (
-    Action,
-    ActionDiscardDrawn,
-    ActionDrawDeck,
-    ActionDrawDiscard,
-    ActionFlipCard,
-    ActionPass,
-    ActionSwapCard,
-)
+from pycardgolf.core.actions import Action, ActionSpace
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
@@ -120,13 +112,13 @@ class CLIInputHandler(GameInput):
         if observation.phase == RoundPhase.FLIP:
             return self._handle_flip_phase(player, observation)
 
-        return ActionPass()
+        return ActionSpace.PASS
 
     def _handle_setup_phase(
         self, player: BasePlayer, observation: Observation
     ) -> Action:
         idx = self._get_valid_flip_index(player, observation)
-        return ActionFlipCard(hand_index=idx)
+        return ActionSpace.FLIP[idx]
 
     def _handle_draw_phase(
         self, player: BasePlayer, observation: Observation
@@ -141,8 +133,8 @@ class CLIInputHandler(GameInput):
             error_msg="Invalid input. Please enter 'd' or 'p'.",
         )
         if choice == "d":
-            return ActionDrawDeck()
-        return ActionDrawDiscard()
+            return ActionSpace.DRAW_DECK
+        return ActionSpace.DRAW_DISCARD
 
     def _handle_action_phase(
         self, player: BasePlayer, observation: Observation
@@ -155,7 +147,7 @@ class CLIInputHandler(GameInput):
                 capitilization_sensitive=False,
             )
             if choice == "d":
-                return ActionDiscardDrawn()
+                return ActionSpace.DISCARD_DRAWN
 
         obs_hand = Hand(observation.my_hand, face_up_mask=(1 << HAND_SIZE) - 1)
         self.renderer.display_hand(obs_hand, display_indices=True)
@@ -164,7 +156,7 @@ class CLIInputHandler(GameInput):
             validation_func=self._validate_card_index,
             error_msg="Invalid input. Please enter a number between 1 and 6.",
         )
-        return ActionSwapCard(hand_index=idx)
+        return ActionSpace.SWAP[idx]
 
     def _handle_flip_phase(
         self, player: BasePlayer, observation: Observation
@@ -177,8 +169,8 @@ class CLIInputHandler(GameInput):
         )
         if choice == "y":
             idx = self._get_valid_flip_index(player, observation)
-            return ActionFlipCard(hand_index=idx)
-        return ActionPass()
+            return ActionSpace.FLIP[idx]
+        return ActionSpace.PASS
 
     def _validate_card_index(self, s: str) -> int:
         """Validate input is a valid card index mapping to 0-based index."""

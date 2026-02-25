@@ -1,58 +1,76 @@
+from collections import defaultdict
 from unittest.mock import MagicMock
 
 import pytest
 
-from pycardgolf.core.actions import ActionDiscardDrawn, ActionDrawDeck, ActionPass
+from pycardgolf.core.actions import Action, ActionType
 from pycardgolf.core.phases import (
     ActionPhaseState,
     DrawPhaseState,
     FlipPhaseState,
     SetupPhaseState,
 )
-from pycardgolf.core.round import Round
 from pycardgolf.exceptions import IllegalActionError
 
 
-def test_action_phase_get_valid_actions_drawn_from_discard():
-    """Test get_valid_actions in ACTION phase when drawn from discard."""
-    state = ActionPhaseState(drawn_from_deck=False)
-    round_mock = MagicMock(spec=Round)
-
-    actions = state.get_valid_actions(round_mock, 0)
-    # Should NOT contain ActionDiscardDrawn
-    assert not any(isinstance(a, ActionDiscardDrawn) for a in actions)
+@pytest.fixture
+def mock_round():
+    mock = MagicMock()
+    mock.cards_flipped_in_setup = defaultdict(int)
+    mock.current_player_idx = 0
+    return mock
 
 
-def test_setup_phase_invalid_action():
-    """Test that SetupPhaseState raises IllegalActionError for non-flip action."""
-    state = SetupPhaseState()
-    round_mock = MagicMock(spec=Round)
-    with pytest.raises(IllegalActionError, match="Must flip a card"):
-        state.handle_action(round_mock, ActionPass())
+@pytest.mark.parametrize(
+    ("state", "action_type", "target_index", "match_msg"),
+    [
+        # SetupPhaseState: line 85 action_type != ActionType.FLIP
+        (
+            SetupPhaseState(),
+            ActionType.DRAW_DECK,
+            None,
+            "Must flip a valid card in SETUP phase",
+        ),
+        # DrawPhaseState: line 168 case _:
+        (
+            DrawPhaseState(),
+            ActionType.FLIP,
+            0,
+            "Invalid action for DRAW phase",
+        ),
+        # ActionPhaseState: line 208-209 is_from_deck=False + DISCARD_DRAWN
+        (
+            ActionPhaseState(drawn_from_deck=False),
+            ActionType.DISCARD_DRAWN,
+            None,
+            "Cannot discard if the card was not drawn from the deck.",
+        ),
+        # ActionPhaseState: line 214-215 case _:
+        (
+            ActionPhaseState(drawn_from_deck=True),
+            ActionType.DRAW_DECK,
+            None,
+            "Invalid action for ACTION phase",
+        ),
+        # FlipPhaseState: line 137 case _:
+        (
+            FlipPhaseState(),
+            ActionType.DRAW_DECK,
+            None,
+            "Invalid action for FLIP phase",
+        ),
+    ],
+)
+def test_phase_handle_action_defensive_checks(
+    mock_round, state, action_type, target_index, match_msg
+):
+    """Reach unreachable safety lines in phases.py by bypassing Action validation."""
+    mock_action = MagicMock(spec=Action)
+    mock_action.action_type = action_type
+    mock_action.target_index = target_index
 
-
-def test_draw_phase_invalid_action():
-    """Test that DrawPhaseState raises IllegalActionError for invalid action."""
-    state = DrawPhaseState()
-    round_mock = MagicMock(spec=Round)
-    with pytest.raises(IllegalActionError, match="Invalid action for DRAW phase"):
-        state.handle_action(round_mock, ActionPass())
-
-
-def test_action_phase_invalid_action():
-    """Test that ActionPhaseState raises IllegalActionError for invalid action."""
-    state = ActionPhaseState(drawn_from_deck=True)
-    round_mock = MagicMock(spec=Round)
-    with pytest.raises(IllegalActionError, match="Invalid action for ACTION phase"):
-        state.handle_action(round_mock, ActionDrawDeck())
-
-
-def test_flip_phase_invalid_action():
-    """Test that FlipPhaseState raises IllegalActionError for invalid action."""
-    state = FlipPhaseState()
-    round_mock = MagicMock(spec=Round)
-    with pytest.raises(IllegalActionError, match="Invalid action for FLIP phase"):
-        state.handle_action(round_mock, ActionDrawDeck())
+    with pytest.raises(IllegalActionError, match=match_msg):
+        state.handle_action(mock_round, mock_action)
 
 
 def test_phase_state_eq_incompatible_type():

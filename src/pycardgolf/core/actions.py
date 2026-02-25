@@ -2,111 +2,76 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from enum import Enum
 
-if TYPE_CHECKING:
-    from pycardgolf.core.events import GameEvent
-    from pycardgolf.core.round import Round
-
-ActionType = Literal[
-    "DRAW_DECK",
-    "DRAW_DISCARD",
-    "SWAP_CARD",
-    "DISCARD_DRAWN",
-    "FLIP_CARD",
-    "PASS",
-]
+from pycardgolf.exceptions import IllegalActionError
+from pycardgolf.utils.constants import HAND_SIZE
 
 
-@dataclass(frozen=True, kw_only=True)
-class Action(ABC):
-    """Base class for all actions."""
+class ActionType(Enum):
+    """Types of actions a player can take."""
+
+    FLIP = 1
+    DRAW_DECK = 2
+    DRAW_DISCARD = 3
+    SWAP = 4
+    DISCARD_DRAWN = 5
+    PASS = 6
+
+
+# Actions that require a target index
+TARGETED_ACTIONS = frozenset({ActionType.FLIP, ActionType.SWAP})
+
+
+@dataclass(frozen=True)
+class Action:
+    """Pure data representation of an action."""
 
     action_type: ActionType
+    target_index: int | None = None  # e.g., which card in hand to flip/swap
 
-    @abstractmethod
-    def execute(self, round_state: Round) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
+    def __post_init__(self) -> None:
+        """Strictly validate action data upon creation.
 
+        Raises IllegalActionError to ensure invalid actions can never be instantiated,
+        even in optimized modes where asserts are stripped.
+        """
+        is_targeted = self.action_type in TARGETED_ACTIONS
 
-@dataclass(frozen=True, kw_only=True)
-class ActionDrawDeck(Action):
-    """Action to draw a card from the deck."""
+        if is_targeted:
+            if self.target_index is None:
+                msg = f"Action {self.action_type} must have a target_index."
+                raise IllegalActionError(msg)
+            if not (0 <= self.target_index < HAND_SIZE):
+                msg = f"Target index {self.target_index} out of bounds."
+                raise IllegalActionError(msg)
+        elif self.target_index is not None:
+            msg = f"Action {self.action_type} must not have a target_index."
+            raise IllegalActionError(msg)
 
-    action_type: ActionType = "DRAW_DECK"
-
-    def execute(self, round_state: Round) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
-        player_idx = round_state.current_player_idx
-        event = round_state.draw_from_deck(player_idx)
-        return [event]
-
-
-@dataclass(frozen=True, kw_only=True)
-class ActionDrawDiscard(Action):
-    """Action to draw a card from the discard pile."""
-
-    action_type: ActionType = "DRAW_DISCARD"
-
-    def execute(self, round_state: Round) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
-        player_idx = round_state.current_player_idx
-        event = round_state.draw_from_discard(player_idx)
-        return [event]
+    @property
+    def safe_target_index(self) -> int:
+        """Returns the target_index as an int, strictly satisfying the type checker."""
+        if self.target_index is None:
+            msg = f"{self.action_type} requires a target index."
+            raise IllegalActionError(msg)
+        return self.target_index
 
 
-@dataclass(frozen=True, kw_only=True)
-class ActionSwapCard(Action):
-    """Action to swap a card in hand with the held card (drawn card)."""
+class ActionSpace:
+    """Flyweight cache for Action objects to avoid allocations."""
 
-    hand_index: int
-    action_type: ActionType = "SWAP_CARD"
+    # Static actions
+    DRAW_DECK = Action(ActionType.DRAW_DECK)
+    DRAW_DISCARD = Action(ActionType.DRAW_DISCARD)
+    DISCARD_DRAWN = Action(ActionType.DISCARD_DRAWN)
+    PASS = Action(ActionType.PASS)
 
-    def execute(self, round_state: Round) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
-        player_idx = round_state.current_player_idx
-        event = round_state.swap_drawn_card(player_idx, self.hand_index)
-        return [event]
-
-
-@dataclass(frozen=True, kw_only=True)
-class ActionDiscardDrawn(Action):
-    """Action to discard the card drawn from the deck."""
-
-    action_type: ActionType = "DISCARD_DRAWN"
-
-    def execute(self, round_state: Round) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
-        player_idx = round_state.current_player_idx
-        event = round_state.discard_drawn_card(player_idx)
-        return [event]
-
-
-@dataclass(frozen=True, kw_only=True)
-class ActionFlipCard(Action):
-    """Action to flip a card in hand."""
-
-    hand_index: int
-    action_type: ActionType = "FLIP_CARD"
-
-    def execute(self, round_state: Round) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
-        player_idx = round_state.current_player_idx
-        event = round_state.flip_card_in_hand(player_idx, self.hand_index)
-        return [event]
-
-
-@dataclass(frozen=True, kw_only=True)
-class ActionPass(Action):
-    """Action to pass (e.g., choose not to flip a card)."""
-
-    action_type: ActionType = "PASS"
-
-    def execute(
-        self,
-        round_state: Round,  # noqa: ARG002
-    ) -> list[GameEvent]:
-        """Apply the action to the round state and return generated events."""
-        return []
+    # Targeted actions (pre-allocated for HAND_SIZE)
+    FLIP: tuple[Action, ...] = tuple(
+        Action(ActionType.FLIP, i) for i in range(HAND_SIZE)
+    )
+    SWAP: tuple[Action, ...] = tuple(
+        Action(ActionType.SWAP, i) for i in range(HAND_SIZE)
+    )

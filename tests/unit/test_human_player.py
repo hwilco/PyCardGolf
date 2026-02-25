@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pycardgolf.core.actions import ActionDrawDeck
+from pycardgolf.core.actions import ActionSpace
 from pycardgolf.core.observation import Observation
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.interfaces.base import GameInput
@@ -41,7 +41,7 @@ def obs():
 
 def test_get_action_delegation(player, mock_input_handler, obs):
     """Test that HumanPlayer.get_action delegates to its input handler."""
-    expected_action = ActionDrawDeck()
+    expected_action = ActionSpace.DRAW_DECK
     mock_input_handler.get_action.return_value = expected_action
 
     action = player.get_action(obs)

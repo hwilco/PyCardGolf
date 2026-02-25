@@ -3,14 +3,7 @@
 import pytest
 from rich.console import Console
 
-from pycardgolf.core.actions import (
-    ActionDiscardDrawn,
-    ActionDrawDeck,
-    ActionDrawDiscard,
-    ActionFlipCard,
-    ActionPass,
-    ActionSwapCard,
-)
+from pycardgolf.core.actions import ActionType
 from pycardgolf.core.observation import Observation
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
@@ -123,8 +116,8 @@ class TestInputHandlerGetAction:
         base_obs.phase = RoundPhase.SETUP
         mock_console.input.return_value = "1"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionFlipCard)
-        assert action.hand_index == 0
+        assert action.action_type == ActionType.FLIP
+        assert action.target_index == 0
 
     def test_get_action_draw_phase_deck(
         self, input_handler, mock_console, mock_player, base_obs
@@ -133,7 +126,7 @@ class TestInputHandlerGetAction:
         base_obs.phase = RoundPhase.DRAW
         mock_console.input.return_value = "d"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionDrawDeck)
+        assert action.action_type == ActionType.DRAW_DECK
 
     def test_get_action_draw_phase_discard(
         self, input_handler, mock_console, mock_player, base_obs
@@ -142,7 +135,7 @@ class TestInputHandlerGetAction:
         base_obs.phase = RoundPhase.DRAW
         mock_console.input.return_value = "p"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionDrawDiscard)
+        assert action.action_type == ActionType.DRAW_DISCARD
 
     def test_get_action_action_phase_keep_and_swap(
         self, input_handler, mock_console, mock_player, base_obs
@@ -152,8 +145,8 @@ class TestInputHandlerGetAction:
         base_obs.can_discard_drawn = True
         mock_console.input.side_effect = ["k", "2"]
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionSwapCard)
-        assert action.hand_index == 1
+        assert action.action_type == ActionType.SWAP
+        assert action.target_index == 1
 
     def test_get_action_action_phase_discard_drawn(
         self, input_handler, mock_console, mock_player, base_obs
@@ -163,7 +156,7 @@ class TestInputHandlerGetAction:
         base_obs.can_discard_drawn = True
         mock_console.input.return_value = "d"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionDiscardDrawn)
+        assert action.action_type == ActionType.DISCARD_DRAWN
 
     def test_get_action_action_phase_no_discard_drawn(
         self, input_handler, mock_console, mock_player, base_obs
@@ -174,8 +167,8 @@ class TestInputHandlerGetAction:
         # Should skip prompt and go straight to hand replacement
         mock_console.input.return_value = "1"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionSwapCard)
-        assert action.hand_index == 0
+        assert action.action_type == ActionType.SWAP
+        assert action.target_index == 0
 
     def test_get_action_flip_phase_no(
         self, input_handler, mock_console, mock_player, base_obs
@@ -184,7 +177,7 @@ class TestInputHandlerGetAction:
         base_obs.phase = RoundPhase.FLIP
         mock_console.input.return_value = "n"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionPass)
+        assert action.action_type == ActionType.PASS
 
     def test_get_action_flip_phase_yes(
         self, input_handler, mock_console, mock_player, base_obs
@@ -194,14 +187,14 @@ class TestInputHandlerGetAction:
         # Yes, then pick card index 1
         mock_console.input.side_effect = ["y", "1"]
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionFlipCard)
-        assert action.hand_index == 0
+        assert action.action_type == ActionType.FLIP
+        assert action.target_index == 0
 
     def test_get_action_unknown_phase(self, input_handler, mock_player, base_obs):
         """Test fallback for unknown phase."""
         base_obs.phase = "UNKNOWN"
         action = input_handler.get_action(mock_player, base_obs)
-        assert isinstance(action, ActionPass)
+        assert action.action_type == ActionType.PASS
 
 
 class TestInputHandlerHelpers:

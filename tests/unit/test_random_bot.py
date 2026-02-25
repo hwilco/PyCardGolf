@@ -2,14 +2,7 @@
 
 import pytest
 
-from pycardgolf.core.actions import (
-    ActionDiscardDrawn,
-    ActionDrawDeck,
-    ActionDrawDiscard,
-    ActionFlipCard,
-    ActionPass,
-    ActionSwapCard,
-)
+from pycardgolf.core.actions import ActionSpace, ActionType
 from pycardgolf.core.observation import Observation
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.players.bots.random_bot import RandomBot
@@ -20,7 +13,7 @@ def test_random_bot_no_actions(mocker):
     """Test that RandomBot raises RuntimeError if no valid actions are found."""
     bot = RandomBot("Bot")
     mock_observation = mocker.Mock(spec=Observation)
-    mock_observation.valid_actions = []
+    mock_observation.valid_actions = ()
 
     with pytest.raises(RuntimeError, match=r"No valid actions found."):
         bot.get_action(mock_observation)
@@ -57,29 +50,32 @@ def empty_obs():
         deck_top=None,
         current_player_name="Bot",
         phase=RoundPhase.SETUP,
-        valid_actions=[],
+        valid_actions=(),
     )
 
 
 def test_get_action_setup_phase(bot, empty_obs):
     """Setup phase: bot flips a random face-down card."""
     empty_obs.phase = RoundPhase.SETUP
-    empty_obs.valid_actions = [ActionFlipCard(hand_index=i) for i in range(HAND_SIZE)]
+    empty_obs.valid_actions = ActionSpace.FLIP
 
     action = bot.get_action(empty_obs)
 
-    assert isinstance(action, ActionFlipCard)
+    assert action.action_type == ActionType.FLIP
     assert action in empty_obs.valid_actions
 
 
 def test_get_action_draw_phase(bot, empty_obs):
     """Draw phase: bot draws from deck or discard pile."""
     empty_obs.phase = RoundPhase.DRAW
-    empty_obs.valid_actions = [ActionDrawDeck(), ActionDrawDiscard()]
+    empty_obs.valid_actions = (
+        ActionSpace.DRAW_DECK,
+        ActionSpace.DRAW_DISCARD,
+    )
 
     action = bot.get_action(empty_obs)
 
-    assert isinstance(action, (ActionDrawDeck, ActionDrawDiscard))
+    assert action.action_type in (ActionType.DRAW_DECK, ActionType.DRAW_DISCARD)
     assert action in empty_obs.valid_actions
 
 
@@ -88,12 +84,11 @@ def test_get_action_action_phase(bot, empty_obs):
     empty_obs.phase = RoundPhase.ACTION
     empty_obs.drawn_card_id = 99
 
-    actions = [ActionSwapCard(hand_index=i) for i in range(HAND_SIZE)]
-    actions.append(ActionDiscardDrawn())
+    actions = (*ActionSpace.SWAP, ActionSpace.DISCARD_DRAWN)
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)
-    assert isinstance(action, (ActionSwapCard, ActionDiscardDrawn))
+    assert action.action_type in (ActionType.SWAP, ActionType.DISCARD_DRAWN)
     assert action in empty_obs.valid_actions
 
 
@@ -101,10 +96,9 @@ def test_get_action_flip_phase(bot, empty_obs):
     """Flip phase: bot passes or flips a random face-down card."""
     empty_obs.phase = RoundPhase.FLIP
 
-    actions = [ActionPass()]
-    actions.extend(ActionFlipCard(hand_index=i) for i in range(1, HAND_SIZE))
+    actions = (ActionSpace.PASS, *ActionSpace.FLIP)
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)
-    assert isinstance(action, (ActionFlipCard, ActionPass))
+    assert action.action_type in (ActionType.FLIP, ActionType.PASS)
     assert action in empty_obs.valid_actions
