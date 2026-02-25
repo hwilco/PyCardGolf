@@ -93,6 +93,19 @@ def test_handle_draw_deck(round_state):
     assert any(isinstance(e, CardDrawnDeckEvent) for e in events)
 
 
+def test_handle_draw_discard(round_state):
+    """Test drawing from discard pile."""
+    round_state.phase_state = DrawPhaseState()
+    # Ensure there is a card in discard pile
+    round_state.discard_pile.add_card(round_state.deck.draw())
+    events = round_state.step(ActionSpace.DRAW_DISCARD)
+    assert round_state.phase == RoundPhase.ACTION
+    assert round_state.drawn_card_id is not None
+    assert isinstance(round_state.phase_state, ActionPhaseState)
+    assert round_state.phase_state.drawn_from_deck is False
+    assert events
+
+
 def test_handle_swap_card(round_state):
     """Test swapping a card."""
     round_state.phase_state = ActionPhaseState(drawn_from_deck=False)
@@ -139,6 +152,15 @@ def test_round_end(round_state):
     round_state.step(ActionSpace.PASS)
 
     assert round_state.phase == RoundPhase.FINISHED
+
+
+def test_handle_flip_card(round_state):
+    """Test flipping a card in FLIP phase."""
+    round_state.phase_state = FlipPhaseState()
+    # Flip a hidden card
+    events = round_state.step(ActionSpace.FLIP[0])
+    assert any(isinstance(e, CardFlippedEvent) for e in events)
+    assert round_state.phase == RoundPhase.DRAW  # Moved to next player
 
 
 def test_handle_step_finished_phase(round_state):
@@ -213,7 +235,7 @@ def test_get_valid_actions_finished(round_state):
     """Test that FINISHED phase returns no valid actions."""
     round_state.phase_state = FinishedPhaseState()
     actions = round_state.get_valid_actions(0)
-    assert actions == []
+    assert actions == ()
 
 
 def test_get_valid_actions_draw_empty_discard(round_state):

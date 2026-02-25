@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from pycardgolf.exceptions import IllegalActionError
 from pycardgolf.utils.constants import HAND_SIZE
 
 
@@ -31,16 +32,31 @@ class Action:
     target_index: int | None = None  # e.g., which card in hand to flip/swap
 
     def __post_init__(self) -> None:
-        """Validate action data.
+        """Strictly validate action data upon creation.
 
-        This uses an assertion so that validation is stripped in optimized mode.
+        Raises IllegalActionError to ensure invalid actions can never be instantiated,
+        even in optimized modes where asserts are stripped.
         """
         is_targeted = self.action_type in TARGETED_ACTIONS
-        msg = (
-            f"Action {self.action_type} must "
-            f"{'have' if is_targeted else 'not have'} a target_index"
-        )
-        assert is_targeted == (self.target_index is not None), msg  # noqa: S101
+
+        if is_targeted:
+            if self.target_index is None:
+                msg = f"Action {self.action_type} must have a target_index."
+                raise IllegalActionError(msg)
+            if not (0 <= self.target_index < HAND_SIZE):
+                msg = f"Target index {self.target_index} out of bounds."
+                raise IllegalActionError(msg)
+        elif self.target_index is not None:
+            msg = f"Action {self.action_type} must not have a target_index."
+            raise IllegalActionError(msg)
+
+    @property
+    def safe_target_index(self) -> int:
+        """Returns the target_index as an int, strictly satisfying the type checker."""
+        if self.target_index is None:
+            msg = f"{self.action_type} requires a target index."
+            raise IllegalActionError(msg)
+        return self.target_index
 
 
 class ActionSpace:

@@ -3,6 +3,7 @@
 import pytest
 
 from pycardgolf.core.actions import Action, ActionSpace, ActionType
+from pycardgolf.exceptions import IllegalActionError
 from pycardgolf.utils.constants import HAND_SIZE
 
 
@@ -20,20 +21,39 @@ def test_action_validation_success():
 
 
 def test_action_validation_fails():
-    """Verify that invalid combinations trigger the assertion."""
+    """Verify that invalid combinations trigger the exception."""
     # Targeted action missing index
-    with pytest.raises(AssertionError, match="must have a target_index"):
+    with pytest.raises(IllegalActionError, match="must have a target_index"):
         Action(ActionType.FLIP, None)
 
-    with pytest.raises(AssertionError, match="must have a target_index"):
+    with pytest.raises(IllegalActionError, match="must have a target_index"):
         Action(ActionType.SWAP, None)
 
     # Non-targeted action with index
-    with pytest.raises(AssertionError, match="must not have a target_index"):
+    with pytest.raises(IllegalActionError, match="must not have a target_index"):
         Action(ActionType.DRAW_DECK, 0)
 
-    with pytest.raises(AssertionError, match="must not have a target_index"):
+    with pytest.raises(IllegalActionError, match="must not have a target_index"):
         Action(ActionType.PASS, 1)
+
+    # Out of bounds target index
+    with pytest.raises(IllegalActionError, match="out of bounds"):
+        Action(ActionType.FLIP, -1)
+
+    with pytest.raises(IllegalActionError, match="out of bounds"):
+        Action(ActionType.FLIP, HAND_SIZE)
+
+
+def test_safe_target_index():
+    """Verify safe_target_index behavior."""
+    # Success
+    action = Action(ActionType.FLIP, 0)
+    assert action.safe_target_index == 0
+
+    # Failure
+    action = Action(ActionType.DRAW_DECK, None)
+    with pytest.raises(IllegalActionError, match="requires a target index"):
+        _ = action.safe_target_index
 
 
 def test_action_space_is_flyweight():

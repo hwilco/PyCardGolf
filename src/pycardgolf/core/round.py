@@ -104,8 +104,8 @@ class Round(RNGMixin):
         """Return the index of the player whose turn it is."""
         return self.current_player_idx
 
-    def get_valid_actions(self, player_idx: int) -> list[Action]:
-        """Return a list of valid actions for the given player."""
+    def get_valid_actions(self, player_idx: int) -> tuple[Action, ...]:
+        """Return a tuple of valid actions for the given player."""
         return self.phase_state.get_valid_actions(self, player_idx)
 
     @classmethod

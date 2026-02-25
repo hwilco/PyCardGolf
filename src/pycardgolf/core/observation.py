@@ -27,7 +27,7 @@ class Observation:
     deck_top: CardID | None
     current_player_name: str
     phase: RoundPhase
-    valid_actions: list[Action]
+    valid_actions: tuple[Action, ...]
     drawn_card_id: CardID | None = None
     can_discard_drawn: bool = False
 
