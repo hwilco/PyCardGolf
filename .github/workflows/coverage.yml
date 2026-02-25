@@ -109,48 +109,35 @@ jobs:
 
   ## 3. Update Badge Job
   # Only runs on successful push to 'main'
-  # Reuses the coverage artifact from the test job to update the README badge.
+  # Reuses the coverage artifact from the test job to update the README badge (via updating a gist).
   update_badge:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
-    # **REQUIRES** 'contents: write' to commit the updated README
-    permissions:
-      contents: write
-
     steps:
-    - uses: actions/checkout@v4
-      with:
-        persist-credentials: true
-        fetch-depth: 0
+      - uses: actions/checkout@v4
 
-    - name: Download coverage report artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: coverage-report
-        path: .
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: .
 
-    - name: Download test results artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: test-results
-        path: .
+      - name: Extract Coverage Value
+        id: extract_cov
+        run: |
+          # Use Python to reliably parse the XML line-rate
+          COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(int(float(root.attrib['line-rate']) * 100))")
+          echo "percent=$COVERAGE" >> $GITHUB_OUTPUT
 
-    - name: Generate Coverage Badge
-      id: coverage
-      uses: MishaKav/pytest-coverage-comment@v1
-      with:
-        pytest-xml-coverage-path: ./coverage.xml
-        junitxml-path: ./pytest.xml
-        hide-comment: true
-
-    - name: Update README with coverage badge
-      run: |
-        sed -i '/<!-- Pytest Coverage Comment:Begin -->/,/<!-- Pytest Coverage Comment:End -->/c\<!-- Pytest Coverage Comment:Begin -->\n${{ steps.coverage.outputs.coverageHtml }}\n<!-- Pytest Coverage Comment:End -->' ./README.md
-
-    - name: Commit README coverage changes
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: 'docs: update coverage badge'
-        file_pattern: README.md
+      - name: Update Gist Badge
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: bf00f430f6ee22a373cb8afae306c096
+          filename: pycardgolf-coverage.json
+          label: Coverage
+          message: ${{ steps.extract_cov.outputs.percent }}%
+          valColorRange: ${{ steps.extract_cov.outputs.percent }}
+          maxColorRange: 90
+          minColorRange: 50
