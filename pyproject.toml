@@ -6,14 +6,20 @@ authors = ["Harrison Wilco <hwilco@gmail.com>"]
 readme = "README.md"
 packages = [{include = "pycardgolf", from = "src"}]
 
+[tool.poetry.scripts]
+pycardgolf = "pycardgolf.main:main"
+
 [tool.poetry.dependencies]
 python = "^3.13"
+rich = "^13.7.0"
+color-contrast = "^0.1.1"
 
 [tool.pyrefly]
 project-includes = [
-    "**/*.py*",
+    "src/**/*.py*",
     "**/*.ipynb",
 ]
+search-roots = ["src"]
 project-excludes = [
     "tests/**",
     "**/__pycache__/**",
@@ -22,12 +28,13 @@ project-excludes = [
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.0.1"
-ruff = "^0.14.7"
+ruff = "^0.14.8"
 isort = "^7.0.0"
 pytest = "^9.0.1"
 pytest-cov = "^7.0.0"
 pytest-mock = "^3.15.1"
 pyrefly = "^0.43.1"
+pyright = "^1.1.408"
 
 [build-system]
 requires = ["poetry-core"]
@@ -63,6 +70,9 @@ exclude_lines = [
     "@abstractmethod",
 ]
 
+[tool.isort]
+    profile = "black"
+
 [tool.ruff]
 target-version = "py313"
 exclude = ["scripts"]
@@ -75,6 +85,7 @@ ignore = [
     "D107",   # Missing docstring in __init__
     "D203",   # 1 blank line required before class docstring (incompatible with D211)
     "D213",   # Multi-line docstring summary at second line (incompatible with D212)
+    "EXE002", # Allow executable files for cross-platform compatibility
     "S311",   # Allow standard pseudo-random generators for game logic
     "TD",     # TODOs
     "FIX",    # Fixmes
@@ -82,8 +93,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"src/pycardgolf/interfaces/cli.py" = [
-    "T201",  # Allow print statements in CLI
+"src/pycardgolf/main.py" = [
+    "T201",  # Allow print statements in main entry point
 ]
 "src/pycardgolf/utils/deck.py" = [
     "SLF001", # Allow private member access for deck operations
@@ -97,4 +108,19 @@ ignore = [
     "ANN",     # Allow missing type annotations in tests
     "D",       # Allow missing docstrings in tests
     "SLF001",  # Allow private member access in tests
+    "ARG002",  # Allow unused method arguments in tests
 ]
+
+[tool.pyright]
+include = ["src"]
+executionEnvironments = [
+  { root = "src" }
+]
+exclude = [
+    "**/__pycache__",
+    "scripts",
+    "tests"
+]
+pythonVersion = "3.13"
+typeCheckingMode = "standard" # Options: "off", "basic", "standard", "strict"
+reportMissingTypeStubs = false

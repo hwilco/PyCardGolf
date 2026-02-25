@@ -1,172 +1,256 @@
 import pytest
 
-from pycardgolf.core.hand import Hand
-from pycardgolf.core.player import Player
-from pycardgolf.core.round import Round
-from pycardgolf.exceptions import GameConfigError
-from pycardgolf.utils.card import Card
-from pycardgolf.utils.constants import HAND_SIZE
-from pycardgolf.utils.enums import Rank, Suit
-
-
-class MockPlayer(Player):
-    def take_turn(self, game_round: Round) -> None:
-        pass
-
-
-def test_round_setup():
-    p1 = MockPlayer("P1")
-    p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
-    game_round.setup()
-
-    assert len(p1.hand) == HAND_SIZE
-    assert len(p2.hand) == HAND_SIZE
-    # Check 2 cards are face up
-    assert sum(1 for c in p1.hand if c.face_up) == 2
-    assert sum(1 for c in p2.hand if c.face_up) == 2
-
-    assert game_round.discard_pile.num_cards == 1
-    assert game_round.discard_pile.peek().face_up
-
-
-@pytest.mark.parametrize(
-    ("num_players", "hand_size", "deck_cards"),
-    [
-        # 3 players * 6 cards = 18 needed, 18 available - not enough (no discard)
-        pytest.param(3, 6, 18, id="exact_no_discard"),
-        # 4 players * 6 cards = 24 needed, 18 available - way not enough
-        pytest.param(4, 6, 18, id="six_cards_short"),
-    ],
+from pycardgolf.core.actions import ActionSpace
+from pycardgolf.core.events import (
+    CardDiscardedEvent,
+    CardDrawnDeckEvent,
+    CardDrawnDiscardEvent,
+    CardFlippedEvent,
+    CardSwappedEvent,
+    TurnStartEvent,
 )
-def test_round_init_too_many_players(num_players, hand_size, deck_cards, mocker):
-    """Test that GameConfigError is raised when not enough cards for players."""
-    # Mock HAND_SIZE constant
-    mocker.patch("pycardgolf.core.round.HAND_SIZE", hand_size)
-
-    # Create players
-    players = [MockPlayer(f"P{i}") for i in range(num_players)]
-
-    # Mock the Deck class to have the specified number of cards
-    mock_deck = mocker.MagicMock()
-    mock_deck.num_cards = deck_cards
-    mocker.patch("pycardgolf.core.round.Deck", return_value=mock_deck)
-
-    # Creating Round should raise GameConfigError
-    with pytest.raises(GameConfigError, match="Not enough cards for players"):
-        Round(players)
+from pycardgolf.core.phases import (
+    ActionPhaseState,
+    DrawPhaseState,
+    FlipPhaseState,
+    RoundPhase,
+)
+from pycardgolf.core.round import Round, RoundFactory
+from pycardgolf.exceptions import GameConfigError, IllegalActionError
+from pycardgolf.utils.constants import HAND_SIZE
 
 
-def test_check_round_end_condition():
-    p1 = MockPlayer("P1")
-    game_round = Round([p1])
-    # Give p1 a hand
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
-
-    # All face down
-    for c in p1.hand:
-        c.face_up = False
-    assert not game_round.check_round_end_condition(p1)
-
-    # All face up
-    for c in p1.hand:
-        c.face_up = True
-    assert game_round.check_round_end_condition(p1)
+def test_validate_config_success():
+    """Test that validate_config passes for valid configuration."""
+    Round.validate_config(num_players=2)
 
 
-def test_get_scores_requires_face_up():
-    p1 = MockPlayer("P1")
-    game_round = Round([p1])
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
-    for c in p1.hand:
-        c.face_up = False
-
-    # Should raise ValueError because cards are not face up
-    with pytest.raises(ValueError, match="All cards must be face up"):
-        game_round.get_scores()
+def test_validate_config_failure():
+    """Test that validate_config raises GameConfigError for invalid configuration."""
+    with pytest.raises(GameConfigError, match="Not enough cards"):
+        Round.validate_config(num_players=10)
 
 
-def test_reveal_hands():
-    p1 = MockPlayer("P1")
-    p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    p1.hand = Hand(cards)
-    p2.hand = Hand(cards)
-    for c in p1.hand:
-        c.face_up = False
-    for c in p2.hand:
-        c.face_up = False
+def test_round_initialization():
+    player_names = ["P1", "P2"]
+    round_instance = RoundFactory.create_standard_round(player_names=player_names)
 
-    game_round.reveal_hands()
-    assert all(c.face_up for c in p1.hand)
-    assert all(c.face_up for c in p2.hand)
+    assert round_instance.phase == RoundPhase.SETUP
+    assert len(round_instance.hands) == 2
+    assert len(round_instance.hands[0]) == HAND_SIZE
+    assert len(round_instance.hands[1]) == HAND_SIZE
+    assert round_instance.discard_pile.num_cards == 1
 
 
-def test_get_scores_returns_correct_scores():
-    p1 = MockPlayer("P1")
-    p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
-    cards_p1 = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    cards_p2 = [Card(Rank.THREE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
-    cards_p2.extend(
-        [Card(Rank.KING, Suit.CLUBS, "blue") for _ in range(HAND_SIZE // 2)]
+def test_rounds_have_unique_default_seeds(mocker):
+    """Test that multiple rounds instantiated without seeds get unique seeds."""
+    mock_randrange = mocker.patch("pycardgolf.utils.mixins.random.randrange")
+    mock_randrange.side_effect = [100, 200, 300, 400, 500, 600]
+
+    r1 = RoundFactory.create_standard_round(["P1", "P2"])
+    r2 = RoundFactory.create_standard_round(["P1", "P2"])
+
+    assert r1.seed is not None
+    assert r2.seed is not None
+    assert r1.seed != r2.seed
+
+
+def test_round_step_setup_phase():
+    player_names = ["P1"]
+    round_instance = RoundFactory.create_standard_round(player_names=player_names)
+
+    assert round_instance.phase == RoundPhase.SETUP
+    assert round_instance.get_current_player_idx() == 0
+
+    # Action 1: Flip index 0
+    events = round_instance.step(ActionSpace.FLIP[0])
+    assert len(events) == 1
+    assert isinstance(events[0], CardFlippedEvent)
+    assert round_instance.hands[0].is_face_up(0)
+    assert round_instance.phase == RoundPhase.SETUP
+
+    # Action 2: Flip index 1
+    events = round_instance.step(ActionSpace.FLIP[1])
+    assert round_instance.hands[0].is_face_up(1)
+    assert round_instance.phase == RoundPhase.DRAW
+    assert isinstance(events[0], CardFlippedEvent)
+    assert isinstance(events[-1], TurnStartEvent)
+
+
+def test_round_step_illegal_setup_action():
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    with pytest.raises(IllegalActionError):
+        round_instance.step(ActionSpace.PASS)
+
+
+def test_round_step_draw_phase():
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.phase_state = DrawPhaseState()
+    events = round_instance.step(ActionSpace.DRAW_DECK)
+    assert isinstance(events[0], CardDrawnDeckEvent)
+    assert round_instance.phase == RoundPhase.ACTION
+    assert round_instance.drawn_card_id is not None
+    assert isinstance(round_instance.phase_state, ActionPhaseState)
+    assert round_instance.phase_state.drawn_from_deck is True
+
+
+def test_round_step_action_phase_swap():
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.phase_state = ActionPhaseState(drawn_from_deck=False)
+    drawn = 99
+    round_instance.drawn_card_id = drawn
+
+    initial_hand_card = round_instance.hands[0][0]
+    events = round_instance.step(ActionSpace.SWAP[0])
+
+    assert isinstance(events[0], CardSwappedEvent)
+    assert round_instance.hands[0][0] == drawn
+    assert round_instance.discard_pile.peek() == initial_hand_card
+    assert round_instance.phase == RoundPhase.DRAW
+
+
+def test_round_step_action_phase_discard_drawn():
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.phase_state = ActionPhaseState(drawn_from_deck=True)
+    drawn = 99
+    round_instance.drawn_card_id = drawn
+
+    events = round_instance.step(ActionSpace.DISCARD_DRAWN)
+    assert isinstance(events[0], CardDiscardedEvent)
+    assert round_instance.discard_pile.peek() == drawn
+    assert round_instance.phase == RoundPhase.FLIP
+
+
+def test_round_step_flip_phase():
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.phase_state = FlipPhaseState()
+    events = round_instance.step(ActionSpace.FLIP[2])
+    assert isinstance(events[0], CardFlippedEvent)
+    assert round_instance.hands[0].is_face_up(2)
+    assert round_instance.phase == RoundPhase.DRAW
+
+
+def test_draw_from_discard():
+    """Test drawing from discard pile."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.discard_pile.clear()
+    round_instance.discard_pile.add_card(42)
+
+    event = round_instance.draw_from_discard(player_idx=0)
+
+    assert event.card_id == 42
+    assert round_instance.drawn_card_id == 42
+    assert round_instance.discard_pile.num_cards == 0
+
+
+def test_round_step_draw_discard_phase():
+    """Test drawing from discard pile in DRAW phase."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.phase_state = DrawPhaseState()
+    round_instance.discard_pile.add_card(88)
+
+    events = round_instance.step(ActionSpace.DRAW_DISCARD)
+    assert isinstance(events[0], CardDrawnDiscardEvent)
+    assert round_instance.phase == RoundPhase.ACTION
+    assert round_instance.drawn_card_id == 88
+
+
+def test_discard_drawn_card_success():
+    """Test discarding a drawn card."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.drawn_card_id = 77
+
+    event = round_instance.discard_drawn_card(0)
+    assert isinstance(event, CardDiscardedEvent)
+    assert event.card_id == 77
+    assert round_instance.discard_pile.peek() == 77
+    assert round_instance.drawn_card_id is None
+
+
+def test_draw_from_discard_empty():
+    """Test drawing from empty discard pile raises IllegalActionError."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.discard_pile.clear()
+    with pytest.raises(IllegalActionError, match="Discard pile is empty"):
+        round_instance.draw_from_discard(player_idx=0)
+
+
+def test_discard_drawn_card_invalid():
+    """Test discarding when no card is drawn raises IllegalActionError."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.drawn_card_id = None
+    with pytest.raises(IllegalActionError, match="No card drawn"):
+        round_instance.discard_drawn_card(player_idx=0)
+
+
+def test_get_valid_actions_delegation(mocker):
+    """Test that get_valid_actions delegates to phase_state."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    mock_phase_state = mocker.Mock()
+    round_instance.phase_state = mock_phase_state
+    round_instance.get_valid_actions(0)
+    mock_phase_state.get_valid_actions.assert_called_once_with(round_instance, 0)
+
+
+def test_round_get_scores(mocker):
+    """Test that get_scores correctly maps calculate_score to hands."""
+    mock_calc = mocker.patch(
+        "pycardgolf.core.round.calculate_score", side_effect=[10, 20]
     )
-    p1.hand = Hand(cards_p1)
-    p2.hand = Hand(cards_p2)
-    game_round.reveal_hands()
+    round_instance = RoundFactory.create_standard_round(player_names=["P1", "P2"])
 
-    scores = game_round.get_scores()
-
-    # Score for 6 Aces (3 pairs) = 0
-    assert scores[p1] == 0
-    # Score for half 3s and half Kings = 3 * HAND_SIZE // 2 (6 for 6 cards)
-    assert scores[p2] == (HAND_SIZE // 2) * 3
-    # Player score should NOT be updated by Round
-    assert p1.score == 0
-    assert p2.score == 0
+    scores = round_instance.get_scores()
+    assert scores == {0: 10, 1: 20}
+    assert mock_calc.call_count == 2
 
 
-def test_advance_turn():
-    # Test normal turn advancement
-    p1 = MockPlayer("P1")
-    p2 = MockPlayer("P2")
-    p3 = MockPlayer("P3")
-    game_round = Round([p1, p2, p3])
-
-    assert game_round.current_player_idx == 0
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 1
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 2
-
-
-def test_advance_turn_wraps_around():
-    # Test that turn wraps to 0 after last player
-    p1 = MockPlayer("P1")
-    p2 = MockPlayer("P2")
-    game_round = Round([p1, p2])
-
-    game_round.current_player_idx = 1
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 0
-    assert not game_round.round_over
+def get_all_slots(obj):
+    """Gather all slots from class hierarchy."""
+    slots = set()
+    for cls in type(obj).__mro__:
+        dict_slots = getattr(cls, "__slots__", None)
+        if dict_slots:
+            if isinstance(dict_slots, str):
+                slots.add(dict_slots)
+            else:
+                slots.update(dict_slots)
+    return slots
 
 
-def test_advance_turn_ends_round():
-    # Test that round ends when we return to last_turn_player_idx
-    p1 = MockPlayer("P1")
-    p2 = MockPlayer("P2")
-    p3 = MockPlayer("P3")
-    game_round = Round([p1, p2, p3])
+def test_round_clone_copies_all_attributes():
+    """Verify that Round.clone() correctly copies all attributes."""
+    player_names = ["P1", "P2"]
+    original = RoundFactory.create_standard_round(player_names=player_names)
+    original.drawn_card_id = 42
 
-    # Set player 1 as the one who ended the round
-    game_round.last_turn_player_idx = 1
-    game_round.current_player_idx = 0
+    clone = original.clone(preserve_rng=True)
 
-    # Advance from 0 to 1 - should end the round
-    game_round.advance_turn()
-    assert game_round.current_player_idx == 1
-    assert game_round.round_over
+    slots = get_all_slots(original)
+
+    # Check all slots are present and values match
+    for slot in slots:
+        assert hasattr(clone, slot), f"Clone missing slot: {slot}"
+
+        # Skip RNG comparison as random.Random doesn't support state-based equality
+        if slot in ("rng", "_rng"):
+            continue
+
+        orig_val = getattr(original, slot)
+        clone_val = getattr(clone, slot)
+
+        assert orig_val == clone_val, (
+            f"Value mismatch for slot {slot}: {orig_val} != {clone_val}"
+        )
+
+        # For mutable collections, ensure deep copy (different IDs)
+        if isinstance(orig_val, (list, dict)):
+            assert id(orig_val) != id(clone_val), (
+                f"Shallow copy detected for slot {slot}"
+            )
+
+    # Specifically check hands (list of Hand objects)
+    assert len(original.hands) == len(clone.hands)
+    for h1, h2 in zip(original.hands, clone.hands, strict=True):
+        assert h1 is not h2
+        assert h1.card_ids == h2.card_ids
+        assert h1.face_up_mask == h2.face_up_mask

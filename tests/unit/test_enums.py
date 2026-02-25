@@ -1,6 +1,8 @@
 import pytest
 
-from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.deck import Rank, Suit
+
+# TODO: Rename this or move tests to deck.py
 
 
 def test_rank_comparison():

@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+# Cancels in-progress runs for the same branch to save CI minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Poetry first so setup-python can use it for caching
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "poetry" # Enables caching based on poetry.lock
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Ruff format check
+        run: poetry run ruff format --check .
+
+      - name: isort check
+        run: poetry run isort --check-only --diff .
+
+      - name: Ruff lint
+        run: poetry run ruff check .
+
+      - name: Pyright type check
+        run: poetry run pyright
+
+      - name: Pyrefly type check
+        run: poetry run pyrefly check
+
+      - name: Run tests with coverage
+        run: poetry run pytest --cov

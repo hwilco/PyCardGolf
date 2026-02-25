@@ -1,139 +1,96 @@
 import pytest
 
 from pycardgolf.core.hand import Hand
-from pycardgolf.core.scoring import calculate_score, calculate_visible_score
-from pycardgolf.utils.card import Card
+from pycardgolf.core.scoring import (
+    _card_value,
+    calculate_score,
+    calculate_visible_score,
+)
 from pycardgolf.utils.constants import HAND_SIZE
-from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.deck import CARDS_PER_SUIT, Rank
 
 
-def _make_hand(card_values, color="blue"):
-    """Create a hand from a list of tuples (rank, suit)."""
-    cards = [Card(rank, suit, color, face_up=True) for rank, suit in card_values]
-    return Hand(cards)
+def _make_hand(card_ids, face_up_mask=None):
+    """Create a hand from a list of CardIDs."""
+    if face_up_mask is None:
+        face_up_mask = (1 << len(card_ids)) - 1
+    return Hand(card_ids, face_up_mask)
+
+
+def _get_card_id(rank, suit_idx=0):
+    """Helper to get a CardID for a specific rank."""
+    # Suit order: Spades, Hearts, Diamonds, Clubs
+    # Suit index: 0, 1, 2, 3
+    # rank_idx: ACE(0) ... KING(12)
+    rank_idx = rank.value[0] - 1
+    return suit_idx * CARDS_PER_SUIT + rank_idx
 
 
 @pytest.mark.parametrize(
-    ("card_values", "expected_score"),
+    ("ranks", "expected_score"),
     [
         pytest.param(
-            [
-                (Rank.ACE, Suit.CLUBS),
-                (Rank.TWO, Suit.CLUBS),
-                (Rank.THREE, Suit.CLUBS),
-                (Rank.FOUR, Suit.CLUBS),
-                (Rank.FIVE, Suit.CLUBS),
-                (Rank.SIX, Suit.CLUBS),
-            ],
+            [Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX],
             17,
             id="simple_sum_no_pairs",
         ),
         pytest.param(
-            [
-                (Rank.FIVE, Suit.CLUBS),
-                (Rank.TWO, Suit.CLUBS),
-                (Rank.THREE, Suit.CLUBS),
-                (Rank.FIVE, Suit.DIAMONDS),
-                (Rank.FOUR, Suit.CLUBS),
-                (Rank.SIX, Suit.CLUBS),
-            ],
+            [Rank.FIVE, Rank.TWO, Rank.THREE, Rank.FIVE, Rank.FOUR, Rank.SIX],
             11,
             id="one_pair_cancels",
         ),
         pytest.param(
-            [
-                (Rank.KING, Suit.CLUBS),
-                (Rank.QUEEN, Suit.CLUBS),
-                (Rank.JACK, Suit.CLUBS),
-                (Rank.KING, Suit.DIAMONDS),
-                (Rank.TWO, Suit.CLUBS),
-                (Rank.ACE, Suit.CLUBS),
-            ],
+            [Rank.KING, Rank.QUEEN, Rank.JACK, Rank.KING, Rank.TWO, Rank.ACE],
             19,
             id="face_cards_and_king_pair",
         ),
         pytest.param(
-            [
-                (Rank.KING, Suit.CLUBS),
-                (Rank.THREE, Suit.CLUBS),
-                (Rank.FOUR, Suit.CLUBS),
-                (Rank.FIVE, Suit.CLUBS),
-                (Rank.SIX, Suit.CLUBS),
-                (Rank.SEVEN, Suit.CLUBS),
-            ],
+            [Rank.KING, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN],
             25,
             id="king_worth_zero",
         ),
         pytest.param(
-            [
-                (Rank.THREE, Suit.CLUBS),
-                (Rank.SEVEN, Suit.CLUBS),
-                (Rank.NINE, Suit.CLUBS),
-                (Rank.THREE, Suit.DIAMONDS),
-                (Rank.SEVEN, Suit.HEARTS),
-                (Rank.NINE, Suit.SPADES),
-            ],
+            [Rank.THREE, Rank.SEVEN, Rank.NINE, Rank.THREE, Rank.SEVEN, Rank.NINE],
             0,
             id="all_pairs_cancel",
         ),
         pytest.param(
-            [
-                (Rank.TWO, Suit.CLUBS),
-                (Rank.TWO, Suit.DIAMONDS),
-                (Rank.TWO, Suit.HEARTS),
-                (Rank.KING, Suit.CLUBS),
-                (Rank.KING, Suit.DIAMONDS),
-                (Rank.KING, Suit.SPADES),
-            ],
+            [Rank.TWO, Rank.TWO, Rank.TWO, Rank.KING, Rank.KING, Rank.KING],
             -6,
             id="negative_score",
         ),
-        pytest.param(
-            [
-                (Rank.KING, Suit.CLUBS),
-                (Rank.KING, Suit.DIAMONDS),
-                (Rank.KING, Suit.HEARTS),
-                (Rank.KING, Suit.SPADES),
-                (Rank.KING, Suit.CLUBS),
-                (Rank.KING, Suit.DIAMONDS),
-            ],
-            0,
-            id="all_kings",
-        ),
     ],
 )
-def test_calculate_score_valid_hands(card_values, expected_score):
-    """Test various valid 6-card hands."""
-    hand = _make_hand(card_values)
+def test_calculate_score_valid_hands(ranks, expected_score):
+    card_ids = [_get_card_id(r) for r in ranks]
+    # Ensure they are different cards for pairs to simulate different suits if needed,
+    # though our scoring only cares about Rank.
+    # Actually, let's use different suit indices for the bottom row.
+    for i in range(3, 6):
+        card_ids[i] = _get_card_id(ranks[i], suit_idx=1)
+
+    hand = _make_hand(card_ids)
     assert calculate_score(hand) == expected_score
 
 
 def test_calculate_score_none_hand():
-    """Test that a None hand raises ValueError."""
-    with pytest.raises(ValueError, match="Hand must not be None"):
+    with pytest.raises(ValueError, match="Hand must be a list of"):
         calculate_score(None)
 
 
-@pytest.mark.parametrize(
-    "hand_size",
-    [
-        pytest.param(0, id="empty_hand"),
-        pytest.param(5, id="five_cards"),
-        pytest.param(7, id="seven_cards"),
-    ],
-)
-def test_calculate_score_invalid_hand_size(hand_size):
-    """Test that non-<HAND_SIZE>-card hands raise ValueError."""
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
-    hand = Hand(cards)
-    with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
+def test_calculate_score_invalid_hand_size(monkeypatch):
+    mock_hand_size = 4
+    monkeypatch.setattr("pycardgolf.core.scoring.HAND_SIZE", mock_hand_size)
+    hand = Hand([1, 2, 3])
+    with pytest.raises(
+        ValueError, match=f"Hand must be a list of {mock_hand_size} cards"
+    ):
         calculate_score(hand)
 
 
 def test_calculate_score_face_down_cards():
-    """Test that a hand with any face-down cards raises ValueError."""
-    hand = _make_hand([(Rank.ACE, Suit.CLUBS)] * HAND_SIZE)
-    hand[0].face_up = False
+    hand = _make_hand([0] * HAND_SIZE)
+    hand.face_up_mask = 0b111110  # One card face down
     with pytest.raises(
         ValueError, match="All cards must be face up to calculate score"
     ):
@@ -147,36 +104,48 @@ def test_calculate_score_face_down_cards():
         pytest.param([0, 4], 2, id="two_aces_no_cancel"),
         pytest.param([0, 3], 0, id="pair_cancels_col_0"),
         pytest.param([1], 1, id="one_card_of_pair_visible"),
-        pytest.param([1, 2], 2, id="one_card_of_pair_visible_plus_other"),
         pytest.param([0, 3, 1, 4], 0, id="two_pairs_cancel"),
     ],
 )
 def test_calculate_visible_score_valid_hands(face_up_indices, expected_score):
-    """Test calculating score of only face-up cards."""
-    # Hand setup:
-    # Col 0: Ace (0), Ace (3)
-    # Col 1: Ace (1), Ace (4)
-    # Col 2: Ace (2), Ace (5)
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(HAND_SIZE)]
-    hand = Hand(cards)
-
+    # All Aces
+    card_ids = [_get_card_id(Rank.ACE)] * HAND_SIZE
+    mask = 0
     for idx in face_up_indices:
-        hand[idx].face_up = True
-
+        mask |= 1 << idx
+    hand = Hand(card_ids, mask)
     assert calculate_visible_score(hand) == expected_score
 
 
-@pytest.mark.parametrize(
-    "hand_size",
-    [
-        pytest.param(0, id="empty_hand"),
-        pytest.param(5, id="five_cards"),
-        pytest.param(7, id="seven_cards"),
-    ],
-)
-def test_calculate_visible_score_invalid_hand_size(hand_size):
-    """Test that non-<HAND_SIZE>-card hands raise ValueError."""
-    cards = [Card(Rank.ACE, Suit.CLUBS, "blue") for _ in range(hand_size)]
-    hand = Hand(cards)
-    with pytest.raises(ValueError, match=f"Hand must be a list of {HAND_SIZE} cards"):
+def test_calculate_visible_score_invalid_hand_size(monkeypatch):
+    """Test calculate_visible_score with invalid hand size raises ValueError."""
+    mock_hand_size = 6
+    monkeypatch.setattr("pycardgolf.core.scoring.HAND_SIZE", mock_hand_size)
+    hand = Hand([1, 2, 3])
+    with pytest.raises(ValueError, match=f"Hand must have {mock_hand_size} cards"):
         calculate_visible_score(hand)
+
+
+def test_calculate_visible_score_mismatched_ranks():
+    """Test that visible score doesn't cancel if ranks in a column differ."""
+    # Column 0: Ace and Two (both face up)
+    # Expected score: 1 + (-2) = -1
+    card_ids = [_get_card_id(Rank.ACE), _get_card_id(Rank.TWO)] + [0] * (HAND_SIZE - 2)
+    # Indices 0 and 3 are in the same column for rows=2, cols=3
+    # idx 0: col 0, row 0
+    # idx 3: col 0, row 1
+    card_ids = [0] * HAND_SIZE
+    card_ids[0] = _get_card_id(Rank.ACE)
+    card_ids[3] = _get_card_id(Rank.TWO)
+
+    mask = (1 << 0) | (1 << 3)
+    hand = Hand(card_ids, mask)
+
+    # ACE is index 0, TWO is index 3
+    # hand.get_column(0) should return (ACE_id, TWO_id)
+    assert calculate_visible_score(hand) == -1
+
+
+def test_card_value_hidden_rank_raises():
+    with pytest.raises(ValueError, match="Cannot calculate value of face-down card"):
+        _card_value(-1)

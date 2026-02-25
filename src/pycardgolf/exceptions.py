@@ -9,4 +9,12 @@ class PyCardGolfError(Exception):
 
 
 class GameConfigError(PyCardGolfError):
-    """Raised when game configuration is invalid."""
+    """Exception raised for errors in the game configuration."""
+
+
+class GameExitError(PyCardGolfError):
+    """Exception raised when the user wants to exit the game."""
+
+
+class IllegalActionError(PyCardGolfError):
+    """Raised when a player attempts an illegal action."""

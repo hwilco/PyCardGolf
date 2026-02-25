@@ -1,129 +1,116 @@
-"""Module containing the Card class."""
+"""Module defining card-related constants and display functions."""
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import TYPE_CHECKING
 
-from pycardgolf.utils.enums import Rank, Suit
+from pycardgolf.utils.deck import (
+    _RANK_ORDER,
+    _SUIT_ORDER,
+    CARDS_PER_DECK,
+    CARDS_PER_SUIT,
+    Rank,
+    Suit,
+)
+
+if TYPE_CHECKING:
+    from pycardgolf.utils.types import CardID
+
+_CARD_NAMES: dict[int, str] = {}
+for s_idx, suit in enumerate(_SUIT_ORDER):
+    for r_idx, rank in enumerate(_RANK_ORDER):
+        card_id = s_idx * CARDS_PER_SUIT + r_idx
+        _CARD_NAMES[card_id] = f"{rank} of {suit.name.capitalize()}"
+
+_DECK_COLORS: dict[int, str] = {
+    0: "blue",
+    1: "red",
+    2: "green",
+}
+
+_SUIT_COLORS = {
+    Suit.SPADES: "black",
+    Suit.HEARTS: "red",
+    Suit.DIAMONDS: "red",
+    Suit.CLUBS: "black",
+}
 
 
-class Card:
-    """A class to represent a playing card."""
+def is_face_up(card_id: CardID | None) -> bool:
+    """Return True if the card is face up (ID >= 0)."""
+    return card_id is not None and card_id >= 0
 
-    __SUIT_STR: ClassVar[dict[Suit, str]] = {
-        Suit.SPADES: "\u2660",
-        Suit.HEARTS: "\u2665",
-        Suit.DIAMONDS: "\u2666",
-        Suit.CLUBS: "\u2663",
-    }
-    __SUIT_OUTLINE_STR: ClassVar[dict[Suit, str]] = {
-        Suit.SPADES: "\u2664",
-        Suit.HEARTS: "\u2661",
-        Suit.DIAMONDS: "\u2662",
-        Suit.CLUBS: "\u2667",
-    }
-    _outline_suits: ClassVar[bool] = True
 
-    def __init__(
-        self,
-        rank: Rank,
-        suit: Suit,
-        color: str,
-        face_up: bool = False,
-    ) -> None:
-        """Construct a Card object.
+def is_face_down(card_id: CardID | None) -> bool:
+    """Return True if the card is face down (ID < 0)."""
+    return card_id is not None and card_id < 0
 
-        Args:
-            rank: The rank of the card. Must be a member of the Rank enum.
-            suit: The suit of the card. Must be a member of the Suit enum.
-                (Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, or Suit.SPADES)
-            color: A string representing the color of the card. Used to
-                differentiate cards from different decks. Converted to lower
-                case.
-            face_up (optional): True if the card is face up (showing its rank
-                and suit), False if it is face down. Defaults to False.
 
-        Raises:
-            ValueError: If rank or suit are out of range.
+def get_masked_id(card_id: CardID) -> CardID:
+    """Return the masked ID for a card (encoding only the deck index)."""
+    return -(card_id // CARDS_PER_DECK + 1)
 
-        """
-        self.__rank: Rank = rank
-        if self.__rank not in Rank:
-            msg = f"Card rank must be a member of Rank enum. Given rank: {rank}"
-            raise ValueError(msg)
-        self.__suit: Suit = suit
-        if self.__suit not in Suit:
-            msg = (
-                "Card suit must be in [Suit.CLUBS, Suit.DIAMONDS, "
-                "Suit.HEARTS, or Suit.SPADES]. Given "
-                f"suit: {suit}"
-            )
-            raise ValueError(msg)
-        self.__color: str = color.lower()
-        self.__face_up: bool = face_up
 
-    @property
-    def rank(self) -> Rank:
-        """The rank of the card as a Rank enum."""
-        return self.__rank
-
-    @property
-    def suit(self) -> Suit:
-        """The suit of the card."""
-        return self.__suit
-
-    @property
-    def color(self) -> str:
-        """A string representing the color of the card."""
-        return self.__color
-
-    @property
-    def face_up(self) -> bool:
-        """True if the card is face up, False otherwise."""
-        return self.__face_up
-
-    @face_up.setter
-    def face_up(self, value: bool) -> None:
-        self.__face_up = value
-
-    @property
-    def __rank_str(self) -> str:
-        """Human-readable representation of the rank of the card."""
-        return str(self.rank)
-
-    @property
-    def __suit_str(self) -> str:
-        """Human-readable representation of the suit of the card."""
-        # TODO: handle configuration of suit display (outline or filled)
-        if self._outline_suits:
-            return Card.__SUIT_OUTLINE_STR[self.suit]
-        return Card.__SUIT_STR[self.suit]
-
-    def __repr__(self) -> str:
-        return f"Card({self.rank!r}, {self.suit!r}, '{self.color}', {self.face_up})"
-
-    def __str__(self) -> str:
-        """Return string representation of the card."""
-        if self.face_up:
-            return self.__rank_str + self.__suit_str
+def card_to_string(card_id: CardID) -> str:
+    """Return a short string representation (e.g., 'A\u2660')."""
+    if card_id < 0:
         return "??"
+    rank = get_rank(card_id)
+    suit = get_suit(card_id)
+    # Use short suit symbol
+    suit_sym = {
+        Suit.SPADES: "♠",
+        Suit.HEARTS: "♥",
+        Suit.DIAMONDS: "♦",
+        Suit.CLUBS: "♣",
+    }.get(suit, "?")
+    return f"{rank}{suit_sym}"
 
-    def __eq__(self, other: object) -> bool:
-        """Check equality with another object."""
-        if not isinstance(other, Card):
-            return NotImplemented
-        return (
-            self.rank == other.rank
-            and self.suit == other.suit
-            and self.color == other.color
-            and self.face_up == other.face_up
-        )
 
-    __hash__ = None
+def card_back_to_string(card_id: CardID) -> str:
+    """Return a string for the back of the card."""
+    deck_index = abs(card_id) - 1 if card_id < 0 else card_id // CARDS_PER_DECK
+    color = _DECK_COLORS.get(deck_index, "Unknown")
+    return f"[Hidden {color} Card]"
 
-    def flip(self) -> None:
-        """Flip the card.
 
-        If the card was face up, it will become face down and vice versa.
-        """
-        self.face_up = not self.face_up
+def get_card_colors(card_id: CardID) -> tuple[str, str]:
+    """Return (foreground_color, background_color) for a card."""
+    deck_index = abs(card_id) - 1 if card_id < 0 else card_id // CARDS_PER_DECK
+    background = _DECK_COLORS.get(deck_index, "blue").lower()
+    if card_id < 0:
+        return ("black", background)
+
+    suit = get_suit(card_id)
+    foreground = _SUIT_COLORS.get(suit, "black")
+    return (foreground, background)
+
+
+def get_card_display(card_id: CardID) -> str:
+    """Return a human-readable string for a card ID."""
+    if card_id < 0:
+        return card_back_to_string(card_id)
+
+    deck_index = card_id // CARDS_PER_DECK
+    value = card_id % CARDS_PER_DECK
+    card_name = _CARD_NAMES.get(value, "Unknown Card")
+    color = _DECK_COLORS.get(deck_index, "Unknown")
+    return f"{card_name} ({color} back)"
+
+
+def get_rank(card_id: CardID) -> Rank:
+    """Return the Rank enum for a given card ID."""
+    if card_id < 0:
+        return Rank.HIDDEN
+    value = card_id % CARDS_PER_DECK
+    rank_idx = value % CARDS_PER_SUIT
+    return _RANK_ORDER[rank_idx]
+
+
+def get_suit(card_id: CardID) -> Suit:
+    """Return the Suit enum for a given card ID."""
+    if card_id < 0:
+        return Suit.HIDDEN
+    value = card_id % CARDS_PER_DECK
+    suit_idx = value // CARDS_PER_SUIT
+    return _SUIT_ORDER[suit_idx]

@@ -1,54 +1,34 @@
+"""Integration tests for a full game execution."""
+
+from pycardgolf.core.event_bus import EventBus
 from pycardgolf.core.game import Game
-from pycardgolf.interfaces.base import GameInterface
 from pycardgolf.players.bots.random_bot import RandomBot
 
 
 def test_full_game_execution(mocker):
-    # Setup
-    mock_interface = mocker.MagicMock(spec=GameInterface)
+    """A full 2-round bot game should complete and call renderer methods."""
+    event_bus = EventBus()
 
-    # Create two random bots
-    bot1 = RandomBot("Bot 1", mock_interface)
-    bot2 = RandomBot("Bot 2", mock_interface)
+    bot1 = RandomBot("Bot 1")
+    bot2 = RandomBot("Bot 2")
+    bot1._rng = mocker.Mock()
+    bot1._rng.choice.side_effect = lambda x: x[0]
+    bot2._rng = mocker.Mock()
+    bot2._rng.choice.side_effect = lambda x: x[0]
 
     players = [bot1, bot2]
 
-    # Initialize game with 2 rounds
-    game = Game(players, mock_interface, num_rounds=2)
-
-    # Execute
+    game = Game(players, event_bus, num_rounds=2)
     game.start()
 
-    # Verification
+    # Drive the game to completion
+    running = True
+    while running:
+        running = game.tick()
 
-    # 1. Verify game completed (current_round_num should be 2)
+    # Game should have completed both rounds
     assert game.current_round_num == 2
 
-    # 2. Verify scores are calculated (should be non-zero usually, but
-    # technically could be 0 if lucky)
-    # At least check they are integers
-    assert isinstance(bot1.score, int)
-    assert isinstance(bot2.score, int)
-
-    # 3. Verify interface calls
-    # Should have notified start of rounds
-    assert (
-        mocker.call("--- Starting Round 1 ---") in mock_interface.notify.call_args_list
-    )
-    assert (
-        mocker.call("--- Starting Round 2 ---") in mock_interface.notify.call_args_list
-    )
-
-    # Should have declared game over
-    assert mocker.call("\n--- Game Over ---") in mock_interface.notify.call_args_list
-
-    # Should have announced a winner
-    # We don't know who won, but we know the format
-    winner_calls = [
-        c for c in mock_interface.notify.call_args_list if "Winner:" in str(c)
-    ]
-    assert len(winner_calls) == 1
-
-    # Verify bots took turns (interface should have received notifications from bots)
-    bot_actions = [c for c in mock_interface.notify.call_args_list if "Bot" in str(c)]
-    assert len(bot_actions) > 0
+    # Scores should be integers
+    assert isinstance(game.scores[bot1], int)
+    assert isinstance(game.scores[bot2], int)

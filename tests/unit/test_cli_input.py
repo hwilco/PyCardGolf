@@ -1,0 +1,227 @@
+"""Tests for the CLI input handler using primitives."""
+
+import pytest
+from rich.console import Console
+
+from pycardgolf.core.actions import ActionType
+from pycardgolf.core.observation import Observation
+from pycardgolf.core.phases import RoundPhase
+from pycardgolf.exceptions import GameExitError
+from pycardgolf.interfaces.cli import CLIInputHandler, CLIRenderer
+from pycardgolf.utils.constants import HAND_SIZE
+from pycardgolf.utils.deck import CARDS_PER_DECK
+
+
+@pytest.fixture
+def mock_console(mocker):
+    """Create a mock console."""
+    return mocker.Mock(spec=Console)
+
+
+@pytest.fixture
+def mock_renderer(mocker):
+    """Create a mock renderer."""
+    return mocker.Mock(spec=CLIRenderer)
+
+
+@pytest.fixture
+def input_handler(mock_console, mock_renderer):
+    """Create a CLI input handler with a mock console and renderer."""
+    return CLIInputHandler(mock_console, mock_renderer)
+
+
+@pytest.fixture
+def mock_player(mocker):
+    """Create a mock player."""
+    player = mocker.Mock()
+    player.name = "Test Player"
+    return player
+
+
+@pytest.fixture
+def base_obs():
+    """Create a base observation fixture."""
+    return Observation(
+        my_hand=[-1] * HAND_SIZE,
+        other_hands={},
+        discard_top=None,
+        deck_size=CARDS_PER_DECK,
+        deck_top=None,
+        current_player_name="Test Player",
+        phase=RoundPhase.SETUP,
+        valid_actions=[],
+    )
+
+
+class TestInputHandlerValidation:
+    """Tests for user input validation in CLIInputHandler."""
+
+    def test_get_input(self, input_handler, mock_console):
+        """Test basic input retrieval."""
+        mock_console.input.return_value = "test"
+        result = input_handler.get_input("Prompt: ")
+        assert result == "test"
+        mock_console.input.assert_called_once_with("Prompt: ")
+
+    def test_get_choice_with_valid_options(self, input_handler, mock_console):
+        """Test that valid options are accepted."""
+        mock_console.input.return_value = "d"
+        result = input_handler.get_choice(
+            "Choose: ", valid_options=["d", "p"], error_msg="Invalid"
+        )
+        assert result == "d"
+
+    def test_get_choice_retries_on_invalid(self, input_handler, mock_console):
+        """Test that invalid input causes retry."""
+        mock_console.input.side_effect = ["invalid", "d"]
+        result = input_handler.get_choice(
+            "Choose: ", valid_options=["d", "p"], error_msg="Invalid input."
+        )
+        assert result == "d"
+        mock_console.print.assert_any_call("Invalid input.")
+
+    @pytest.mark.parametrize(
+        "quit_input",
+        ["q", "quit", "Q", "QUIT"],
+    )
+    def test_get_choice_quit(self, input_handler, mock_console, quit_input):
+        """Test that quit inputs raise GameExitError."""
+        mock_console.input.return_value = quit_input
+        with pytest.raises(GameExitError):
+            input_handler.get_choice("Choose: ", valid_options=["a", "b"])
+
+    def test_get_validated_input_quit(self, input_handler, mock_console):
+        """Test that quit input in get_validated_input raises GameExitError."""
+        mock_console.input.return_value = "q"
+        with pytest.raises(GameExitError):
+            input_handler.get_validated_input("Input: ", lambda x: int(x))
+
+    def test_get_validated_input_retries_on_error(self, input_handler, mock_console):
+        """Test that validation errors cause retry."""
+        mock_console.input.side_effect = ["abc", "123"]
+        result = input_handler.get_validated_input(
+            "Number: ", lambda x: int(x), error_msg="Not a number."
+        )
+        assert result == 123
+        mock_console.print.assert_called_with("Not a number.")
+
+
+class TestInputHandlerGetAction:
+    """Tests for the consolidated get_action method."""
+
+    def test_get_action_setup_phase(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test setup phase routing."""
+        base_obs.phase = RoundPhase.SETUP
+        mock_console.input.return_value = "1"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.FLIP
+        assert action.target_index == 0
+
+    def test_get_action_draw_phase_deck(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test draw phase: deck."""
+        base_obs.phase = RoundPhase.DRAW
+        mock_console.input.return_value = "d"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.DRAW_DECK
+
+    def test_get_action_draw_phase_discard(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test draw phase: discard."""
+        base_obs.phase = RoundPhase.DRAW
+        mock_console.input.return_value = "p"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.DRAW_DISCARD
+
+    def test_get_action_action_phase_keep_and_swap(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test action phase: keep and swap."""
+        base_obs.phase = RoundPhase.ACTION
+        base_obs.can_discard_drawn = True
+        mock_console.input.side_effect = ["k", "2"]
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.SWAP
+        assert action.target_index == 1
+
+    def test_get_action_action_phase_discard_drawn(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test action phase: discard drawn card."""
+        base_obs.phase = RoundPhase.ACTION
+        base_obs.can_discard_drawn = True
+        mock_console.input.return_value = "d"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.DISCARD_DRAWN
+
+    def test_get_action_action_phase_no_discard_drawn(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test action phase: can_discard_drawn is False."""
+        base_obs.phase = RoundPhase.ACTION
+        base_obs.can_discard_drawn = False
+        # Should skip prompt and go straight to hand replacement
+        mock_console.input.return_value = "1"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.SWAP
+        assert action.target_index == 0
+
+    def test_get_action_flip_phase_no(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test flip phase: no."""
+        base_obs.phase = RoundPhase.FLIP
+        mock_console.input.return_value = "n"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.PASS
+
+    def test_get_action_flip_phase_yes(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test flip phase: yes."""
+        base_obs.phase = RoundPhase.FLIP
+        # Yes, then pick card index 1
+        mock_console.input.side_effect = ["y", "1"]
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.FLIP
+        assert action.target_index == 0
+
+    def test_get_action_unknown_phase(self, input_handler, mock_player, base_obs):
+        """Test fallback for unknown phase."""
+        base_obs.phase = "UNKNOWN"
+        action = input_handler.get_action(mock_player, base_obs)
+        assert action.action_type == ActionType.PASS
+
+
+class TestInputHandlerHelpers:
+    """Tests for private helper methods and card index validation."""
+
+    def test_validate_card_index_valid(self, input_handler):
+        """Test valid card index strings."""
+        assert input_handler._validate_card_index("1") == 0
+        assert input_handler._validate_card_index("6") == 5
+
+    def test_validate_card_index_invalid(self, input_handler):
+        """Test invalid card index strings raise ValueError."""
+        with pytest.raises(ValueError, match="Not a valid number"):
+            input_handler._validate_card_index("abc")
+        with pytest.raises(ValueError, match="Card index must be between 1 and 6"):
+            input_handler._validate_card_index("0")
+        with pytest.raises(ValueError, match="Card index must be between 1 and 6"):
+            input_handler._validate_card_index("7")
+
+    def test_get_valid_flip_index_filtering(
+        self, input_handler, mock_console, mock_player, base_obs
+    ):
+        """Test filtration of face-up cards."""
+        base_obs.my_hand[0] = 0  # Face up
+        base_obs.my_hand[1] = -1  # Face down
+
+        # User tries to pick '1' (already face up), then picks '2'
+        mock_console.input.side_effect = ["1", "2"]
+        result = input_handler._get_valid_flip_index(mock_player, base_obs)
+        assert result == 1
