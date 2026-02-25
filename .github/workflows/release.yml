@@ -16,17 +16,18 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
       - name: Generate App Token
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.SEMVER_APP_ID }}
           private-key: ${{ secrets.SEMVER_APP_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Python Semantic Release
         uses: python-semantic-release/python-semantic-release@v10.5.3
