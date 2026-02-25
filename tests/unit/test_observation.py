@@ -2,7 +2,7 @@
 
 import pytest
 
-from pycardgolf.core.actions import Action, ActionType
+from pycardgolf.core.actions import ActionSpace, ActionType
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.core.phases import ActionPhaseState, RoundPhase
@@ -47,9 +47,7 @@ def mock_round(sample_card_ids, mocker):
     round_state.discard_pile.peek.return_value = 25  # Jack of Hearts
 
     # Mock get_valid_actions
-    round_state.get_valid_actions.return_value = [
-        Action(action_type=ActionType.DRAW_DECK)
-    ]
+    round_state.get_valid_actions.return_value = (ActionSpace.DRAW_DECK,)
 
     return round_state
 

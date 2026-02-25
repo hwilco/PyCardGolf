@@ -163,6 +163,14 @@ def test_handle_flip_card(round_state):
     assert round_state.phase == RoundPhase.DRAW  # Moved to next player
 
 
+def test_get_valid_actions_action_from_discard(round_state):
+    """Test valid actions in ACTION phase when drawn from discard."""
+    round_state.phase_state = ActionPhaseState(drawn_from_deck=False)
+    actions = round_state.get_valid_actions(0)
+    assert any(a.action_type == ActionType.SWAP for a in actions)
+    assert not any(a.action_type == ActionType.DISCARD_DRAWN for a in actions)
+
+
 def test_handle_step_finished_phase(round_state):
     """Test that step returns empty list for FINISHED phase."""
     round_state.phase_state = FinishedPhaseState()

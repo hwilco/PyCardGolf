@@ -13,7 +13,7 @@ def test_random_bot_no_actions(mocker):
     """Test that RandomBot raises RuntimeError if no valid actions are found."""
     bot = RandomBot("Bot")
     mock_observation = mocker.Mock(spec=Observation)
-    mock_observation.valid_actions = []
+    mock_observation.valid_actions = ()
 
     with pytest.raises(RuntimeError, match=r"No valid actions found."):
         bot.get_action(mock_observation)
@@ -50,14 +50,14 @@ def empty_obs():
         deck_top=None,
         current_player_name="Bot",
         phase=RoundPhase.SETUP,
-        valid_actions=[],
+        valid_actions=(),
     )
 
 
 def test_get_action_setup_phase(bot, empty_obs):
     """Setup phase: bot flips a random face-down card."""
     empty_obs.phase = RoundPhase.SETUP
-    empty_obs.valid_actions = [ActionSpace.FLIP[i] for i in range(HAND_SIZE)]
+    empty_obs.valid_actions = ActionSpace.FLIP
 
     action = bot.get_action(empty_obs)
 
@@ -68,10 +68,10 @@ def test_get_action_setup_phase(bot, empty_obs):
 def test_get_action_draw_phase(bot, empty_obs):
     """Draw phase: bot draws from deck or discard pile."""
     empty_obs.phase = RoundPhase.DRAW
-    empty_obs.valid_actions = [
+    empty_obs.valid_actions = (
         ActionSpace.DRAW_DECK,
         ActionSpace.DRAW_DISCARD,
-    ]
+    )
 
     action = bot.get_action(empty_obs)
 
@@ -84,8 +84,7 @@ def test_get_action_action_phase(bot, empty_obs):
     empty_obs.phase = RoundPhase.ACTION
     empty_obs.drawn_card_id = 99
 
-    actions = [ActionSpace.SWAP[i] for i in range(HAND_SIZE)]
-    actions.append(ActionSpace.DISCARD_DRAWN)
+    actions = (*ActionSpace.SWAP, ActionSpace.DISCARD_DRAWN)
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)
@@ -97,8 +96,7 @@ def test_get_action_flip_phase(bot, empty_obs):
     """Flip phase: bot passes or flips a random face-down card."""
     empty_obs.phase = RoundPhase.FLIP
 
-    actions = [ActionSpace.PASS]
-    actions.extend(ActionSpace.FLIP[i] for i in range(1, HAND_SIZE))
+    actions = (ActionSpace.PASS, *ActionSpace.FLIP)
     empty_obs.valid_actions = actions
 
     action = bot.get_action(empty_obs)
