@@ -33,6 +33,7 @@ if TYPE_CHECKING:
         CardDrawnDiscardEvent,
         CardFlippedEvent,
         CardSwappedEvent,
+        DeckReshuffledEvent,
         GameOverEvent,
         GameStatsEvent,
         RoundEndEvent,
@@ -407,14 +408,11 @@ class CLIRenderer(GameRenderer):
                 else:
                     self.console.print(f"  {name}: {value}")
 
-    def display_initial_flip_choices(
-        self, player_name: str, hand: Hand, choices: list[int]
-    ) -> None:
-        """Display the choices made for initial cards to flip."""
-        card_ids = [hand[i] for i in choices]
-        msg_parts: list[str | CardID] = [f"{player_name} flipped initial cards: "]
-        for i, card_id in enumerate(card_ids):
-            msg_parts.append(card_id)
-            if i < len(card_ids) - 1:
-                msg_parts.append(", ")
-        self._print_card_message(msg_parts)
+    def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:  # noqa: ARG002
+        """Display a notification that the draw pile was replenished from discard."""
+        self.console.print(
+            Panel(
+                "[bold yellow]The draw deck is empty! Reshuffling the discard pile to"
+                " form a new deck...[/bold yellow]"
+            )
+        )

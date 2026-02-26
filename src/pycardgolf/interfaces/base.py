@@ -21,6 +21,7 @@ from pycardgolf.core.events import (
     CardDrawnDiscardEvent,
     CardFlippedEvent,
     CardSwappedEvent,
+    DeckReshuffledEvent,
     GameOverEvent,
     GameStartedEvent,
     GameStatsEvent,
@@ -71,6 +72,7 @@ class GameRenderer(ABC):
         self.event_bus.subscribe(CardDiscardedEvent, self.display_discard_action)
         self.event_bus.subscribe(CardSwappedEvent, self.display_replace_action)
         self.event_bus.subscribe(CardFlippedEvent, self.display_flip_action)
+        self.event_bus.subscribe(DeckReshuffledEvent, self.display_deck_reshuffled)
         self.event_bus.subscribe(RoundEndEvent, self.display_round_end)
         self.event_bus.subscribe(GameOverEvent, self.display_game_over)
         self.event_bus.subscribe(ScoreBoardEvent, self.display_scoreboard)
@@ -113,12 +115,6 @@ class GameRenderer(ABC):
         """Display the action of flipping a card face-up."""
 
     @abstractmethod
-    def display_initial_flip_choices(
-        self, player_name: str, hand: Hand, choices: list[int]
-    ) -> None:
-        """Display the choices made for initial cards to flip."""
-
-    @abstractmethod
     def display_turn_start(self, event: TurnStartEvent) -> None:
         """Display the start of a turn."""
 
@@ -129,6 +125,10 @@ class GameRenderer(ABC):
     @abstractmethod
     def display_hand(self, hand: Hand, display_indices: bool = False) -> None:
         """Display a hand."""
+
+    @abstractmethod
+    def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:
+        """Display a notification that the draw pile was replenished from discard."""
 
 
 # ---------------------------------------------------------------------------
@@ -174,11 +174,6 @@ class NullGameRenderer(GameRenderer):
     def display_flip_action(self, event: CardFlippedEvent) -> None:  # pragma: no cover
         """No-op."""
 
-    def display_initial_flip_choices(
-        self, player_name: str, hand: Hand, choices: list[int]
-    ) -> None:  # pragma: no cover
-        """No-op."""
-
     def display_turn_start(self, event: TurnStartEvent) -> None:  # pragma: no cover
         """No-op."""
 
@@ -189,6 +184,11 @@ class NullGameRenderer(GameRenderer):
 
     def display_hand(
         self, hand: Hand, display_indices: bool = False
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_deck_reshuffled(
+        self, event: DeckReshuffledEvent
     ) -> None:  # pragma: no cover
         """No-op."""
 

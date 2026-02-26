@@ -12,6 +12,7 @@ from pycardgolf.core.events import (
     CardDrawnDiscardEvent,
     CardFlippedEvent,
     CardSwappedEvent,
+    DeckReshuffledEvent,
 )
 from pycardgolf.core.hand import Hand
 from pycardgolf.core.phases import RoundPhase, SetupPhaseState
@@ -124,11 +125,25 @@ class Round(RNGMixin):
         """Advance the game state by one step based on the action."""
         return self.phase_state.handle_action(self, action)
 
-    def draw_from_deck(self, player_idx: int) -> CardDrawnDeckEvent:
-        """Draw a card from the deck."""
+    def draw_from_deck(self, player_idx: int) -> list[GameEvent]:
+        """Draw a card from the deck, shuffling the discard pile first if necessary."""
+        events: list[GameEvent] = []
+
+        if self.deck.num_cards == 0:
+            if self.discard_pile.num_cards <= 1:
+                # Edge case: All cards are tied up in players' hands or drawn
+                msg = "Not enough cards left in the discard pile to reshuffle."
+                raise IllegalActionError(msg)
+            top_discard = self.discard_pile.draw()
+            self.deck.add_card_stack(self.discard_pile, clear_other=True)
+            self.deck.shuffle()
+            self.discard_pile.add_card(top_discard)  # top of the discard pile remains
+            events.append(DeckReshuffledEvent())
+
         card_id = self.deck.draw()
         self.drawn_card_id = card_id
-        return CardDrawnDeckEvent(player_idx=player_idx, card_id=card_id)
+        events.append(CardDrawnDeckEvent(player_idx=player_idx, card_id=card_id))
+        return events
 
     def draw_from_discard(self, player_idx: int) -> CardDrawnDiscardEvent:
         """Draw a card from the discard pile."""

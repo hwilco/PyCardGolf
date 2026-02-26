@@ -14,6 +14,7 @@ from pycardgolf.core.events import (
     CardDrawnDiscardEvent,
     CardFlippedEvent,
     CardSwappedEvent,
+    DeckReshuffledEvent,
     GameOverEvent,
     GameStartedEvent,
     GameStatsEvent,
@@ -296,11 +297,6 @@ class TestRendererDisplay:
         renderer.display_final_turn_notification(mock_player)
         assert "TestPlayer has revealed all their cards!" in output.getvalue()
 
-    def test_display_initial_flip_choices(self, captured_renderer, sample_hand):
-        renderer, output = captured_renderer
-        renderer.display_initial_flip_choices("TestPlayer", sample_hand, [0, 1])
-        assert "TestPlayer flipped initial cards:" in output.getvalue()
-
     def test_display_turn_start(
         self, captured_renderer, mock_player, sample_hand, mocker
     ):
@@ -363,3 +359,10 @@ class TestColorValidation:
 
         renderer.handle_game_started(event)
         assert renderer.players == [player1, player2]
+
+    def test_display_deck_reshuffled(self, captured_renderer):
+        """Test displaying a deck reshuffled notification."""
+        renderer, output = captured_renderer
+        event = DeckReshuffledEvent()
+        renderer.display_deck_reshuffled(event)
+        assert "The draw deck is empty! Reshuffling" in output.getvalue()

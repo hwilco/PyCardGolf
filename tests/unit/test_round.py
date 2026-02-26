@@ -7,6 +7,7 @@ from pycardgolf.core.events import (
     CardDrawnDiscardEvent,
     CardFlippedEvent,
     CardSwappedEvent,
+    DeckReshuffledEvent,
     TurnStartEvent,
 )
 from pycardgolf.core.phases import (
@@ -254,3 +255,84 @@ def test_round_clone_copies_all_attributes():
         assert h1 is not h2
         assert h1.card_ids == h2.card_ids
         assert h1.face_up_mask == h2.face_up_mask
+
+
+def test_draw_from_deck_reshuffle_success():
+    """Test that drawing from an empty deck triggers a reshuffle.
+
+    Triggers if discard pile has cards.
+    """
+    player_names = ["P1"]
+    round_instance = RoundFactory.create_standard_round(player_names=player_names)
+
+    # Empty the deck
+    round_instance.deck.clear()
+
+    # Ensure discard pile has at least 2 cards (one becomes new deck)
+    round_instance.discard_pile.clear()
+    round_instance.discard_pile.add_card(10)  # Will be top deck card
+    round_instance.discard_pile.add_card(20)  # Will remain discard pile top card
+
+    events = round_instance.draw_from_deck(player_idx=0)
+
+    assert any(isinstance(e, DeckReshuffledEvent) for e in events)
+    assert any(isinstance(e, CardDrawnDeckEvent) for e in events)
+    assert round_instance.deck.num_cards == 0  # Drew the only card
+    assert round_instance.discard_pile.num_cards == 1
+    assert round_instance.discard_pile.peek() == 20
+
+
+def test_draw_from_deck_reshuffle_failure():
+    """Test that drawing from an empty deck raises IllegalActionError.
+
+    Occurs if discard pile is too small.
+    """
+    player_names = ["P1"]
+    round_instance = RoundFactory.create_standard_round(player_names=player_names)
+
+    # Empty the deck
+    round_instance.deck.clear()
+
+    # Discard pile has only 1 card (cannot reshuffle as it must remain as top)
+    round_instance.discard_pile.clear()
+    round_instance.discard_pile.add_card(10)
+
+    with pytest.raises(
+        IllegalActionError, match="Not enough cards left in the discard pile"
+    ):
+        round_instance.draw_from_deck(player_idx=0)
+
+
+def test_round_clone_no_preserve_rng():
+    """Verify Round.clone(preserve_rng=False) reseeds the clone."""
+    player_names = ["P1", "P2"]
+    original = RoundFactory.create_standard_round(player_names=player_names)
+    clone = original.clone(preserve_rng=False)
+
+    assert clone.seed is not None
+    assert clone.seed != original.seed
+
+
+def test_swap_drawn_card_no_card():
+    """Test swap_drawn_card raises IllegalActionError if no card drawn."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.drawn_card_id = None
+    with pytest.raises(IllegalActionError, match="No card drawn"):
+        round_instance.swap_drawn_card(player_idx=0, hand_index=0)
+
+
+def test_flip_card_in_hand_already_face_up():
+    """Test flip_card_in_hand raises IllegalActionError if card already face up."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1"])
+    round_instance.hands[0].flip_card(0)
+    with pytest.raises(IllegalActionError, match="Card already face up"):
+        round_instance.flip_card_in_hand(player_idx=0, hand_index=0)
+
+
+def test_reveal_hands_round():
+    """Test reveal_hands reveals all cards in all hands."""
+    round_instance = RoundFactory.create_standard_round(player_names=["P1", "P2"])
+    round_instance.reveal_hands()
+    for hand in round_instance.hands:
+        for i in range(HAND_SIZE):
+            assert hand.is_face_up(i)
