@@ -20,7 +20,7 @@ description: Generate a commit message from staged changes and optionally commit
 
      - Bullet point explaining a specific change or rationale.
      - Another bullet point for a separate change.
-     - Wrap lines at ~72 characters.
+     - Wrap lines at ~72 characters (body line cannot exceed 90 characters)
      - Follow rules of @commitlint/config-conventional (https://www.conventionalcommits.org/en/v1.0.0/#summary)
      ```
    - **Allowed Types:**

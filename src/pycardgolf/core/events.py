@@ -24,6 +24,7 @@ EventType = Literal[
     "SCORE_BOARD",
     "GAME_STATS",
     "GAME_STARTED",
+    "DECK_RESHUFFLED",
 ]
 
 
@@ -141,3 +142,10 @@ class GameStatsEvent(GameEvent):
 
     stats: dict[BasePlayer, PlayerStats]
     event_type: EventType = "GAME_STATS"
+
+
+@dataclass(frozen=True, kw_only=True)
+class DeckReshuffledEvent(GameEvent):
+    """Event triggered when the discard pile is shuffled to form a new draw pile."""
+
+    event_type: EventType = "DECK_RESHUFFLED"

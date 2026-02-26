@@ -159,20 +159,20 @@ class DrawPhaseState(PhaseState):
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
         player_idx = round_state.current_player_idx
+        events: list[GameEvent]
+
         match action.action_type:
             case ActionType.DRAW_DECK:
-                event = round_state.draw_from_deck(player_idx)
+                events = round_state.draw_from_deck(player_idx)
                 is_from_deck = True
             case ActionType.DRAW_DISCARD:
-                event = round_state.draw_from_discard(player_idx)
+                events = [round_state.draw_from_discard(player_idx)]
                 is_from_deck = False
             case _:
                 msg = f"Invalid action for DRAW phase: {action}"
                 raise IllegalActionError(msg)
 
-        events: list[GameEvent] = [event]
         round_state.phase_state = ActionPhaseState(drawn_from_deck=is_from_deck)
-
         return events
 
 
