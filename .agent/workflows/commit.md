@@ -12,18 +12,34 @@ description: Generate a commit message from staged changes and optionally commit
 2. **Generate Commit Message**
    - **Format:**
      ```
-     type: short lowercase description
+     <type>[optional scope]: <description (lowercase)>
+
+     [optional body]
+
+     [optional footer(s)]
 
      - Bullet point explaining a specific change or rationale.
      - Another bullet point for a separate change.
      - Wrap lines at ~72 characters.
+     - Follow rules of @commitlint/config-conventional (https://www.conventionalcommits.org/en/v1.0.0/#summary)
      ```
-   - **Allowed Types:** `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`.
+   - **Allowed Types:**
+    - `build`
+    - `chore`
+    - `ci`
+    - `docs`
+    - `feat`
+    - `fix`
+    - `perf`
+    - `refactor`
+    - `revert`
+    - `style`
+    - `test`
    - **Constraint Rules:**
      - **Summary Line:** Lowercase, imperative mood, no trailing period, and ideally under 50 characters.
      - **Content:** Explain *what* and *why*, not just a restatement of the diff.
      - **Paths:** Use relative paths for files/classes; never include absolute paths (e.g., `/Users/...`).
-     - **Formatting:** Use backticks (`code`) for code references.
+     - **Formatting:** Use backticks (`code`) for code references, do not escape the backticks with backslashes.
      - **Scope:** Typically 3–6 bullets. If it isn't in the diff, it doesn't belong in the message (no internal reasoning that didn't make the final commit).
 
 3. **User Approval**
