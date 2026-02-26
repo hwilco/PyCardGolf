@@ -266,8 +266,7 @@ def test_draw_from_deck_reshuffle_success():
     round_instance = RoundFactory.create_standard_round(player_names=player_names)
 
     # Empty the deck
-    while round_instance.deck.num_cards > 0:
-        round_instance.deck.draw()
+    round_instance.deck.clear()
 
     # Ensure discard pile has at least 2 cards (one becomes new deck)
     round_instance.discard_pile.clear()
@@ -292,8 +291,7 @@ def test_draw_from_deck_reshuffle_failure():
     round_instance = RoundFactory.create_standard_round(player_names=player_names)
 
     # Empty the deck
-    while round_instance.deck.num_cards > 0:
-        round_instance.deck.draw()
+    round_instance.deck.clear()
 
     # Discard pile has only 1 card (cannot reshuffle as it must remain as top)
     round_instance.discard_pile.clear()

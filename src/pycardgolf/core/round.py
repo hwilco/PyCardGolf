@@ -129,7 +129,7 @@ class Round(RNGMixin):
         """Draw a card from the deck, shuffling the discard pile first if necessary."""
         events: list[GameEvent] = []
 
-        if len(self.deck.card_ids) == 0:  # TODO: rework logic if using card stack
+        if self.deck.num_cards == 0:
             if self.discard_pile.num_cards <= 1:
                 # Edge case: All cards are tied up in players' hands or drawn
                 msg = "Not enough cards left in the discard pile to reshuffle."
