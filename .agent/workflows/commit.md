@@ -24,17 +24,17 @@ description: Generate a commit message from staged changes and optionally commit
      - Follow rules of @commitlint/config-conventional (https://www.conventionalcommits.org/en/v1.0.0/#summary)
      ```
    - **Allowed Types:**
-     -build
-     -chore
-     -ci
-     -docs
-     -feat
-     -fix
-     -perf
-     -refactor
-     -revert
-     -style
-     -test
+    - `build`
+    - `chore`
+    - `ci`
+    - `docs`
+    - `feat`
+    - `fix`
+    - `perf`
+    - `refactor`
+    - `revert`
+    - `style`
+    - `test`
    - **Constraint Rules:**
      - **Summary Line:** Lowercase, imperative mood, no trailing period, and ideally under 50 characters.
      - **Content:** Explain *what* and *why*, not just a restatement of the diff.
