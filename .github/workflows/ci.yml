@@ -12,13 +12,6 @@ on:
       - ".github/workflows/**"
   pull_request:
     branches: [main, beta]
-    paths:
-      - "src/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - ".pre-commit-config.yaml"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 # Cancels in-progress runs for the same branch to save CI minutes
