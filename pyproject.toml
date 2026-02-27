@@ -124,3 +124,15 @@ exclude = [
 pythonVersion = "3.13"
 typeCheckingMode = "standard" # Options: "off", "basic", "standard", "strict"
 reportMissingTypeStubs = false
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:tool.poetry.version"]
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.branches.beta]
+match = "beta"
+prerelease = true
+prerelease_token = "beta"
