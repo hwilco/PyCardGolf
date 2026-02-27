@@ -24,3 +24,5 @@
 * [ ] **Code Quality:** Code is simple, easy to understand, and follows project standards (e.g., linting passes locally).
 * [ ] **Testing:** Changes are tested (ran existing unit/integration tests and/or manually confirmed functionality).
 * [ ] **Documentation:** If this is a new feature or a change to public API, necessary documentation has been updated (e.g., README, function comments, API docs).
+* [ ] **PR Title:** The PR title follows the [Conventional Commits](https://www.conventionalcommits.org/) format (e.g., `feat: add multiplayer`, `fix: score calculation`).
+* [ ] **Scope:** This PR contains exactly one self-contained functional change. (If it contains multiple unrelated changes, please split it into multiple PRs).
