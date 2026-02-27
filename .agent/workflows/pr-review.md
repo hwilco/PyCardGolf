@@ -4,7 +4,7 @@ description: Run a structured PR review against the current branch
 
 ## Steps
 
-1. Retrieve the `git diff` against the target branch (usually `main`).
+1. Retrieve the `git diff` against the target branch (usually `beta`).
    - Identify the core purpose of the changes based on the diff and any recent commit messages.
 
 2. Run the project's lint and type-check tooling to surface mechanical issues:

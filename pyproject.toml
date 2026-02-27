@@ -8,11 +8,13 @@ packages = [{include = "pycardgolf", from = "src"}]
 
 [tool.poetry.scripts]
 pycardgolf = "pycardgolf.main:main"
+pycardgolf-tui = "pycardgolf.interfaces.tui.tui_main:main"
 
 [tool.poetry.dependencies]
 python = "^3.13"
-rich = "^13.7.0"
+rich = "^14.3.3"
 color-contrast = "^0.1.1"
+textual = "^8.0.0"
 
 [tool.pyrefly]
 project-includes = [
@@ -101,6 +103,9 @@ ignore = [
 ]
 "src/pycardgolf/interfaces/base.py" = [
     "ANN401", # Allow Any type in base interface methods if necessary
+]
+"src/pycardgolf/interfaces/tui/tui_main.py" = [
+    "T201",  # Allow print statements in TUI entry point
 ]
 "tests/*" = [
     "S101",    # Allow assert statements in tests
