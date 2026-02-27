@@ -22,7 +22,7 @@ description: Generate a commit message from staged changes and optionally commit
      - Another bullet point for a separate change.
      - Wrap lines at ~72 characters (body line cannot exceed 90 characters).
      - Follow rules of @commitlint/config-conventional (https://www.conventionalcommits.org/en/v1.0.0/#summary).
-     - If there is a breaking change, include BREAKING CHANGE in the footer before each one.
+     - For breaking changes, use a footer in the format "BREAKING CHANGE: <description>".
      ```
    - **Allowed Types:**
     - `build`
