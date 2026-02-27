@@ -18,6 +18,7 @@ from pycardgolf.core.events import (
     GameOverEvent,
     GameStartedEvent,
     GameStatsEvent,
+    IllegalActionEvent,
     RoundEndEvent,
     RoundStartEvent,
     ScoreBoardEvent,
@@ -366,3 +367,10 @@ class TestColorValidation:
         event = DeckReshuffledEvent()
         renderer.display_deck_reshuffled(event)
         assert "The draw deck is empty! Reshuffling" in output.getvalue()
+
+    def test_display_illegal_action(self, captured_renderer):
+        """Test displaying an illegal action message."""
+        renderer, output = captured_renderer
+        event = IllegalActionEvent(player_idx=0, message="Illegal move test")
+        renderer.display_illegal_action(event)
+        assert "Error: Illegal move test" in output.getvalue()

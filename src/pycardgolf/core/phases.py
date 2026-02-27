@@ -108,6 +108,14 @@ class SetupPhaseState(PhaseState):
                 round_state.phase_state = DrawPhaseState()
                 return events
 
+            # Emit TurnStartEvent for the next player in setup
+            events.append(
+                TurnStartEvent(
+                    player_idx=round_state.current_player_idx,
+                    hands=dict(enumerate(round_state.hands)),
+                )
+            )
+
         return events
 
 

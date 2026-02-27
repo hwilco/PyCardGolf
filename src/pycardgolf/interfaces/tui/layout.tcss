@@ -1,0 +1,83 @@
+/* Layout CSS for PyCardGolf TUI */
+
+Screen {
+    layout: horizontal;
+}
+
+#main-container {
+    width: 100%;
+    height: 100%;
+}
+
+#game-area {
+    width: 3fr;
+    height: 100%;
+    align: center middle;
+}
+
+#event-log-container {
+    width: 1fr;
+    min-width: 30;
+    height: 100%;
+    border-left: solid $primary;
+}
+
+#event-log-title {
+    text-align: center;
+    text-style: bold;
+    color: $text-muted;
+    width: 100%;
+    height: 1;
+}
+
+.section-title {
+    text-align: center;
+    text-style: bold;
+    color: $text-muted;
+    width: 100%;
+}
+
+/* Opponents area */
+#opponents {
+    width: 100%;
+    height: auto;
+    max-height: 33%;
+    padding: 1;
+    border-bottom: solid $primary-darken-2;
+}
+
+/* Center table */
+#center-table {
+    width: 100%;
+    height: auto;
+    padding: 1;
+}
+
+/* Player area (hand + side indicator) */
+#player-area {
+    width: 100%;
+    height: auto;
+    border-top: solid $primary-darken-2;
+}
+
+#player-hand {
+    width: 1fr;
+    height: auto;
+    padding: 1;
+}
+
+/* Card labels */
+.card-label {
+    width: 8;
+    text-align: center;
+    color: $text-muted;
+}
+
+/* Status bar styling */
+#status-bar {
+    dock: bottom;
+    height: 1;
+    background: $primary-background;
+    color: $text;
+    text-style: bold;
+}
