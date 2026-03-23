@@ -16,7 +16,6 @@ from rich.text import Text
 from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.exceptions import GameConfigError
 from pycardgolf.interfaces.base import GameRenderer
-from pycardgolf.players.human import HumanPlayer
 from pycardgolf.utils.card import (
     card_to_string,
     get_card_colors,
@@ -424,8 +423,9 @@ class CLIRenderer(GameRenderer):
         """Display an error message for an illegal action."""
         self.console.print(f"Error: {event.message}", style="bold red")
 
-        # Only wait for enter if it's a human player's turn to avoid stalling bots
+        # Only wait for enter if it's an interactive player's turn to
+        # avoid stalling bots
         if self.players:
             player = self.players[event.player_idx]
-            if isinstance(player, HumanPlayer):
+            if player.is_interactive:
                 self.wait_for_enter()

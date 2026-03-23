@@ -48,3 +48,8 @@ def test_get_action_delegation(player, mock_input_handler, obs):
 
     assert action == expected_action
     mock_input_handler.get_action.assert_called_once_with(player, obs)
+
+
+def test_is_interactive(player):
+    """Test that a human player is interactive."""
+    assert player.is_interactive is True

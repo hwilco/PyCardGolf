@@ -27,5 +27,15 @@ class BasePlayer(ABC):
     def get_action(self, observation: Observation) -> Action:
         """Decide on an action given the current observation."""
 
+    @property
+    def is_interactive(self) -> bool:
+        """Indicate whether this player requires external input to proceed.
+
+        This property allows interfaces to determine whether to pause game
+        execution and await acknowledgement (e.g., waiting for a human
+        user to read a message before continuing).
+        """
+        return False
+
     def __repr__(self) -> str:
         return f"Player(name={self.name})"

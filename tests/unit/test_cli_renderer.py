@@ -368,9 +368,49 @@ class TestColorValidation:
         renderer.display_deck_reshuffled(event)
         assert "The draw deck is empty! Reshuffling" in output.getvalue()
 
-    def test_display_illegal_action(self, captured_renderer):
-        """Test displaying an illegal action message."""
+    def test_display_illegal_action_interactive(
+        self, captured_renderer, mock_player, mocker
+    ):
+        """Test displaying an illegal action message for an interactive player."""
         renderer, output = captured_renderer
+        mocker.patch.object(renderer, "wait_for_enter")
+
+        # Setup interactive player
+        mock_player.is_interactive = True
+        renderer.players = [mock_player]
+
         event = IllegalActionEvent(player_idx=0, message="Illegal move test")
         renderer.display_illegal_action(event)
+
         assert "Error: Illegal move test" in output.getvalue()
+        renderer.wait_for_enter.assert_called_once()
+
+    def test_display_illegal_action_non_interactive(
+        self, captured_renderer, mock_player, mocker
+    ):
+        """Test displaying an illegal action message for a non-interactive player."""
+        renderer, output = captured_renderer
+        mocker.patch.object(renderer, "wait_for_enter")
+
+        # Setup non-interactive player
+        mock_player.is_interactive = False
+        renderer.players = [mock_player]
+
+        event = IllegalActionEvent(player_idx=0, message="Illegal move test")
+        renderer.display_illegal_action(event)
+
+        assert "Error: Illegal move test" in output.getvalue()
+        renderer.wait_for_enter.assert_not_called()
+
+    def test_display_illegal_action_no_players(self, captured_renderer, mocker):
+        """Test displaying an illegal action message when no players are set."""
+        renderer, output = captured_renderer
+        mocker.patch.object(renderer, "wait_for_enter")
+
+        renderer.players = []
+
+        event = IllegalActionEvent(player_idx=0, message="Illegal move test")
+        renderer.display_illegal_action(event)
+
+        assert "Error: Illegal move test" in output.getvalue()
+        renderer.wait_for_enter.assert_not_called()

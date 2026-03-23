@@ -23,6 +23,11 @@ class HumanPlayer(BasePlayer):
         super().__init__(name)
         self.input_handler: GameInput = input_handler
 
+    @property
+    def is_interactive(self) -> bool:
+        """Indicate whether this player requires external input to proceed."""
+        return True
+
     def get_action(self, observation: Observation) -> Action:
         """Decide on an action given the current observation."""
         return self.input_handler.get_action(self, observation)

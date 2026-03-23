@@ -30,3 +30,9 @@ def test_abstract_instantiation_raises() -> None:
     """Test that BasePlayer cannot be instantiated directly."""
     with pytest.raises(TypeError):
         BasePlayer("Abstract")  # type: ignore[abstract]
+
+
+def test_is_interactive() -> None:
+    """Test that the base player is not interactive by default."""
+    player = ConcretePlayer("TestPlayer")
+    assert player.is_interactive is False
