@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         DeckReshuffledEvent,
         GameOverEvent,
         GameStatsEvent,
+        IllegalActionEvent,
         RoundEndEvent,
         RoundStartEvent,
         ScoreBoardEvent,
@@ -43,7 +44,7 @@ if TYPE_CHECKING:
     )
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.round import Round
-    from pycardgolf.players import BasePlayer
+    from pycardgolf.players.player import BasePlayer
     from pycardgolf.utils.types import CardID
 
 try:
@@ -408,11 +409,23 @@ class CLIRenderer(GameRenderer):
                 else:
                     self.console.print(f"  {name}: {value}")
 
-    def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:  # noqa: ARG002
+    def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:
         """Display a notification that the draw pile was replenished from discard."""
+        _ = event
         self.console.print(
             Panel(
                 "[bold yellow]The draw deck is empty! Reshuffling the discard pile to"
                 " form a new deck...[/bold yellow]"
             )
         )
+
+    def display_illegal_action(self, event: IllegalActionEvent) -> None:
+        """Display an error message for an illegal action."""
+        self.console.print(f"Error: {event.message}", style="bold red")
+
+        # Only wait for enter if it's an interactive player's turn to
+        # avoid stalling bots
+        if self.players:
+            player = self.players[event.player_idx]
+            if player.is_interactive:
+                self.wait_for_enter()

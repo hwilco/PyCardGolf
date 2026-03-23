@@ -25,6 +25,7 @@ EventType = Literal[
     "GAME_STATS",
     "GAME_STARTED",
     "DECK_RESHUFFLED",
+    "ILLEGAL_ACTION",
 ]
 
 
@@ -149,3 +150,12 @@ class DeckReshuffledEvent(GameEvent):
     """Event triggered when the discard pile is shuffled to form a new draw pile."""
 
     event_type: EventType = "DECK_RESHUFFLED"
+
+
+@dataclass(frozen=True, kw_only=True)
+class IllegalActionEvent(GameEvent):
+    """Event triggered when a player attempts an illegal action."""
+
+    player_idx: int
+    message: str
+    event_type: EventType = "ILLEGAL_ACTION"
