@@ -5,7 +5,9 @@ from __future__ import annotations
 import queue
 from typing import TYPE_CHECKING
 
+from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.base import GameInput
+from pycardgolf.interfaces.tui.constants import QUIT_SENTINEL
 
 if TYPE_CHECKING:
     from pycardgolf.core.actions import Action
@@ -63,20 +65,9 @@ class TUIInputHandler(GameInput):
             except queue.Empty:
                 continue
             else:
-                # Import here to avoid circular dependency at module level
-                from pycardgolf.interfaces.tui.tui_app import (  # noqa: PLC0415
-                    _QUIT_SENTINEL,
-                )
-
-                if result is _QUIT_SENTINEL:
-                    from pycardgolf.exceptions import (  # noqa: PLC0415
-                        GameExitError,
-                    )
-
+                if result is QUIT_SENTINEL:
                     raise GameExitError
                 return result  # type: ignore[return-value]
-
-        from pycardgolf.exceptions import GameExitError  # noqa: PLC0415
 
         raise GameExitError
 
@@ -94,7 +85,5 @@ class TUIInputHandler(GameInput):
 
     def shutdown(self) -> None:
         """Signal the input handler to stop blocking."""
-        from pycardgolf.interfaces.tui.tui_app import _QUIT_SENTINEL  # noqa: PLC0415
-
         self._shutdown = True
-        self.action_queue.put_nowait(_QUIT_SENTINEL)
+        self.action_queue.put_nowait(QUIT_SENTINEL)

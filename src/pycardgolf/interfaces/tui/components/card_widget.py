@@ -35,7 +35,7 @@ class CardWidget(Widget):
     }
     """
 
-    card_id: reactive[int | None] = reactive(None)  # type: ignore[type-arg]
+    card_id: reactive[int | None] = reactive(None)
 
     def __init__(
         self,

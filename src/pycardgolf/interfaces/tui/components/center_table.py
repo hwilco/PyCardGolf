@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from textual.containers import Horizontal
+from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
@@ -55,9 +56,9 @@ class CenterTable(Widget):
     }
     """
 
-    discard_top: reactive[int | None] = reactive(None)  # type: ignore[type-arg]
-    drawn_card: reactive[int | None] = reactive(None)  # type: ignore[type-arg]
-    deck_size: reactive[int] = reactive(0)  # type: ignore[type-arg]
+    discard_top: reactive[int | None] = reactive(None)
+    drawn_card: reactive[int | None] = reactive(None)
+    deck_size: reactive[int] = reactive(0)
 
     def compose(self) -> ComposeResult:
         """Build the center table with draw pile, discard pile, and drawn card."""
@@ -84,7 +85,7 @@ class CenterTable(Widget):
         try:
             discard_widget = self.query_one("#discard-pile-card", CardWidget)
             discard_widget.card_id = card_id
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass  # Widget may not be mounted yet
 
     def watch_drawn_card(self, card_id: CardID | None) -> None:
@@ -92,7 +93,7 @@ class CenterTable(Widget):
         try:
             drawn_widget = self.query_one("#drawn-card-display", CardWidget)
             drawn_widget.card_id = card_id
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass  # Widget may not be mounted yet
 
     def watch_deck_size(self, size: int) -> None:
@@ -100,5 +101,5 @@ class CenterTable(Widget):
         try:
             label = self.query_one("#deck-count-label", Static)
             label.update(f"({size})")
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass  # Widget may not be mounted yet

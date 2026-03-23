@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
+from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
@@ -56,8 +57,8 @@ class OpponentHandWidget(Widget):
         self.opponent_name = opponent_name
         self._opp_index = opp_index
 
-    opponent_name: reactive[str] = reactive("Opponent")  # type: ignore[type-arg]
-    is_next: reactive[bool] = reactive(False)  # type: ignore[type-arg]
+    opponent_name: reactive[str] = reactive("Opponent")
+    is_next: reactive[bool] = reactive(False)
 
     def compose(self) -> ComposeResult:
         """Build a compact 2-row card grid for this opponent."""
@@ -97,7 +98,7 @@ class OpponentHandWidget(Widget):
                 )
             else:
                 label_widget.update(self.opponent_name)
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass
 
     def watch_opponent_name(self, name: str) -> None:
@@ -116,7 +117,7 @@ class OpponentHandWidget(Widget):
                 label_widget.update(f"{name} [bold cyan](Next)[/bold cyan]")
             else:
                 label_widget.update(name)
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass
 
 
@@ -157,7 +158,7 @@ class OpponentGrid(Widget):
         super().__init__(id=id, classes=classes)
         self._num_slots = min(max(num_slots, 0), self.MAX_OPPONENTS)
 
-    next_player_name: reactive[str] = reactive("")  # type: ignore[type-arg]
+    next_player_name: reactive[str] = reactive("")
 
     def compose(self) -> ComposeResult:
         """Build horizontal row of opponent slots."""
@@ -175,7 +176,7 @@ class OpponentGrid(Widget):
             opp_widget = self.query_one(f"#opponent-{opp_index}", OpponentHandWidget)
             opp_widget.opponent_name = name
             opp_widget.update_hand(cards)
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass  # Opponent slot may not exist
 
     def mark_next_player(self, player_name: str) -> None:

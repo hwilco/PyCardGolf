@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from textual.containers import Horizontal, Vertical
+from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
@@ -44,10 +45,8 @@ class PlayerHandWidget(Widget):
     }
     """
 
-    hand_cards: reactive[list[int]] = reactive(  # type: ignore[type-arg]
-        list, always_update=True
-    )
-    player_label: reactive[str] = reactive("Your Hand")  # type: ignore[type-arg]
+    hand_cards: reactive[list[int]] = reactive(list, always_update=True)
+    player_label: reactive[str] = reactive("Your Hand")
 
     def compose(self) -> ComposeResult:
         """Build the 2x3 card grid with position labels."""
@@ -85,7 +84,7 @@ class PlayerHandWidget(Widget):
         try:
             title = self.query_one("#hand-title", Static)
             title.update(label)
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass  # Widget may not be mounted yet
 
     def with_vertical(self) -> Vertical:

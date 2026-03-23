@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from rich.console import Console
+from rich.markdown import Markdown
+
 from pycardgolf.core.event_bus import EventBus
 from pycardgolf.core.game import Game
 from pycardgolf.interfaces.tui.tui_app import PyCardGolfApp
@@ -21,9 +24,6 @@ if TYPE_CHECKING:
 
 def _display_rules() -> None:
     """Display the game rules and exit."""
-    from rich.console import Console  # noqa: PLC0415
-    from rich.markdown import Markdown  # noqa: PLC0415
-
     rules_path = Path(__file__).parents[2] / "RULES.md"
     console = Console()
     markdown = Markdown(rules_path.read_text(encoding="utf-8"))

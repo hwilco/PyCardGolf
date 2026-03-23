@@ -21,9 +21,9 @@ class StatusBar(Static):
     }
     """
 
-    round_num: reactive[int] = reactive(0)  # type: ignore[type-arg]
-    phase_name: reactive[str] = reactive("")  # type: ignore[type-arg]
-    current_player: reactive[str] = reactive("")  # type: ignore[type-arg]
+    round_num: reactive[int] = reactive(0)
+    phase_name: reactive[str] = reactive("")
+    current_player: reactive[str] = reactive("")
 
     def render(self) -> str:
         """Render the status bar text."""

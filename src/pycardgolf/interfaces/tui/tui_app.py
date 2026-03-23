@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import queue
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
+from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.widgets import Footer, Static
 
 from pycardgolf.core.actions import ActionSpace
 from pycardgolf.core.observation import ObservationBuilder
+from pycardgolf.core.phases import RoundPhase
 from pycardgolf.exceptions import GameExitError
 from pycardgolf.interfaces.tui.components.banner import SideIndicator
 from pycardgolf.interfaces.tui.components.center_table import CenterTable
@@ -27,6 +29,7 @@ from pycardgolf.players.human import HumanPlayer
 if TYPE_CHECKING:
     from textual.worker import Worker
 
+    from pycardgolf.core.actions import Action
     from pycardgolf.core.game import Game
     from pycardgolf.core.hand import Hand
     from pycardgolf.core.observation import Observation
@@ -34,9 +37,6 @@ if TYPE_CHECKING:
     from pycardgolf.interfaces.tui.tui_renderer import TUIRenderer
     from pycardgolf.players.player import BasePlayer
     from pycardgolf.utils.types import CardID
-
-# Sentinel to unblock queue.get() on quit
-_QUIT_SENTINEL = object()
 
 
 class PyCardGolfApp(App[None]):
@@ -51,17 +51,18 @@ class PyCardGolfApp(App[None]):
     TITLE = "PyCardGolf"
 
     # All possible bindings — check_action() filters by phase
-    BINDINGS = [  # noqa: RUF012
+    BINDINGS: ClassVar[list[Binding]] = [  # type: ignore[assignment]
         # Draw phase
         Binding("d", "draw_deck", "Draw from Deck", show=True),
         Binding("p", "pick_discard", "Pick from Discard", show=True),
         # Card selection (1-6): used in SETUP, ACTION/swap, FLIP
-        Binding("1", "select_1", "Card 1", show=True),
-        Binding("2", "select_2", "Card 2", show=True),
-        Binding("3", "select_3", "Card 3", show=True),
-        Binding("4", "select_4", "Card 4", show=True),
-        Binding("5", "select_5", "Card 5", show=True),
-        Binding("6", "select_6", "Card 6", show=True),
+        # Using parameterized actions to avoid boilerplate methods
+        Binding("1", "select(1)", "Card 1", show=True),
+        Binding("2", "select(2)", "Card 2", show=True),
+        Binding("3", "select(3)", "Card 3", show=True),
+        Binding("4", "select(4)", "Card 4", show=True),
+        Binding("5", "select(5)", "Card 5", show=True),
+        Binding("6", "select(6)", "Card 6", show=True),
         # Action phase: discard drawn card
         Binding("x", "discard_drawn", "Discard Drawn", show=True),
         # Flip phase: pass
@@ -72,13 +73,21 @@ class PyCardGolfApp(App[None]):
         Binding("q", "quit_game", "Quit", show=True),
     ]
 
+    # Map action names to their required phase and core game action
+    _ACTION_DISPATCH: ClassVar[dict[str, tuple[str, Action]]] = {
+        "draw_deck": ("DRAW", ActionSpace.DRAW_DECK),
+        "pick_discard": ("DRAW", ActionSpace.DRAW_DISCARD),
+        "discard_drawn": ("ACTION", ActionSpace.DISCARD_DRAWN),
+        "pass_flip": ("FLIP", ActionSpace.PASS),
+    }
+
     # --- Reactive State ---
-    game_phase: reactive[str] = reactive("WAITING")  # type: ignore[type-arg]
-    current_player_name: reactive[str] = reactive("")  # type: ignore[type-arg]
-    can_discard: reactive[bool] = reactive(False)  # type: ignore[type-arg]
-    is_human_turn: reactive[bool] = reactive(False)  # type: ignore[type-arg]
-    game_over: reactive[bool] = reactive(False)  # type: ignore[type-arg]
-    waiting_for_continue: reactive[bool] = reactive(False)  # type: ignore[type-arg]
+    game_phase: reactive[str] = reactive("WAITING")
+    current_player_name: reactive[str] = reactive("")
+    can_discard: reactive[bool] = reactive(False)
+    is_human_turn: reactive[bool] = reactive(False)
+    game_over: reactive[bool] = reactive(False)
+    waiting_for_continue: reactive[bool] = reactive(False)
 
     def __init__(
         self,
@@ -129,106 +138,93 @@ class PyCardGolfApp(App[None]):
     # check_action — dynamic binding visibility
     # ------------------------------------------------------------------
 
-    def check_action(  # noqa: PLR0911
+    def check_action(
         self,
         action: str,
-        parameters: tuple[object, ...],  # noqa: ARG002
+        parameters: tuple[object, ...],
     ) -> bool | None:
         """Return False to dim/hide actions invalid for the current phase."""
-        if self.game_over:
-            return action == "quit_game"
+        _ = parameters
 
-        # When waiting for Enter at round-end, only show continue + quit
-        if self.waiting_for_continue:
-            return action in ("continue_round", "quit_game")
+        if action == "quit_game":
+            return True
 
-        if not self.is_human_turn:
-            return action == "quit_game"
+        # If game is terminal/paused, only allow continue if actively waiting for it
+        if self.game_over or not self.is_human_turn or self.waiting_for_continue:
+            return action == "continue_round" and self.waiting_for_continue
 
-        phase = self.game_phase
+        if action == "select":
+            return self.game_phase in ("SETUP", "ACTION", "FLIP")
 
-        if action == "continue_round":
-            return False  # Only shown during round-end
+        if action in self._ACTION_DISPATCH:
+            required_phase, _ = self._ACTION_DISPATCH[action]
+            is_valid = self.game_phase == required_phase
+            return (
+                (is_valid and self.can_discard)
+                if action == "discard_drawn"
+                else is_valid
+            )
 
-        if action in ("draw_deck", "pick_discard"):
-            return phase == "DRAW"
-
-        if action == "discard_drawn":
-            return phase == "ACTION" and self.can_discard
-
-        if action == "pass_flip":
-            return phase == "FLIP"
-
-        if action.startswith("select_"):
-            return phase in ("SETUP", "ACTION", "FLIP")
-
-        return action == "quit_game"
+        return False
 
     # ------------------------------------------------------------------
     # Action handlers — push actions to the input queue
     # ------------------------------------------------------------------
 
+    def _try_submit(self, action_name: str) -> None:
+        """Look up and submit a phase-gated action from the dispatch table."""
+        if not self.is_human_turn or self.waiting_for_continue:
+            return
+
+        entry = self._ACTION_DISPATCH.get(action_name)
+        if not entry:
+            return
+
+        required_phase, action_value = entry
+        if self.game_phase != required_phase:
+            return
+
+        # Extra guard for discard
+        if action_name == "discard_drawn" and not self.can_discard:
+            return
+
+        self._input_handler.submit_action(action_value)
+
     def action_draw_deck(self) -> None:
-        """Handle 'd' key: draw from deck."""
-        if self.game_phase == "DRAW" and self.is_human_turn:
-            self._input_handler.submit_action(ActionSpace.DRAW_DECK)
+        """Handle 'd' key."""
+        self._try_submit("draw_deck")
 
     def action_pick_discard(self) -> None:
-        """Handle 'p' key: pick from discard pile."""
-        if self.game_phase == "DRAW" and self.is_human_turn:
-            self._input_handler.submit_action(ActionSpace.DRAW_DISCARD)
+        """Handle 'p' key."""
+        self._try_submit("pick_discard")
 
     def action_discard_drawn(self) -> None:
-        """Handle 'x' key: discard the drawn card."""
-        if self.game_phase == "ACTION" and self.can_discard and self.is_human_turn:
-            self._input_handler.submit_action(ActionSpace.DISCARD_DRAWN)
+        """Handle 'x' key."""
+        self._try_submit("discard_drawn")
 
     def action_pass_flip(self) -> None:
-        """Handle 'n' key: pass on flipping."""
-        if self.game_phase == "FLIP" and self.is_human_turn:
-            self._input_handler.submit_action(ActionSpace.PASS)
+        """Handle 'n' key."""
+        self._try_submit("pass_flip")
 
     def action_continue_round(self) -> None:
         """Handle Enter key: continue past round-end summary."""
         if self.waiting_for_continue:
             self._continue_queue.put_nowait(True)
 
+    def action_select(self, index: int) -> None:
+        """Handle card selection (1-6) via parameterized action."""
+        self._handle_card_select(index - 1)
+
     def _handle_card_select(self, index: int) -> None:
         """Handle a numbered card selection (0-indexed)."""
-        if not self.is_human_turn:
+        if not self.is_human_turn or self.waiting_for_continue:
             return
 
         phase = self.game_phase
-        if phase == "SETUP":
+        if phase in ("SETUP", "FLIP"):
             self._input_handler.submit_action(ActionSpace.FLIP[index])
         elif phase == "ACTION":
             self._input_handler.submit_action(ActionSpace.SWAP[index])
-        elif phase == "FLIP":
-            self._input_handler.submit_action(ActionSpace.FLIP[index])
-
-    def action_select_1(self) -> None:
-        """Handle '1' key."""
-        self._handle_card_select(0)
-
-    def action_select_2(self) -> None:
-        """Handle '2' key."""
-        self._handle_card_select(1)
-
-    def action_select_3(self) -> None:
-        """Handle '3' key."""
-        self._handle_card_select(2)
-
-    def action_select_4(self) -> None:
-        """Handle '4' key."""
-        self._handle_card_select(3)
-
-    def action_select_5(self) -> None:
-        """Handle '5' key."""
-        self._handle_card_select(4)
-
-    def action_select_6(self) -> None:
-        """Handle '6' key."""
-        self._handle_card_select(5)
 
     def action_quit_game(self) -> None:
         """Handle 'q' key: exit the application cleanly."""
@@ -270,8 +266,6 @@ class PyCardGolfApp(App[None]):
 
     def _is_final_turn(self) -> bool:
         """Check if the current round is in its final turn sequence."""
-        from pycardgolf.core.phases import RoundPhase  # noqa: PLC0415
-
         if not self._game.current_round:
             return False
         if self._game.current_round.phase == RoundPhase.FINISHED:
@@ -291,7 +285,7 @@ class PyCardGolfApp(App[None]):
         if is_final:
             if "⚠️" not in status_bar.phase_name:
                 status_bar.phase_name = (
-                    f"{status_bar.phase_name} [bold red]⚠️ FINAL TURN[/bold red]"
+                    f"{status_bar.phase_name} [bold red]⚠️  FINAL TURN[/bold red]"
                 )
         elif "⚠️" in status_bar.phase_name:
             # Strip the warning tag
@@ -354,7 +348,8 @@ class PyCardGolfApp(App[None]):
             )
             if prompt:
                 if is_final_turn:
-                    prompt = f"[bold red]⚠️ FINAL TURN ⚠️[/bold red]\n  {prompt}"
+                    # Double space after ⚠️ to help with rendering properly
+                    prompt = f"[bold red]⚠️  FINAL TURN ⚠️[/bold red]\n  {prompt}"
                 self.log_game_event(f"[italic yellow]▸ {prompt}[/italic yellow]")
 
     def refresh_hands(self) -> None:
@@ -372,8 +367,6 @@ class PyCardGolfApp(App[None]):
         hands: dict[int, Hand],
     ) -> None:
         """Update all hand displays from a TurnStartEvent."""
-        from pycardgolf.players.human import HumanPlayer  # noqa: PLC0415
-
         players = self._game.players
 
         # Dynamic human selection for the bottom widget:
@@ -466,7 +459,7 @@ class PyCardGolfApp(App[None]):
         try:
             opponent_grid = self.query_one("#opponents", OpponentGrid)
             opponent_grid.mark_next_player(next_player_name)
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass
 
     def set_round_num(self, round_num: int) -> None:
@@ -479,7 +472,7 @@ class PyCardGolfApp(App[None]):
         try:
             event_log = self.query_one("#event-log", EventLogWidget)
             event_log.log_event(message)
-        except Exception:  # noqa: BLE001, S110
+        except NoMatches:
             pass  # Widget may not be mounted yet
 
     def show_round_end_summary(self) -> None:

@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pycardgolf.interfaces.base import GameRenderer
+from pycardgolf.players.human import HumanPlayer
 from pycardgolf.utils.card import card_to_string
+from pycardgolf.utils.card import card_to_string as c2s
 
 if TYPE_CHECKING:
     from pycardgolf.core.event_bus import EventBus
@@ -74,8 +76,6 @@ class TUIRenderer(GameRenderer):
 
     def display_turn_start(self, event: TurnStartEvent) -> None:
         """Display the start of a player's turn and update all hands."""
-        from pycardgolf.players.human import HumanPlayer  # noqa: PLC0415
-
         player_name = self._get_player_name(event.player_idx)
         player = self.players[event.player_idx] if self.players else None
         is_bot = player is not None and not isinstance(player, HumanPlayer)
@@ -149,9 +149,6 @@ class TUIRenderer(GameRenderer):
 
     def display_round_end(self, event: RoundEndEvent) -> None:
         """Display round-end summary with all hands and scores, then wait for Enter."""
-        from pycardgolf.players.human import HumanPlayer  # noqa: PLC0415
-        from pycardgolf.utils.card import card_to_string as c2s  # noqa: PLC0415
-
         self._log(f"\n[bold cyan]═══ Round {event.round_num} Complete ═══[/bold cyan]")
 
         # Build face-up hand data for main window (card_id list per player name)
@@ -230,8 +227,9 @@ class TUIRenderer(GameRenderer):
                 f"Avg: {stats.average_score:.1f}"
             )
 
-    def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:  # noqa: ARG002
+    def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:
         """Display a message when the discard pile is reshuffled into the deck."""
+        _ = event
         self._log(
             "[bold yellow]The discard pile was reshuffled into the deck.[/bold yellow]"
         )

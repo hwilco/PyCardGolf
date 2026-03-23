@@ -27,7 +27,7 @@ class SideIndicator(Static):
     }
     """
 
-    message: reactive[str] = reactive("")  # type: ignore[type-arg]
+    message: reactive[str] = reactive("")
 
     def watch_message(self, message: str) -> None:
         """Update content and visibility when message changes."""
