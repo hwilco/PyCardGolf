@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pycardgolf"
-version = "0.1.0"
+version = "1.2.0-beta.1"
 description = ""
 authors = ["Harrison Wilco <hwilco@gmail.com>"]
 readme = "README.md"
