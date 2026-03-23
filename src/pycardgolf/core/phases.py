@@ -108,6 +108,14 @@ class SetupPhaseState(PhaseState):
                 round_state.phase_state = DrawPhaseState()
                 return events
 
+            # Emit TurnStartEvent for the next player in setup
+            events.append(
+                TurnStartEvent(
+                    player_idx=round_state.current_player_idx,
+                    hands=dict(enumerate(round_state.hands)),
+                )
+            )
+
         return events
 
 
@@ -149,9 +157,10 @@ class DrawPhaseState(PhaseState):
     def get_valid_actions(
         self,
         round_state: Round,
-        player_idx: int,  # noqa: ARG002
+        player_idx: int,
     ) -> tuple[Action, ...]:
         """Return a tuple of valid actions for the given player."""
+        _ = player_idx
         if round_state.discard_pile.num_cards > 0:
             return self._ACTIONS_WITH_DISCARD
         return self._ACTIONS_DECK_ONLY
@@ -192,10 +201,12 @@ class ActionPhaseState(PhaseState):
 
     def get_valid_actions(
         self,
-        round_state: Round,  # noqa: ARG002
-        player_idx: int,  # noqa: ARG002
+        round_state: Round,
+        player_idx: int,
     ) -> tuple[Action, ...]:
         """Return a tuple of valid actions for the given player."""
+        _ = round_state
+        _ = player_idx
         return self._cached_actions
 
     def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
@@ -226,14 +237,18 @@ class FinishedPhaseState(PhaseState):
 
     def get_valid_actions(
         self,
-        round_state: Round,  # noqa: ARG002
-        player_idx: int,  # noqa: ARG002
+        round_state: Round,
+        player_idx: int,
     ) -> tuple[Action, ...]:
         """There are no valid actions in the FINISHED phase."""
+        _ = round_state
+        _ = player_idx
         return ()
 
-    def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:  # noqa: ARG002
+    def handle_action(self, round_state: Round, action: Action) -> list[GameEvent]:
         """Advance the round state based on the action and return events."""
+        _ = round_state
+        _ = action
         return []
 
 

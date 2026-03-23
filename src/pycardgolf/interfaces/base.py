@@ -25,6 +25,7 @@ from pycardgolf.core.events import (
     GameOverEvent,
     GameStartedEvent,
     GameStatsEvent,
+    IllegalActionEvent,
     RoundEndEvent,
     RoundStartEvent,
     ScoreBoardEvent,
@@ -77,6 +78,7 @@ class GameRenderer(ABC):
         self.event_bus.subscribe(GameOverEvent, self.display_game_over)
         self.event_bus.subscribe(ScoreBoardEvent, self.display_scoreboard)
         self.event_bus.subscribe(GameStatsEvent, self.display_game_stats)
+        self.event_bus.subscribe(IllegalActionEvent, self.display_illegal_action)
 
     @abstractmethod
     def display_round_end(self, event: RoundEndEvent) -> None:
@@ -129,6 +131,10 @@ class GameRenderer(ABC):
     @abstractmethod
     def display_deck_reshuffled(self, event: DeckReshuffledEvent) -> None:
         """Display a notification that the draw pile was replenished from discard."""
+
+    @abstractmethod
+    def display_illegal_action(self, event: IllegalActionEvent) -> None:
+        """Display an error message for an illegal action."""
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +195,11 @@ class NullGameRenderer(GameRenderer):
 
     def display_deck_reshuffled(
         self, event: DeckReshuffledEvent
+    ) -> None:  # pragma: no cover
+        """No-op."""
+
+    def display_illegal_action(
+        self, event: IllegalActionEvent
     ) -> None:  # pragma: no cover
         """No-op."""
 

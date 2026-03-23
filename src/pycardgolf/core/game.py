@@ -10,14 +10,17 @@ from pycardgolf.core.events import (
     GameOverEvent,
     GameStartedEvent,
     GameStatsEvent,
+    IllegalActionEvent,
     RoundEndEvent,
     RoundStartEvent,
     ScoreBoardEvent,
+    TurnStartEvent,
 )
 from pycardgolf.core.observation import ObservationBuilder
 from pycardgolf.core.phases import RoundPhase
 from pycardgolf.core.round import Round, RoundFactory
 from pycardgolf.core.stats import PlayerStats
+from pycardgolf.exceptions import IllegalActionError
 from pycardgolf.utils.mixins import RNGMixin
 
 if TYPE_CHECKING:
@@ -66,6 +69,14 @@ class Game(RNGMixin):
         self.current_round = RoundFactory.create_standard_round(
             player_names=player_names,
             seed=round_seed,
+        )
+
+        # Publish initial turn start event for UI to refresh hands
+        self.event_bus.publish(
+            TurnStartEvent(
+                player_idx=self.current_round.current_player_idx,
+                hands=dict(enumerate(self.current_round.hands)),
+            )
         )
 
     def _handle_round_end(self) -> None:
@@ -129,8 +140,19 @@ class Game(RNGMixin):
 
         obs = ObservationBuilder.build(self.current_round, current_player_idx)
         action = current_player.get_action(obs)
-        events = self.current_round.step(action)
-        self.publish_events(events)
+
+        try:
+            events = self.current_round.step(action)
+            self.publish_events(events)
+        except IllegalActionError as exc:
+            # Publish illegal action event but return True to keep game loop running
+            # and allow the same player to try a different move.
+            self.event_bus.publish(
+                IllegalActionEvent(
+                    player_idx=current_player_idx,
+                    message=str(exc),
+                )
+            )
 
         return True
 
