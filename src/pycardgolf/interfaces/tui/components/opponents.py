@@ -28,6 +28,7 @@ class OpponentHandWidget(Widget):
         height: auto;
         width: auto;
         padding: 0 1;
+        border: round $primary-background;
     }
 
     OpponentHandWidget .opp-name {
@@ -59,6 +60,17 @@ class OpponentHandWidget(Widget):
 
     opponent_name: reactive[str] = reactive("Opponent")
     is_next: reactive[bool] = reactive(False)
+    theme_color: reactive[str] = reactive("")
+
+    def watch_theme_color(self, color: str) -> None:
+        """Update the widget's border and label color when theme_color changes."""
+        if color:
+            self.styles.border = ("round", color)
+            try:
+                label = self.query_one("#opp-name-label", Static)
+                label.styles.color = color
+            except NoMatches:
+                pass
 
     def compose(self) -> ComposeResult:
         """Build a compact 2-row card grid for this opponent."""
@@ -170,12 +182,16 @@ class OpponentGrid(Widget):
             for i in range(self._num_slots):
                 yield OpponentHandWidget(opp_index=i, id=f"opponent-{i}")
 
-    def update_opponent(self, opp_index: int, name: str, cards: list[CardID]) -> None:
-        """Update a specific opponent's slot with name and hand."""
+    def update_opponent(
+        self, opp_index: int, name: str, cards: list[CardID], color: str = ""
+    ) -> None:
+        """Update a specific opponent's slot with name, hand, and theme color."""
         try:
             opp_widget = self.query_one(f"#opponent-{opp_index}", OpponentHandWidget)
             opp_widget.opponent_name = name
             opp_widget.update_hand(cards)
+            if color:
+                opp_widget.theme_color = color
         except NoMatches:
             pass  # Opponent slot may not exist
 

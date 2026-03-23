@@ -55,12 +55,12 @@ async def test_phase_reactivity():
         await pilot.pause()
 
         assert app.check_action("draw_deck", ()) is True
-        assert app.check_action("select_1", ()) is False
+        assert app.check_action("select", (1,)) is False
 
         app.game_phase = "ACTION"
         await pilot.pause()
         assert app.check_action("draw_deck", ()) is False
-        assert app.check_action("select_1", ()) is True
+        assert app.check_action("select", (1,)) is True
 
 
 @pytest.mark.asyncio

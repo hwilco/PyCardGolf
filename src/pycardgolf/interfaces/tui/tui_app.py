@@ -395,11 +395,15 @@ class PyCardGolfApp(App[None]):
         # Update opponent grid with everyone else's hands
         opp_index = 0
         opponent_grid = self.query_one("#opponents", OpponentGrid)
-        for i in range(len(players)):
-            if i == human_idx:
+        total_players = len(players)
+        # Start looking at the next player after the focused human
+        for offset in range(1, total_players):
+            i = (human_idx + offset) % total_players
+            if i not in hands:
                 continue
             sanitized = ObservationBuilder.sanitize_hand(hands[i])
-            opponent_grid.update_opponent(opp_index, players[i].name, sanitized)
+            color = self._get_player_color(i)
+            opponent_grid.update_opponent(opp_index, players[i].name, sanitized, color)
             opp_index += 1
             if opp_index >= opponent_grid.MAX_OPPONENTS:
                 break
@@ -411,6 +415,38 @@ class PyCardGolfApp(App[None]):
         status_bar = self.query_one("#status-bar", StatusBar)
         if current_player_idx < len(players):
             status_bar.current_player = players[current_player_idx].name
+            self._apply_player_theme(current_player_idx)
+
+    def _get_player_color(self, player_idx: int) -> str:
+        """Get a distinct color for a given player index dynamically."""
+        total_players = len(self._game.players) if hasattr(self, "_game") else 1
+        num_colors = max(total_players, 1)
+        # Distribute hues evenly across the 360-degree color wheel
+        hue = int(360 * player_idx / num_colors)
+        return f"hsl({hue},80%,45%)"
+
+    def _apply_player_theme(self, player_idx: int) -> None:
+        """Apply a dynamic color theme based on the current player index."""
+        color = self._get_player_color(player_idx)
+
+        try:
+            status_bar = self.query_one("#status-bar", StatusBar)
+            status_bar.styles.background = color
+            status_bar.styles.color = "white"
+        except NoMatches:
+            pass
+
+        try:
+            player_area = self.query_one("#player-area")
+            player_area.styles.border_top = ("thick", color)
+        except NoMatches:
+            pass
+
+        try:
+            event_log_title = self.query_one("#event-log-title")
+            event_log_title.styles.color = color
+        except NoMatches:
+            pass
 
     def set_drawn_card(self, card_id: CardID) -> None:
         """Set the drawn card display."""
@@ -443,14 +479,24 @@ class PyCardGolfApp(App[None]):
         # Update opponent grid with everyone else's revealed hand
         opp_index = 0
         opponent_grid = self.query_one("#opponents", OpponentGrid)
-        for player in players:
-            if player.name == human_name:
-                continue
+        total_players = len(players)
+
+        # Find the human's index so we can start offsets from them
+        human_idx = 0
+        for i, p in enumerate(players):
+            if p.name == human_name:
+                human_idx = i
+                break
+
+        for offset in range(1, total_players):
+            idx = (human_idx + offset) % total_players
+            player = players[idx]
             if player.name in hands_by_name:
+                color = self._get_player_color(idx)
                 opponent_grid.update_opponent(
-                    opp_index, player.name, hands_by_name[player.name]
+                    opp_index, player.name, hands_by_name[player.name], color
                 )
-            opp_index += 1
+                opp_index += 1
             if opp_index >= opponent_grid.MAX_OPPONENTS:
                 break
 
